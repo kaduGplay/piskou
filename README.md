@@ -94,6 +94,8 @@ O Pixel não carrega em localhost, para os testes não entrarem nas métricas. O
 
 ## Checkout
 
+Após "Dê vida à sua IA", o visitante entra em `/chat` com o nome, a imagem e as características selecionadas. A demonstração permite duas mensagens, com respostas pré-definidas; após a segunda resposta mostra uma prévia de foto bloqueada. O perfil abre por toque, e os botões de desbloqueio abrem os planos Premium e Luxo existentes. A conversa é salva nesta aba e retomada ao recarregar. Não há integração com um modelo de IA, vídeo novo ou liberação automática de chat pago nesta etapa.
+
 Os botões da oferta levam para `/checkout?plano=<id>`, junto com as UTMs. A página mostra, nesta ordem:
 
 1. **Personagem montada no funil:** imagem, nome, idade, personalidade e relação, lidas do `sessionStorage`.

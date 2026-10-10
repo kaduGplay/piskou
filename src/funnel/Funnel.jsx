@@ -37,6 +37,7 @@ import {
   track,
 } from './data.js'
 import './Funnel.css'
+import { SELECTION_STORAGE_KEY } from '../shared/checkout.js'
 
 const loadGeneratingPanel = () => import('./GeneratingPanel.jsx')
 const GeneratingPanel = lazy(loadGeneratingPanel)
@@ -503,8 +504,8 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
 
   const openOffer = () => {
     onComplete()
-    track(EVENTS.OFFER_VIEW, { visual_style: sel.style })
-    setPaywallOpen(true)
+    try { sessionStorage.setItem(SELECTION_STORAGE_KEY, JSON.stringify(sel)) } catch { /* armazenamento opcional */ }
+    window.location.assign(`/chat${window.location.search}`)
   }
 
   const mediaImage = (field, value) => getOptionMedia(sel.style, field, value)?.image

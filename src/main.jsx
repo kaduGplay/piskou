@@ -4,10 +4,14 @@ import './index.css'
 
 const Funnel = lazy(() => import('./funnel/Funnel.jsx'))
 const CheckoutPage = lazy(() => import('./checkout/CheckoutPage.jsx'))
+const ChatPage = lazy(() => import('./chat/ChatPage.jsx'))
 
 // /checkout abre o checkout; o resto é o funil.
 // ?dev=creating abre direto na revelação; ?dev=offer abre a revelação com a oferta aberta.
 function App() {
+  if (window.location.pathname.replace(/\/+$/, '') === '/chat') {
+    return <Suspense fallback={<div className="app-loading" aria-label="Carregando conversa" />}><ChatPage /></Suspense>
+  }
   if (window.location.pathname.replace(/\/+$/, '') === '/checkout') {
     return (
       <Suspense fallback={<div className="app-loading" aria-label="Carregando" />}>
