@@ -49,7 +49,9 @@ const Laurel = ({ right = false }) => (
   </span>
 )
 
-export default function PaywallSheet({ sel, onClose }) {
+export default function PaywallSheet({ sel, onClose, source }) {
+  const fromChat = source === 'chat'
+  const characterName = sel.name || 'sua personagem'
   const [tier, setTier] = useState('premium')
   const [openFaq, setOpenFaq] = useState(null)
   const result = getResultImage(sel)
@@ -103,9 +105,9 @@ export default function PaywallSheet({ sel, onClose }) {
           <div className="paywall-hero">
             <img src={result.src} alt="Personagem escolhida" />
             <div className="paywall-hero-copy">
-              <span>PERSONAGEM PRONTA</span>
-              <h1 id="paywall-title">Dê vida à {sel.name || 'sua personagem'}</h1>
-              <p>Escolha o acesso que combina com você.</p>
+              <span>{fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}</span>
+              <h1 id="paywall-title">{fromChat ? `Continue conversando com ${characterName}` : `Dê vida à ${characterName}`}</h1>
+              <p>{fromChat ? `Gostou de conhecer ${characterName}? Escolha seu acesso para continuar a conversa do seu jeito, com a personalidade que você escolheu.` : 'Escolha o acesso que combina com você.'}</p>
             </div>
           </div>
 
@@ -146,7 +148,7 @@ export default function PaywallSheet({ sel, onClose }) {
                       {option.name}
                     </span>
                     <small>
-                      {option.bonusCount ? `${option.bonusCount} bônus incluídos` : 'Personagem e conversa por texto'}
+                      {fromChat ? (option.bonusCount ? `Conversa + ${option.bonusCount} bônus incluídos` : `Continue sua conversa com ${characterName}`) : (option.bonusCount ? `${option.bonusCount} bônus incluídos` : 'Personagem e conversa por texto')}
                     </small>
                   </span>
                   <span className="paywall-plan-price">
@@ -196,7 +198,7 @@ export default function PaywallSheet({ sel, onClose }) {
               className={`paywall-cta${isLuxury ? ' luxury' : ''}`}
               onClickCapture={(event) => goToCheckout(event, plan)}
             >
-              LIBERAR {plan.name.toUpperCase()} POR {formatBRL(plan.price)} <ArrowRight size={17} />
+              {fromChat ? 'CONTINUAR A CONVERSA' : `LIBERAR ${plan.name.toUpperCase()}`} · {formatBRL(plan.price)} <ArrowRight size={17} />
             </a>
             <p className="paywall-checkout-note">
               <ShieldCheck size={14} aria-hidden="true" /> Pagamento seguro via PIX · Sem renovação automática

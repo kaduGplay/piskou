@@ -384,14 +384,14 @@ export default function ChatPage() {
                 <div className="chat-continue-notice">
                   <LockKeyhole size={19} />
                   <div>
-                    <strong>Vamos continuar essa conversa?</strong>
-                    <p>Para continuar conversando, adquira um plano.</p>
+                    <strong>Sua conversa com {name} só começou</strong>
+                    <p>Vocês ainda têm muito para conversar. Escolha seu acesso e continue conhecendo {name}.</p>
                     <button
                       type="button"
                       className="chat-continue-button"
                       onClick={openOffer}
                     >
-                      Continuar a conversa <ChevronRight size={14} />
+                      Ver planos para continuar <ChevronRight size={14} />
                     </button>
                   </div>
                 </div>
@@ -531,7 +531,7 @@ export default function ChatPage() {
             </div>
           }
         >
-          <PaywallSheet sel={sel} onClose={() => setOfferOpen(false)} />
+          <PaywallSheet source="chat" sel={sel} onClose={() => setOfferOpen(false)} />
         </Suspense>
       )}
     </div>
