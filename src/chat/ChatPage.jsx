@@ -25,6 +25,7 @@ import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
 const FREE_MESSAGES = CHAT_PREVIEW_LIMIT
+const UPGRADE_DELAY_MS = 120_000
 
 function readSelection() {
   try {
@@ -54,6 +55,7 @@ export default function ChatPage() {
   const messagesRef = useRef(null)
   const requestRef = useRef(null)
   const sendGuard = useRef(false)
+  const upgradeTimer = useRef(null)
   const profileRef = useRef(null)
   const profileTrigger = useRef(null)
   const sent = messages.filter((m) => m.role === 'user').length
@@ -111,7 +113,6 @@ export default function ChatPage() {
         const data = await response.json()
         if (!response.ok) throw new Error(data.error)
         setMessages(data.messages || [])
-        setPaywallReached((data.messages || []).filter(m => m.role === 'character').length >= FREE_MESSAGES)
       })
       .catch((error) => {
         if (error.name !== 'AbortError')
@@ -123,6 +124,7 @@ export default function ChatPage() {
     return () => {
       controller.abort()
       requestRef.current?.abort()
+      clearTimeout(upgradeTimer.current)
     }
   }, [sel])
   useEffect(() => {
@@ -170,7 +172,20 @@ export default function ChatPage() {
     const content = text.trim().slice(0, 500)
     if (loading || typing || sendGuard.current) return
     if (!content) return
-    if (locked) return openOffer()
+    if (locked) {
+      if (paywallReached) return openOffer()
+      sendGuard.current = true
+      setMessages((previous) => [...previous, { role: 'user', text: content }])
+      setDraft('')
+      setChatError('')
+      setTyping(true)
+      upgradeTimer.current = setTimeout(() => {
+        setTyping(false)
+        sendGuard.current = false
+        setPaywallReached(true)
+      }, UPGRADE_DELAY_MS)
+      return
+    }
     sendGuard.current = true
     setMessages((prev) => [...prev, { role: 'user', text: content }])
     setDraft('')
@@ -201,7 +216,6 @@ export default function ChatPage() {
         throw new Error(data.error || 'Não foi possível receber a resposta.')
       }
       setMessages(data.messages)
-      setPaywallReached(data.messages.filter(m => m.role === 'character').length >= FREE_MESSAGES)
     } catch (error) {
       if (error.name !== 'AbortError') {
         setMessages(previous)
