@@ -29,10 +29,11 @@ const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
 const FREE_MESSAGES = CHAT_PREVIEW_LIMIT
 const UPGRADE_DELAY_MS = 2_000
 
-function videoPreviewMessage(selection) {
+function mediaPreviewMessage(selection, kind) {
+  const media = kind === 'video' ? 'do vídeo' : 'da foto'
   const affectionate = selection.relationship !== 'Confidente'
   const address = affectionate ? ', amor' : ''
-  if (selection.speechStyle === 'Direta') return `Aqui está a prévia do vídeo${address}.`
+  if (selection.speechStyle === 'Direta') return `Aqui está a prévia ${media}${address}.`
   if (selection.speechStyle === 'Bem-humorada' || selection.personality === 'Divertida')
     return `Bateu a curiosidade${address}? Dá uma olhada nesta prévia 💕`
   if (selection.socialEnergy === 'Reservada' || selection.personality === 'Reservada' || selection.speechStyle === 'Delicada')
@@ -65,8 +66,9 @@ export default function ChatPage() {
   const [paywallReached, setPaywallReached] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
-  const [photoRequested, setPhotoRequested] = useState(false)
-  const [videoRequested, setVideoRequested] = useState(false)
+  const [mediaRequests, setMediaRequests] = useState([])
+  const mediaTimers = useRef([])
+  const mediaBusy = useRef(false)
   const appRef = useRef(null)
   const messagesRef = useRef(null)
   const requestRef = useRef(null)
@@ -74,6 +76,7 @@ export default function ChatPage() {
   const upgradeTimer = useRef(null)
   const profileRef = useRef(null)
   const profileTrigger = useRef(null)
+  const mediaPending = mediaRequests.some(item => item.phase !== 'media')
   const sent = messages.filter((m) => m.role === 'user').length
   const locked =
     messages.filter((m) => m.role === 'character').length >= FREE_MESSAGES
@@ -141,12 +144,13 @@ export default function ChatPage() {
       controller.abort()
       requestRef.current?.abort()
       clearTimeout(upgradeTimer.current)
+      mediaTimers.current.forEach(clearTimeout)
     }
   }, [sel])
   useEffect(() => {
     const list = messagesRef.current
     list?.scrollTo({ top: list.scrollHeight, behavior: typing ? 'auto' : 'smooth' })
-  }, [messages, typing, photoRequested, videoRequested, paywallReached])
+  }, [messages, typing, mediaRequests, paywallReached])
   useEffect(() => {
     if (!profileOpen) return
     const previous = document.activeElement
@@ -179,19 +183,25 @@ export default function ChatPage() {
     setProfileOpen(false)
     setOfferOpen(true)
   }
-  const requestPhoto = () => {
+  const requestMedia = (kind) => {
+    if (loading || typing || mediaBusy.current) return
     setProfileOpen(false)
-    setPhotoRequested(true)
-    track('ChatFotoSolicitada', { visual_style: sel.style })
+    mediaBusy.current = true
+    const id = crypto.randomUUID()
+    setMediaRequests(previous => [...previous, { id, kind, phase: 'typing' }])
+    track(kind === 'video' ? 'ChatVideoSolicitado' : 'ChatFotoSolicitada', { visual_style: sel.style })
+    const advance = (phase) => setMediaRequests(previous => previous.map(item => item.id === id ? { ...item, phase } : item))
+    mediaTimers.current.push(setTimeout(() => advance('reply'), 1800))
+    mediaTimers.current.push(setTimeout(() => {
+      advance('media')
+      mediaBusy.current = false
+    }, 3000))
   }
-  const requestVideo = () => {
-    setProfileOpen(false)
-    setVideoRequested(true)
-    track('ChatVideoSolicitado', { visual_style: sel.style })
-  }
+  const requestPhoto = () => requestMedia('photo')
+  const requestVideo = () => requestMedia('video')
   const send = async (text = draft) => {
     const content = text.trim().slice(0, 500)
-    if (loading || typing || sendGuard.current) return
+    if (loading || typing || sendGuard.current || mediaBusy.current) return
     if (!content) return
     if (locked) {
       if (paywallReached) return openOffer()
@@ -283,10 +293,10 @@ export default function ChatPage() {
             </div>
           ))}
         </dl>
-        <button type="button" className="chat-primary" onClick={requestPhoto}>
+        <button type="button" className="chat-primary" disabled={loading || typing || mediaPending} onClick={requestPhoto}>
           <LockKeyhole size={17} /> Pedir uma foto · Premium
         </button>
-        <button type="button" className="chat-primary" onClick={requestVideo}>
+        <button type="button" className="chat-primary" disabled={loading || typing || mediaPending} onClick={requestVideo}>
           <Video size={17} /> Pedir um vídeo · Prévia
         </button>
         <p className="chat-profile-note">
@@ -413,7 +423,7 @@ export default function ChatPage() {
               <button
                 type="button"
                 className="chat-start"
-                disabled={loading || typing}
+                disabled={loading || typing || mediaPending}
                 onClick={() => send('Oi! 💕')}
               >
                 <MessageCircle size={17} /> Mandar um oi 💕
@@ -452,7 +462,7 @@ export default function ChatPage() {
               </div>
             </div>
           )}
-          {(paywallReached || photoRequested) && (
+          {paywallReached && (
             <div className="chat-locked-wrap">
               {paywallReached && (
                 <div className="chat-continue-notice">
@@ -498,32 +508,45 @@ export default function ChatPage() {
               </p>
             </div>
           )}
-          {videoRequested && (
-            <div className="chat-video-preview">
+          {mediaRequests.map(item => (
+            <div className="chat-media-request" key={item.id}>
+              <div className="chat-message user">
+                <div className="chat-bubble">
+                  <p>{item.kind === 'video' ? 'Quero ver uma prévia de vídeo 💕' : 'Quero ver uma prévia de foto 💕'}</p>
+                  <span>Você <CheckCheck size={13} /></span>
+                </div>
+              </div>
               <div className="chat-message character">
                 <img className="chat-message-avatar" src={image} alt="" />
-                <div className="chat-bubble">
-                  <p>{videoPreviewMessage(sel)}</p>
-                  <span>{name} · Prévia</span>
-                </div>
+                {item.phase === 'typing' ? (
+                  <div className="chat-typing" aria-label={`${name} está digitando`}><i /><i /><i /></div>
+                ) : (
+                  <div className="chat-bubble">
+                    <p>{mediaPreviewMessage(sel, item.kind)}</p>
+                    <span>{name} · Prévia</span>
+                  </div>
+                )}
               </div>
-              <div className="chat-locked-wrap">
-                <div className="chat-locked-media chat-locked-video">
-                  <img src={image} alt={`Imagem ilustrativa da prévia de vídeo de ${name}`} />
-                  <div className="chat-locked-copy">
-                    <span className="chat-lock-circle"><Play size={24} fill="currentColor" /></span>
-                    <span className="chat-eyebrow">PRÉVIA DE VÍDEO · BLOQUEADA</span>
-                    <h2>Uma prévia de {name} para você</h2>
-                    <p>Conheça os planos e os recursos de vídeo do Luxo.</p>
-                    <button type="button" className="chat-primary" onClick={openOffer}>
-                      <LockKeyhole size={16} /> Desbloquear · Ver planos
-                    </button>
-                    <small>Imagem ilustrativa da personagem · Nenhum vídeo gerado</small>
+              {item.phase === 'reply' && <p className="chat-media-loading" role="status">Carregando prévia…</p>}
+              {item.phase === 'media' && (
+                <div className="chat-locked-wrap">
+                  <div className={`chat-locked-media${item.kind === 'video' ? ' chat-locked-video' : ''}`}>
+                    <img src={image} alt={`Prévia ilustrativa ${item.kind === 'video' ? 'do vídeo' : 'da foto'} de ${name}`} />
+                    <div className="chat-locked-copy">
+                      <span className="chat-lock-circle">{item.kind === 'video' ? <Play size={24} fill="currentColor" /> : <LockKeyhole size={24} />}</span>
+                      <span className="chat-eyebrow">PRÉVIA {item.kind === 'video' ? 'DE VÍDEO' : 'DA FOTO'} · BLOQUEADA</span>
+                      <h2>Uma prévia de {name} para você</h2>
+                      <p>{item.kind === 'video' ? 'Conheça os planos e os recursos de vídeo do Luxo.' : 'Conheça os planos e o recurso de fotos do Premium e Luxo.'}</p>
+                      <button type="button" className="chat-primary" onClick={openOffer}>
+                        <LockKeyhole size={16} /> Desbloquear · Ver planos
+                      </button>
+                      <small>Imagem ilustrativa da personagem · Nenhuma mídia nova gerada</small>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
         <footer className="chat-composer">
           {chatError && (
@@ -542,7 +565,7 @@ export default function ChatPage() {
                   type="button"
                   key={text}
                   onClick={() => send(text)}
-                  disabled={loading || typing}
+                  disabled={loading || typing || mediaPending}
                 >
                   {text}
                 </button>
@@ -550,11 +573,11 @@ export default function ChatPage() {
             <button
               type="button"
               className="chat-photo-request"
-              onClick={requestPhoto}
+              disabled={loading || typing || mediaPending} onClick={requestPhoto}
             >
               <LockKeyhole size={13} /> Pedir uma foto · Premium
             </button>
-            <button type="button" className="chat-photo-request" onClick={requestVideo}>
+            <button type="button" className="chat-photo-request" disabled={loading || typing || mediaPending} onClick={requestVideo}>
               <Video size={13} /> Pedir um vídeo
             </button>
           </div>
@@ -590,7 +613,7 @@ export default function ChatPage() {
               }}
               onClick={paywallReached ? openOffer : undefined}
               disabled={
-                !paywallReached && (loading || typing || !draft.trim())
+                !paywallReached && (loading || typing || mediaPending || !draft.trim())
               }
               aria-label={paywallReached ? 'Desbloquear conversa' : 'Enviar mensagem'}
             >
