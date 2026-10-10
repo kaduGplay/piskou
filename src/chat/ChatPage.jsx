@@ -58,6 +58,7 @@ export default function ChatPage() {
   const [typing, setTyping] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
+  const [photoRequested, setPhotoRequested] = useState(false)
   const endRef = useRef(null)
   const timerRef = useRef(null)
   const sendGuard = useRef(false)
@@ -74,7 +75,7 @@ export default function ChatPage() {
       /* armazenamento opcional */
     }
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [identity, messages, typing])
+  }, [identity, messages, typing, photoRequested])
   useEffect(() => {
     if (!profileOpen) return
     const previous = document.activeElement
@@ -105,6 +106,11 @@ export default function ChatPage() {
     track(EVENTS.OFFER_VIEW, { visual_style: sel.style, source: 'chat' })
     setProfileOpen(false)
     setOfferOpen(true)
+  }
+  const requestPhoto = () => {
+    setProfileOpen(false)
+    setPhotoRequested(true)
+    track('ChatFotoSolicitada', { visual_style: sel.style })
   }
   const send = (text = draft) => {
     const content = text.trim().slice(0, 500)
@@ -165,10 +171,12 @@ export default function ChatPage() {
             </div>
           ))}
         </dl>
-        <button type="button" className="chat-primary" onClick={openOffer}>
-          <LockKeyhole size={17} /> Pedir uma foto exclusiva
+        <button type="button" className="chat-primary" onClick={requestPhoto}>
+          <LockKeyhole size={17} /> Pedir uma foto · Premium
         </button>
-        <p className="chat-profile-note">Disponível nos planos de acesso.</p>
+        <p className="chat-profile-note">
+          Fotos disponíveis a partir do Premium.
+        </p>
       </div>
     </>
   )
@@ -327,15 +335,24 @@ export default function ChatPage() {
               </div>
             </div>
           )}
-          {locked && (
+          {(locked || photoRequested) && (
             <div className="chat-locked-wrap">
-              <div className="chat-continue-notice">
-                <LockKeyhole size={19} />
-                <div>
-                  <strong>Vamos continuar essa conversa?</strong>
-                  <p>Para continuar conversando, adquira um plano.</p>
+              {locked && (
+                <div className="chat-continue-notice">
+                  <LockKeyhole size={19} />
+                  <div>
+                    <strong>Vamos continuar essa conversa?</strong>
+                    <p>Para continuar conversando, adquira um plano.</p>
+                    <button
+                      type="button"
+                      className="chat-continue-button"
+                      onClick={openOffer}
+                    >
+                      Continuar a conversa <ChevronRight size={14} />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="chat-locked-media">
                 <img src={image} alt="Prévia da foto bloqueada" />
                 <div className="chat-locked-copy">
@@ -345,15 +362,15 @@ export default function ChatPage() {
                   <span className="chat-eyebrow">UMA FOTO PARA VOCÊ</span>
                   <h2>A foto de {name} está bloqueada</h2>
                   <p>
-                    Desbloqueie a prévia e continue conhecendo sua personagem.
-                    Escolha entre Premium e Luxo.
+                    Pedir fotos é um recurso Premium, também incluído no Luxo.
+                    Escolha seu plano para ter acesso.
                   </p>
                   <button
                     type="button"
                     className="chat-primary"
                     onClick={openOffer}
                   >
-                    <LockKeyhole size={16} /> Ver planos e continuar
+                    <LockKeyhole size={16} /> Ver planos para fotos
                   </button>
                   <small>Premium ou Luxo · Pagamento único</small>
                 </div>
@@ -380,9 +397,9 @@ export default function ChatPage() {
             <button
               type="button"
               className="chat-photo-request"
-              onClick={openOffer}
+              onClick={requestPhoto}
             >
-              <LockKeyhole size={13} /> Pedir uma foto
+              <LockKeyhole size={13} /> Pedir uma foto · Premium
             </button>
           </div>
           <form

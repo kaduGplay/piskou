@@ -1,10 +1,11 @@
 const RELATIONSHIP_COPY = {
   Namorada: {
-    greeting: 'Oi, amor! 💕 Que bom ter você aqui comigo.',
+    greeting: 'Oi, amor! 💕 Você chegou e eu já fiquei sorrindo aqui.',
     photo: 'Olha, amor… escolhi essa foto para você 💕 O que achou?',
   },
   Amante: {
-    greeting: 'Oi, meu bem 💕 Estava com vontade de ter um momento só nosso.',
+    greeting:
+      'Oi, meu bem 💕 Gosto desse friozinho na barriga de começar uma conversa com você.',
     photo: 'Meu bem, separei essa foto para o nosso momento 💕 Gostou?',
   },
   Confidente: {
@@ -19,11 +20,13 @@ const RELATIONSHIP_COPY = {
 }
 
 const PERSONALITY_QUESTIONS = {
-  Carinhosa: 'Como você está? Me conta como foi seu dia.',
+  Carinhosa:
+    'Se eu pudesse escolher, a gente passava um tempinho juntinho agora. Como você está?',
   Confiante: 'Quero saber mais de você. O que deixou seu dia melhor hoje?',
   Misteriosa: 'Me conta uma coisa sobre você que pouca gente sabe?',
   Divertida: 'Me conta: seu dia merece um abraço ou uma boa risada? 😊',
-  Sedutora: 'Quero te conhecer melhor. O que faz você sorrir?',
+  Sedutora:
+    'Confesso: fiquei curiosa para descobrir seu jeito de me conquistar. Você é mais de um elogio ou de um convite para sair?',
   Reservada: 'Vamos nos conhecer com calma? Como foi seu dia?',
 }
 
@@ -45,6 +48,6 @@ export function conversationReply(selection, message, turn) {
     ? 'Espero que esse nosso momento deixe seu dia um pouco mais leve. '
     : /\b(bem|bom|otim[oa]|feliz|melhor)\b/.test(text)
       ? 'Que bom saber disso! Adorei conversar com você. '
-      : 'Quero continuar conhecendo você. '
+      : 'Você me deixou curiosa… quero conhecer mais desse seu jeito. '
   return `${answer}${copy.photo}`
 }

@@ -77,6 +77,7 @@ export const PLAN_BENEFITS = {
     { icon: 'character', text: 'Personagem configurada por você' },
     { icon: 'personality', text: 'Personalidade e voz escolhidas' },
     { icon: 'chat', text: 'Conversa individual por texto' },
+    { icon: 'photos', text: 'Pedidos de fotos da sua personagem' },
   ],
   luxury: [
     { icon: 'premium', text: 'Todos os recursos do Premium' },
@@ -119,6 +120,7 @@ export const TESTIMONIALS = [
 ]
 
 export const BENEFIT_ICONS = {
+  photos: Images,
   character: UserRound,
   personality: Heart,
   chat: MessageCircle,
@@ -154,7 +156,7 @@ export const FAQ = [
   {
     question: 'Qual é a diferença entre Premium e Luxo?',
     answer:
-      'O Premium libera sua personagem e a conversa por texto. O Luxo inclui todos os recursos do Premium e os oito bônus desta página, como lives, personagens extras, vídeos, áudios e modos de conversa.',
+      'O Premium libera sua personagem, a conversa por texto e os pedidos de fotos. O Luxo inclui todos os recursos do Premium e os oito bônus desta página, como lives, personagens extras, vídeos, áudios e modos de conversa.',
   },
   {
     question: `Os bônus estão incluídos nos ${LUXURY_PRICE}?`,
