@@ -191,11 +191,11 @@ export default function ChatPage() {
     setMediaRequests(previous => [...previous, { id, kind, phase: 'typing' }])
     track(kind === 'video' ? 'ChatVideoSolicitado' : 'ChatFotoSolicitada', { visual_style: sel.style })
     const advance = (phase) => setMediaRequests(previous => previous.map(item => item.id === id ? { ...item, phase } : item))
-    mediaTimers.current.push(setTimeout(() => advance('reply'), 1800))
+    mediaTimers.current.push(setTimeout(() => advance('reply'), 3000))
     mediaTimers.current.push(setTimeout(() => {
       advance('media')
       mediaBusy.current = false
-    }, 3000))
+    }, 5000))
   }
   const requestPhoto = () => requestMedia('photo')
   const requestVideo = () => requestMedia('video')

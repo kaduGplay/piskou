@@ -150,4 +150,4 @@ O chat fixa seu contêiner na área visível e acompanha altura e deslocamento d
 
 Pedir um vídeo mostra uma mensagem de prévia adaptada ao jeito de falar, sociabilidade, personalidade e relacionamento, seguida de uma imagem ilustrativa fortemente borrada com botão para os planos. Não gera vídeo, não chama a API e não consome as mensagens gratuitas.
 
-Pedidos de foto e vídeo têm apresentação em etapas: pedido do visitante, indicador de digitação por 1,8 s, resposta personalizada e prévia bloqueada aos 3 s. Cliques repetidos ficam bloqueados durante a sequência; temporizadores são cancelados ao sair do chat.
+Pedidos de foto e vídeo têm apresentação em etapas: pedido do visitante, indicador de digitação por 3 s, resposta personalizada e prévia bloqueada aos 5 s. Cliques repetidos ficam bloqueados durante a sequência; temporizadores são cancelados ao sair do chat.
