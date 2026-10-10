@@ -74,7 +74,7 @@ original-build/                 o build publicado antigo, intacto, como backup (
 | Qual imagem aparece no final | `getResultImage()` em `src/funnel/data.js` |
 | Textos das etapas | JSX em `src/funnel/Funnel.jsx` |
 
-## Rastreio (Meta Pixel 1422813852615307)
+## Rastreio (Meta Pixel 1512882057313106)
 
 O código base em `index.html` faz o `PageView`; o resto sai de `track()` em `src/funnel/data.js`:
 
