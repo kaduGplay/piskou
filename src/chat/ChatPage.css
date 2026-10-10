@@ -866,3 +866,28 @@
     scroll-behavior: auto;
   }
 }
+
+.chat-continue-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  margin: 0 0 14px;
+  border: 1px solid #ef82ba3b;
+  border-radius: 14px;
+  background: #382035;
+  color: #f7badb;
+}
+.chat-continue-notice > svg {
+  flex-shrink: 0;
+}
+.chat-continue-notice strong {
+  display: block;
+  font-size: 13px;
+}
+.chat-continue-notice p {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: #d4b7cb;
+  line-height: 1.5;
+}

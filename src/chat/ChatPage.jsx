@@ -19,10 +19,11 @@ import {
   track,
 } from '../funnel/data.js'
 import { PLANS, SELECTION_STORAGE_KEY, formatBRL } from '../shared/checkout.js'
+import { conversationReply } from './conversation.js'
 import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
-const CHAT_KEY = 'piskou:chat-preview'
+const CHAT_KEY = 'piskou:chat-preview:v2'
 
 function readSelection() {
   try {
@@ -123,10 +124,7 @@ export default function ChatPage() {
         ...prev,
         {
           role: 'character',
-          text:
-            sent === 0
-              ? `Oi, amor! Que bom te conhecer 💕 Eu sou ${name}. Me conta: como foi seu dia?`
-              : 'Adorei ter você por aqui 💕 Que tal conhecer um pouco mais de mim? Veja minha prévia abaixo.',
+          text: conversationReply(sel, content, sent),
         },
       ])
       setTyping(false)
@@ -232,7 +230,7 @@ export default function ChatPage() {
             </span>
             <span>
               <strong>{name}</strong>
-              <small>Personagem virtual · conversa de demonstração</small>
+              <small>Personagem virtual · prévia de conversa</small>
             </span>
             <ChevronRight size={17} />
           </button>
@@ -285,15 +283,15 @@ export default function ChatPage() {
             <p>
               {messages.length
                 ? 'Toda conexão começa com uma conversa.'
-                : 'Ela tem o nome, o estilo e a personalidade que você escolheu. Sua história começa com um oi.'}
+                : 'Que tal mandar um oi para começar? Escreva do seu jeito e conheça quem você criou.'}
             </p>
             {!messages.length && (
               <button
                 type="button"
                 className="chat-start"
-                onClick={() => send('Oi! Quero te conhecer 💕')}
+                onClick={() => send('Oi! 💕')}
               >
-                <MessageCircle size={17} /> Começar uma conversa
+                <MessageCircle size={17} /> Mandar um oi 💕
               </button>
             )}
           </div>
@@ -331,24 +329,31 @@ export default function ChatPage() {
           )}
           {locked && (
             <div className="chat-locked-wrap">
+              <div className="chat-continue-notice">
+                <LockKeyhole size={19} />
+                <div>
+                  <strong>Vamos continuar essa conversa?</strong>
+                  <p>Para continuar conversando, adquira um plano.</p>
+                </div>
+              </div>
               <div className="chat-locked-media">
                 <img src={image} alt="Prévia da foto bloqueada" />
                 <div className="chat-locked-copy">
                   <span className="chat-lock-circle">
                     <LockKeyhole size={24} />
                   </span>
-                  <span className="chat-eyebrow">PRÉVIA EXCLUSIVA</span>
-                  <h2>Conheça mais de {name}</h2>
+                  <span className="chat-eyebrow">UMA FOTO PARA VOCÊ</span>
+                  <h2>A foto de {name} está bloqueada</h2>
                   <p>
-                    Escolha seu acesso para continuar a conversa e explorar o
-                    conteúdo do seu plano.
+                    Desbloqueie a prévia e continue conhecendo sua personagem.
+                    Escolha entre Premium e Luxo.
                   </p>
                   <button
                     type="button"
                     className="chat-primary"
                     onClick={openOffer}
                   >
-                    <LockKeyhole size={16} /> Desbloquear minha conexão
+                    <LockKeyhole size={16} /> Ver planos e continuar
                   </button>
                   <small>Premium ou Luxo · Pagamento único</small>
                 </div>
@@ -363,20 +368,15 @@ export default function ChatPage() {
         </div>
         <footer className="chat-composer">
           <div className="chat-suggestions">
-            {!locked &&
-              (sent === 0
-                ? ['Oi! 💕', 'Quero te conhecer', 'Como você está?']
-                : ['Meu dia ficou melhor agora 💕', 'Me conta mais sobre você']
-              ).map((text) => (
-                <button
-                  type="button"
-                  key={text}
-                  onClick={() => send(text)}
-                  disabled={typing || sent >= 2}
-                >
-                  {text}
-                </button>
-              ))}
+            {!locked && sent === 0 && (
+              <button
+                type="button"
+                onClick={() => send('Oi! 💕')}
+                disabled={typing}
+              >
+                Que tal mandar um oi? 💕
+              </button>
+            )}
             <button
               type="button"
               className="chat-photo-request"
@@ -413,8 +413,7 @@ export default function ChatPage() {
             </button>
           </form>
           <p>
-            <Sparkles size={11} /> Demonstração com respostas pré-definidas ·
-            Personagem virtual · 18+
+            <Sparkles size={11} /> Personagem virtual · Prévia de conversa · 18+
           </p>
         </footer>
       </main>
