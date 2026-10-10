@@ -468,6 +468,12 @@ export default function ChatPage() {
           >
             <input
               aria-label="Sua mensagem"
+              type="text"
+              lang="pt-BR"
+              spellCheck={true}
+              autoCorrect="on"
+              autoCapitalize="sentences"
+              enterKeyHint="send"
               placeholder={
                 paywallReached
                   ? 'Desbloqueie para continuar a conversa…'
