@@ -17,7 +17,7 @@ Sem `.env.local`, o checkout roda em modo de teste: nada é cobrado e o PIX é a
 O projeto já está configurado (`vercel.json`): preset Vite, `npm ci`, saída `dist`, funções da pasta `api/` na região São Paulo (`gru1`), cache longo para as mídias e headers de segurança. O `.vercelignore` impede que `.env*` e o backup `original-build/` sejam enviados.
 
 1. **Suba o código.** Pode ser pelo GitHub (crie o repositório e importe em vercel.com/new) ou pela CLI (`npx vercel` na pasta do projeto).
-2. **Crie o Redis.** No projeto da Vercel, vá em Storage → Create Database → **Upstash for Redis** (o plano gratuito serve para começar) e conecte ao projeto. Isso cria `KV_REST_API_URL` e `KV_REST_API_TOKEN` sozinho.
+2. **Crie o banco no Supabase Free.** Aplique a migration `supabase/migrations/202610100001_payment_store.sql`. A tabela tem RLS habilitado, sem acesso para visitantes ou usuários do navegador. As funções da Vercel usam uma chave secreta de servidor. Redis continua disponível como alternativa; com ambos configurados, Supabase tem prioridade.
 3. **Cadastre as variáveis** em Settings → Environment Variables (ambiente Production):
 
    | Variável | Valor |
@@ -28,7 +28,8 @@ O projeto já está configurado (`vercel.json`): preset Vite, `npm ci`, saída `
    | `VOIDPAY_FIXED_PHONE` | telefone enviado em todas as cobranças (a Void exige) |
    | `VOIDPAY_FIXED_DOCUMENT` | CPF enviado em todas as cobranças |
    | `SITE_URL` | `https://create.piskou.com` |
-   | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | criadas no passo 2 |
+   | `SUPABASE_URL` | URL do projeto Supabase |
+   | `SUPABASE_SECRET_KEY` | chave secreta `sb_secret_...` (ou use `SUPABASE_SERVICE_ROLE_KEY` legada) |
 
 4. **Faça o deploy** (ou "Redeploy" depois de cadastrar as variáveis, porque as funções só leem variáveis novas num deploy novo).
 5. **Aponte o domínio** `create.piskou.com` para o projeto em Settings → Domains.
@@ -56,7 +57,7 @@ api/checkout-config.js          formas de pagamento disponíveis / se o pagament
 api/webhook.js                  recebe o aviso de pagamento do gateway
 api/_lib/gateway.js             escolhe o gateway (mock ou voidpay)
 api/_lib/voidpay.js             integração com a Void Payments
-api/_lib/store.js               status das cobranças (Upstash Redis na Vercel, memória localmente)
+api/_lib/store.js               status das cobranças (Supabase ou Redis na Vercel, memória localmente)
 public/                         todas as mídias do site (66 MB)
 original-build/                 o build publicado antigo, intacto, como backup (não vai para a Vercel)
 ```
@@ -108,9 +109,9 @@ O `html`/`body` do site não rolam (o funil rola dentro de `.creator-body`), ent
 
 A Void **bloqueia consultas repetidas de status**: a resposta é "Tentativa de polling bloqueada. Receba atualizações via webhook", com bloqueio de 5 minutos. Por isso o fluxo é este:
 
-1. `api/checkout.js` cria o PIX na Void (`POST /pix/receive`) com o identificador `piskou_<uuid>` e um endereço de aviso assinado (`/api/webhook?order=…&sig=…`, um HMAC da chave secreta). Depois grava a cobrança no Redis.
+1. `api/checkout.js` cria o PIX na Void (`POST /pix/receive`) com o identificador `piskou_<uuid>` e um endereço de aviso assinado (`/api/webhook?order=…&sig=…`, um HMAC da chave secreta). Depois grava a cobrança no banco.
 2. Quando o status muda, a Void chama `api/webhook.js`. O aviso só é aceito com assinatura válida e para uma cobrança gravada daquele mesmo pedido. O status é conferido uma vez na Void (`GET /transactions?id=…`); se ela limitar a consulta, vale o status do aviso.
-3. A tela do PIX consulta `api/checkout-status.js` a cada 5 s, por até 1 hora. Essa rota lê o Redis e nunca a Void.
+3. A tela do PIX consulta `api/checkout-status.js` a cada 5 s, por até 1 hora. Essa rota lê o banco e nunca a Void. No Supabase, registros expiram após dois dias, deixam de aparecer nas consultas e são removidos na próxima escrita.
 
 O telefone e o CPF fixos existem porque o checkout não pede esses dados, e a Void recusa cobrança sem telefone, apesar de a documentação dizer que é opcional.
 

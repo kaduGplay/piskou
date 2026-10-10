@@ -125,7 +125,7 @@ export const voidpayGateway = {
   // o pagamento é confirmado só pelo webhook, que grava o status no store.
   confirmsByWebhook: true,
 
-  // Sem chaves, sem telefone fixo ou sem Redis (na Vercel) o pagamento não funciona: avisa antes de a pessoa preencher.
+  // Sem chaves, sem telefone fixo ou sem banco (na Vercel) o pagamento não funciona: avisa antes de a pessoa preencher.
   missingConfig() {
     const missing = ['VOIDPAY_PUBLIC_KEY', 'VOIDPAY_SECRET_KEY', 'VOIDPAY_FIXED_PHONE'].filter((key) => !process.env[key])
     return [...missing, ...missingStoreConfig()]
