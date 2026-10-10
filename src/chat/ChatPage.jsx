@@ -25,7 +25,7 @@ import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
 const FREE_MESSAGES = CHAT_PREVIEW_LIMIT
-const UPGRADE_DELAY_MS = 120_000
+const UPGRADE_DELAY_MS = 2_000
 
 function readSelection() {
   try {
