@@ -34,7 +34,12 @@ function localApi() {
       }
 
       const chunks = []
-      for await (const chunk of req) chunks.push(chunk)
+      try {
+        for await (const chunk of req) chunks.push(chunk)
+      } catch {
+        // Fechar a aba durante uma resposta de IA não deve encerrar o servidor local.
+        return
+      }
       const raw = Buffer.concat(chunks).toString()
       try {
         req.body = raw ? JSON.parse(raw) : undefined

@@ -905,3 +905,10 @@
   font-size: 11px;
   font-weight: 600;
 }
+
+.chat-composer > .chat-error {
+  color: #ffc3d1;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0 0 10px;
+}

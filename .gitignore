@@ -1,6 +1,7 @@
 node_modules
 dist
 .vercel
+supabase/.temp/
 .DS_Store
 
 # Chaves e configuração local: nunca versionar.

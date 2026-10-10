@@ -19,11 +19,9 @@ import {
   track,
 } from '../funnel/data.js'
 import { PLANS, SELECTION_STORAGE_KEY, formatBRL } from '../shared/checkout.js'
-import { conversationReply } from './conversation.js'
 import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
-const CHAT_KEY = 'piskou:chat-preview:v3'
 const FREE_MESSAGES = 3
 
 function readSelection() {
@@ -41,30 +39,16 @@ export default function ChatPage() {
   const [sel] = useState(readSelection)
   const image = getResultImage(sel).src
   const name = sel.name || 'Sua personagem'
-  const identity = JSON.stringify(sel)
-  const [messages, setMessages] = useState(() => {
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(CHAT_KEY) || 'null')
-      return saved?.identity === identity && Array.isArray(saved.messages)
-        ? saved.messages.slice(
-            0,
-            Math.min(
-              FREE_MESSAGES * 2,
-              Math.floor(saved.messages.length / 2) * 2,
-            ),
-          )
-        : []
-    } catch {
-      return []
-    }
-  })
+  const [messages, setMessages] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [chatError, setChatError] = useState('')
   const [draft, setDraft] = useState('')
   const [typing, setTyping] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const [photoRequested, setPhotoRequested] = useState(false)
   const endRef = useRef(null)
-  const timerRef = useRef(null)
+  const requestRef = useRef(null)
   const sendGuard = useRef(false)
   const profileRef = useRef(null)
   const profileTrigger = useRef(null)
@@ -72,15 +56,31 @@ export default function ChatPage() {
   const locked =
     messages.filter((m) => m.role === 'character').length >= FREE_MESSAGES
 
-  useEffect(() => () => clearTimeout(timerRef.current), [])
   useEffect(() => {
-    try {
-      sessionStorage.setItem(CHAT_KEY, JSON.stringify({ identity, messages }))
-    } catch {
-      /* armazenamento opcional */
+    const controller = new AbortController()
+    fetch(`/api/chat?selection=${encodeURIComponent(JSON.stringify(sel))}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error)
+        setMessages(data.messages || [])
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError')
+          setChatError(error.message || 'Não foi possível abrir a conversa.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => {
+      controller.abort()
+      requestRef.current?.abort()
     }
+  }, [sel])
+  useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [identity, messages, typing, photoRequested])
+  }, [messages, typing, photoRequested])
   useEffect(() => {
     if (!profileOpen) return
     const previous = document.activeElement
@@ -117,9 +117,9 @@ export default function ChatPage() {
     setPhotoRequested(true)
     track('ChatFotoSolicitada', { visual_style: sel.style })
   }
-  const send = (text = draft) => {
+  const send = async (text = draft) => {
     const content = text.trim().slice(0, 500)
-    if (typing || sendGuard.current) return
+    if (loading || typing || sendGuard.current) return
     if (sent >= FREE_MESSAGES) return openOffer()
     if (!content) return
     sendGuard.current = true
@@ -130,17 +130,37 @@ export default function ChatPage() {
       message_number: sent + 1,
       visual_style: sel.style,
     })
-    timerRef.current = setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'character',
-          text: conversationReply(sel, content, sent),
-        },
-      ])
+    setChatError('')
+    const previous = messages
+    const controller = new AbortController()
+    requestRef.current = controller
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content, selection: sel }),
+        signal: controller.signal,
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        if (data.locked && data.messages) {
+          setMessages(data.messages)
+          setOfferOpen(true)
+          return
+        }
+        throw new Error(data.error || 'Não foi possível receber a resposta.')
+      }
+      setMessages(data.messages)
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        setMessages(previous)
+        setDraft(content)
+        setChatError(error.message || 'Tente novamente em instantes.')
+      }
+    } finally {
       setTyping(false)
       sendGuard.current = false
-    }, 1100)
+    }
   }
 
   const profile = (
@@ -243,7 +263,7 @@ export default function ChatPage() {
             </span>
             <span>
               <strong>{name}</strong>
-              <small>Personagem virtual · prévia de conversa</small>
+              <small>Personagem virtual · respostas por IA</small>
             </span>
             <ChevronRight size={17} />
           </button>
@@ -302,6 +322,7 @@ export default function ChatPage() {
               <button
                 type="button"
                 className="chat-start"
+                disabled={loading || typing}
                 onClick={() => send('Oi! 💕')}
               >
                 <MessageCircle size={17} /> Mandar um oi 💕
@@ -389,6 +410,12 @@ export default function ChatPage() {
           <div ref={endRef} />
         </div>
         <footer className="chat-composer">
+          {chatError && (
+            <p className="chat-error" role="alert">
+              {chatError}
+            </p>
+          )}
+          {loading && <p role="status">Abrindo sua conversa…</p>}
           <div className="chat-suggestions">
             {!locked &&
               (sent === 0
@@ -399,7 +426,7 @@ export default function ChatPage() {
                   type="button"
                   key={text}
                   onClick={() => send(text)}
-                  disabled={typing || sent >= FREE_MESSAGES}
+                  disabled={loading || typing || sent >= FREE_MESSAGES}
                 >
                   {text}
                 </button>
@@ -427,14 +454,14 @@ export default function ChatPage() {
               }
               maxLength={500}
               value={draft}
-              disabled={locked || typing || sent >= FREE_MESSAGES}
+              disabled={loading || locked || typing || sent >= FREE_MESSAGES}
               onChange={(event) => setDraft(event.target.value)}
             />
             <button
               type={locked ? 'button' : 'submit'}
               onClick={locked ? openOffer : undefined}
               disabled={
-                !locked && (typing || sent >= FREE_MESSAGES || !draft.trim())
+                !locked && (loading || typing || sent >= FREE_MESSAGES || !draft.trim())
               }
               aria-label={locked ? 'Desbloquear conversa' : 'Enviar mensagem'}
             >
@@ -442,7 +469,7 @@ export default function ChatPage() {
             </button>
           </form>
           <p>
-            <Sparkles size={11} /> Personagem virtual · Prévia de conversa · 18+
+            <Sparkles size={11} /> Personagem virtual · Conversa com IA · 18+
           </p>
         </footer>
       </main>
