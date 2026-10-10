@@ -23,7 +23,8 @@ import { conversationReply } from './conversation.js'
 import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
-const CHAT_KEY = 'piskou:chat-preview:v2'
+const CHAT_KEY = 'piskou:chat-preview:v3'
+const FREE_MESSAGES = 3
 
 function readSelection() {
   try {
@@ -47,7 +48,10 @@ export default function ChatPage() {
       return saved?.identity === identity && Array.isArray(saved.messages)
         ? saved.messages.slice(
             0,
-            Math.min(4, Math.floor(saved.messages.length / 2) * 2),
+            Math.min(
+              FREE_MESSAGES * 2,
+              Math.floor(saved.messages.length / 2) * 2,
+            ),
           )
         : []
     } catch {
@@ -65,7 +69,8 @@ export default function ChatPage() {
   const profileRef = useRef(null)
   const profileTrigger = useRef(null)
   const sent = messages.filter((m) => m.role === 'user').length
-  const locked = messages.filter((m) => m.role === 'character').length >= 2
+  const locked =
+    messages.filter((m) => m.role === 'character').length >= FREE_MESSAGES
 
   useEffect(() => () => clearTimeout(timerRef.current), [])
   useEffect(() => {
@@ -115,7 +120,7 @@ export default function ChatPage() {
   const send = (text = draft) => {
     const content = text.trim().slice(0, 500)
     if (typing || sendGuard.current) return
-    if (sent >= 2) return openOffer()
+    if (sent >= FREE_MESSAGES) return openOffer()
     if (!content) return
     sendGuard.current = true
     setMessages((prev) => [...prev, { role: 'user', text: content }])
@@ -291,7 +296,7 @@ export default function ChatPage() {
             <p>
               {messages.length
                 ? 'Toda conexão começa com uma conversa.'
-                : 'Que tal mandar um oi para começar? Escreva do seu jeito e conheça quem você criou.'}
+                : 'Escolha uma sugestão ou escreva do seu jeito. Você tem 3 mensagens gratuitas para conhecer sua personagem.'}
             </p>
             {!messages.length && (
               <button
@@ -385,15 +390,20 @@ export default function ChatPage() {
         </div>
         <footer className="chat-composer">
           <div className="chat-suggestions">
-            {!locked && sent === 0 && (
-              <button
-                type="button"
-                onClick={() => send('Oi! 💕')}
-                disabled={typing}
-              >
-                Que tal mandar um oi? 💕
-              </button>
-            )}
+            {!locked &&
+              (sent === 0
+                ? ['Oi! 💕', 'Como você está?', 'Quero te conhecer']
+                : ['Me conta mais sobre você', 'O que você gosta de fazer?']
+              ).map((text) => (
+                <button
+                  type="button"
+                  key={text}
+                  onClick={() => send(text)}
+                  disabled={typing || sent >= FREE_MESSAGES}
+                >
+                  {text}
+                </button>
+              ))}
             <button
               type="button"
               className="chat-photo-request"
@@ -417,13 +427,15 @@ export default function ChatPage() {
               }
               maxLength={500}
               value={draft}
-              disabled={locked || typing || sent >= 2}
+              disabled={locked || typing || sent >= FREE_MESSAGES}
               onChange={(event) => setDraft(event.target.value)}
             />
             <button
               type={locked ? 'button' : 'submit'}
               onClick={locked ? openOffer : undefined}
-              disabled={!locked && (typing || sent >= 2 || !draft.trim())}
+              disabled={
+                !locked && (typing || sent >= FREE_MESSAGES || !draft.trim())
+              }
               aria-label={locked ? 'Desbloquear conversa' : 'Enviar mensagem'}
             >
               {locked ? <LockKeyhole size={19} /> : <Send size={19} />}

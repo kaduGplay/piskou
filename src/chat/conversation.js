@@ -49,5 +49,7 @@ export function conversationReply(selection, message, turn) {
     : /\b(bem|bom|otim[oa]|feliz|melhor)\b/.test(text)
       ? 'Que bom saber disso! Adorei conversar com você. '
       : 'Você me deixou curiosa… quero conhecer mais desse seu jeito. '
+  if (turn === 1)
+    return `${answer}Se a gente fosse sair para um encontro, qual lugar você escolheria? 💕`
   return `${answer}${copy.photo}`
 }
