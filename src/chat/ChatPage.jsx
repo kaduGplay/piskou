@@ -51,7 +51,7 @@ export default function ChatPage() {
   const [offerOpen, setOfferOpen] = useState(false)
   const [photoRequested, setPhotoRequested] = useState(false)
   const appRef = useRef(null)
-  const endRef = useRef(null)
+  const messagesRef = useRef(null)
   const requestRef = useRef(null)
   const sendGuard = useRef(false)
   const profileRef = useRef(null)
@@ -62,15 +62,44 @@ export default function ChatPage() {
 
   useEffect(() => {
     const viewport = window.visualViewport
-    if (!viewport) return
-    const resize = () => {
-      // Preserve manual pinch zoom; only adapt the layout at normal scale.
-      if (Math.abs(viewport.scale - 1) > 0.01) return
-      appRef.current?.style.setProperty('--chat-viewport-height', `${viewport.height}px`)
+    document.body.classList.add('chat-page')
+    let frame = 0
+    let previousHeight = viewport?.height || window.innerHeight
+    let fullHeight = previousHeight
+    const syncViewport = () => {
+      if (viewport && Math.abs(viewport.scale - 1) > 0.01) return
+      const height = viewport?.height || window.innerHeight
+      const list = messagesRef.current
+      const nearBottom = !list || list.scrollHeight - list.scrollTop - list.clientHeight < 80
+      fullHeight = Math.max(fullHeight, height)
+      const focused = appRef.current?.contains(document.activeElement) &&
+        document.activeElement?.matches('input, textarea')
+      appRef.current?.style.setProperty('--chat-viewport-height', `${height}px`)
+      appRef.current?.style.setProperty('--chat-viewport-top', `${viewport?.offsetTop || 0}px`)
+      appRef.current?.classList.toggle('keyboard-open', Boolean(focused && fullHeight - height > 120))
+      // Scroll only the message list, never the document or its ancestors.
+      if (list && height !== previousHeight && nearBottom) list.scrollTop = list.scrollHeight
+      previousHeight = height
     }
-    resize()
-    viewport.addEventListener('resize', resize)
-    return () => viewport.removeEventListener('resize', resize)
+    const schedule = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(syncViewport)
+    }
+    syncViewport()
+    viewport?.addEventListener('resize', schedule)
+    viewport?.addEventListener('scroll', schedule)
+    window.addEventListener('resize', schedule)
+    document.addEventListener('focusin', schedule)
+    document.addEventListener('focusout', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      viewport?.removeEventListener('resize', schedule)
+      viewport?.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+      document.removeEventListener('focusin', schedule)
+      document.removeEventListener('focusout', schedule)
+      document.body.classList.remove('chat-page')
+    }
   }, [])
 
   useEffect(() => {
@@ -97,7 +126,8 @@ export default function ChatPage() {
     }
   }, [sel])
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    const list = messagesRef.current
+    list?.scrollTo({ top: list.scrollHeight, behavior: typing ? 'auto' : 'smooth' })
   }, [messages, typing, photoRequested, paywallReached])
   useEffect(() => {
     if (!profileOpen) return
@@ -127,6 +157,7 @@ export default function ChatPage() {
 
   const openOffer = () => {
     track(EVENTS.OFFER_VIEW, { visual_style: sel.style, source: 'chat' })
+    if (document.activeElement?.matches('input, textarea')) document.activeElement.blur()
     setProfileOpen(false)
     setOfferOpen(true)
   }
@@ -314,6 +345,7 @@ export default function ChatPage() {
         </div>
         <div
           className="chat-messages"
+          ref={messagesRef}
           role="log"
           aria-label={`Conversa com ${name}`}
           aria-live="polite"
@@ -428,7 +460,6 @@ export default function ChatPage() {
               </p>
             </div>
           )}
-          <div ref={endRef} />
         </div>
         <footer className="chat-composer">
           {chatError && (
@@ -481,11 +512,15 @@ export default function ChatPage() {
               }
               maxLength={500}
               value={draft}
-              disabled={loading || paywallReached || typing}
+              disabled={loading || paywallReached}
               onChange={(event) => setDraft(event.target.value)}
             />
             <button
               type={paywallReached ? 'button' : 'submit'}
+              onPointerDown={(event) => {
+                // Keep the keyboard open when sending a message.
+                if (!paywallReached) event.preventDefault()
+              }}
               onClick={paywallReached ? openOffer : undefined}
               disabled={
                 !paywallReached && (loading || typing || !draft.trim())

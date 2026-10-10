@@ -1,4 +1,14 @@
+body.chat-page {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 .chat-app {
+  position: fixed;
+  top: var(--chat-viewport-top, 0px);
+  left: 0;
   --chat-pink: #f350ad;
   --chat-muted: #aaa2b5;
   display: flex;
@@ -114,6 +124,7 @@
   margin-top: 5px;
 }
 .chat-main {
+  min-height: 0;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -916,4 +927,23 @@
 /* iOS zooms focused text fields smaller than 16px. Keep pinch zoom available. */
 @media (max-width: 767px) {
   .chat-composer input { font-size: 16px; }
+}
+
+@media (max-width: 850px) {
+  .chat-app.keyboard-open .chat-upgrade,
+  .chat-app.keyboard-open .chat-suggestions,
+  .chat-app.keyboard-open .chat-composer > p:not(.chat-error) {
+    display: none;
+  }
+  .chat-app.keyboard-open .chat-composer {
+    padding: 8px 14px;
+  }
+  .chat-app.keyboard-open .chat-header {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .chat-app.keyboard-open .chat-messages {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
 }
