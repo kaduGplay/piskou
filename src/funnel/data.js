@@ -111,9 +111,9 @@ export function getOptionMedia(style, field, value) {
   }
 }
 
-export const PERSONALITIES = ['Carinhosa', 'Confiante', 'Misteriosa', 'Divertida', 'Sedutora', 'Reservada']
+export const PERSONALITIES = ['Carinhosa', 'Confiante', 'Misteriosa', 'Divertida', 'Sedutora', 'Reservada', 'Romântica', 'Empática', 'Intelectual', 'Aventureira', 'Tranquila', 'Espontânea']
 export const RELATIONSHIPS = ['Namorada', 'Confidente', 'Amante', 'Parceira']
-export const OCCUPATIONS = ['Artista', 'Empreendedora', 'Executiva', 'Atleta', 'Criadora', 'Professora']
+export const OCCUPATIONS = ['Artista', 'Empreendedora', 'Executiva', 'Atleta', 'Criadora', 'Professora', 'Médica', 'Enfermeira', 'Psicóloga', 'Advogada', 'Engenheira', 'Programadora', 'Designer', 'Arquiteta', 'Jornalista', 'Fotógrafa', 'Chef de cozinha', 'Veterinária', 'Música', 'Escritora', 'Cientista', 'Piloto', 'Bióloga', 'Personal trainer']
 
 // Partes do nome do arquivo em public/anime-results/<origem>_<cor>_<corpo>_<seios>_<bumbum>.webp
 const ANIME_RESULT_SLUGS = {
@@ -236,12 +236,42 @@ export const DEFAULT_SELECTION = {
   speechStyle: 'Casual',
   socialEnergy: 'Equilibrada',
   initiative: 'Compartilhada',
+  affection: 'Afetuosa',
+  humor: 'Leve',
+  replyLength: 'Naturais',
   occupation: 'Artista',
   relationship: 'Namorada',
 }
 
 // Preferências compartilhadas pelo criador, perfil e validação do servidor.
 export const CHAT_PREFERENCES = {
+  affection: {
+    title: 'Jeito de demonstrar carinho', default: 'Afetuosa',
+    options: ['Discreta', 'Afetuosa', 'Romântica'],
+    instructions: {
+      Discreta: 'Demonstre atenção de forma discreta, sem apelidos íntimos ou elogios frequentes.',
+      Afetuosa: 'Demonstre carinho e cuidado com naturalidade, respeitando o relacionamento escolhido.',
+      Romântica: 'Use elogios sinceros e romance leve quando o relacionamento permitir; em Confidente mantenha amizade.',
+    },
+  },
+  humor: {
+    title: 'Humor na conversa', default: 'Leve',
+    options: ['Mais séria', 'Leve', 'Brincalhona'],
+    instructions: {
+      'Mais séria': 'Priorize conversas sinceras e objetivas, sem piadas ou provocações.',
+      Leve: 'Use bom humor ocasional quando combinar com o assunto.',
+      Brincalhona: 'Use brincadeiras gentis e observações divertidas, sem ironia ofensiva.',
+    },
+  },
+  replyLength: {
+    title: 'Tamanho das respostas', default: 'Naturais',
+    options: ['Curtas', 'Naturais', 'Detalhadas'],
+    instructions: {
+      Curtas: 'Responda em uma ou duas frases curtas.',
+      Naturais: 'Responda em uma a três frases curtas, como em um chat.',
+      Detalhadas: 'Responda em três a cinco frases quando houver assunto, sem alongar uma simples saudação.',
+    },
+  },
   speechStyle: {
     title: 'Jeito de falar', default: 'Casual',
     options: ['Casual', 'Delicada', 'Direta', 'Bem-humorada'],

@@ -162,10 +162,11 @@ function OptionMedia({ media, selected, eager = false }) {
   )
 }
 
-function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onPreview, previewingValue }) {
+function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onPreview, previewingValue, allowCustom = false }) {
   const dialogRef = useRef(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+  const [customValue, setCustomValue] = useState(options.some(option => option.value === value) ? '' : String(value || ''))
   const [closing, setClosing] = useState(false)
   const close = () => setClosing(true)
 
@@ -226,6 +227,18 @@ function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onP
             <X size={20} />
           </button>
         </header>
+        {allowCustom && (
+          <form className="creator-custom-occupation" onSubmit={(event) => {
+            event.preventDefault()
+            if (customValue.trim()) choose(customValue.trim().slice(0, 60))
+          }}>
+            <label htmlFor="custom-occupation">Ou crie uma profissão personalizada</label>
+            <div>
+              <input id="custom-occupation" type="text" placeholder="Ex.: oceanógrafa, confeiteira…" maxLength={60} value={customValue} onChange={event => setCustomValue(event.target.value)} />
+              <button type="submit" disabled={!customValue.trim()}>Usar</button>
+            </div>
+          </form>
+        )}
         <div className="creator-choice-options" role="radiogroup" aria-label={title} onKeyDown={onKeyDown}>
           {options.map((option) => (
             <div key={option.value} className={`creator-choice-row${value === option.value ? ' selected' : ''}`}>
@@ -690,7 +703,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                   onPlay={() => toggleVoice()}
                   onOpen={() => setOpenSheet('voice')}
                 />
-                {['personality', 'speechStyle', 'socialEnergy', 'initiative', 'occupation', 'relationship'].map((key) => (
+                {['personality', ...Object.keys(CHAT_PREFERENCES), 'occupation', 'relationship'].map((key) => (
                   <DetailTile
                     key={key}
                     title={CHOICE_SHEETS[key].title}
@@ -812,6 +825,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
       {openSheet && (
         <ChoiceSheet
           {...CHOICE_SHEETS[openSheet]}
+          allowCustom={openSheet === 'occupation'}
           value={sel[openSheet]}
           onChange={(value) => {
             update(openSheet, value)

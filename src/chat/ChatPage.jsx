@@ -31,9 +31,9 @@ const UPGRADE_DELAY_MS = 2_000
 
 function mediaPreviewMessage(selection, kind) {
   const media = kind === 'video' ? 'do vídeo' : 'da foto'
-  const affectionate = selection.relationship !== 'Confidente'
+  const affectionate = selection.relationship !== 'Confidente' && selection.affection !== 'Discreta'
   const address = affectionate ? ', amor' : ''
-  if (selection.speechStyle === 'Direta') return `Aqui está a prévia ${media}${address}.`
+  if (selection.speechStyle === 'Direta' || selection.humor === 'Mais séria') return `Aqui está a prévia ${media}${address}.`
   if (selection.speechStyle === 'Bem-humorada' || selection.personality === 'Divertida')
     return `Bateu a curiosidade${address}? Dá uma olhada nesta prévia 💕`
   if (selection.socialEnergy === 'Reservada' || selection.personality === 'Reservada' || selection.speechStyle === 'Delicada')
@@ -480,32 +480,7 @@ export default function ChatPage() {
                   </div>
                 </div>
               )}
-              <div className="chat-locked-media">
-                <img src={image} alt="Prévia da foto bloqueada" />
-                <div className="chat-locked-copy">
-                  <span className="chat-lock-circle">
-                    <LockKeyhole size={24} />
-                  </span>
-                  <span className="chat-eyebrow">PRÉVIA DA FOTO · BLOQUEADA</span>
-                  <h2>Olha essa foto de {name} 💕</h2>
-                  <p>
-                    Ficou curioso? Escolha Premium ou Luxo para acessar o
-                    recurso de fotos e continuar a conversa.
-                  </p>
-                  <button
-                    type="button"
-                    className="chat-primary"
-                    onClick={openOffer}
-                  >
-                    <LockKeyhole size={16} /> Quero desbloquear · Ver planos
-                  </button>
-                  <small>Prévia da personagem escolhida · Premium ou Luxo</small>
-                </div>
-              </div>
-              <p className="chat-locked-caption">
-                <ShieldCheck size={13} /> Sem assinatura. Você escolhe como
-                continuar.
-              </p>
+
             </div>
           )}
           {mediaRequests.map(item => (

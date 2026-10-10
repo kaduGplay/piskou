@@ -1414,3 +1414,10 @@
     font-size: 8px;
   }
 }
+
+.creator-custom-occupation { padding: 0 20px 16px; }
+.creator-custom-occupation label { display: block; color: #ccc; font-size: 13px; margin-bottom: 8px; }
+.creator-custom-occupation > div { display: flex; gap: 8px; }
+.creator-custom-occupation input { flex: 1; min-width: 0; padding: 12px; border: 1px solid #ffffff30; border-radius: 12px; background: #24212a; color: white; font-size: 16px; }
+.creator-custom-occupation button { padding: 10px 16px; border-radius: 12px; background: #e950a3; color: white; }
+.creator-custom-occupation button:disabled { opacity: .45; }
