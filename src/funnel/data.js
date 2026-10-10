@@ -272,4 +272,4 @@ export const CHAT_PREFERENCES = {
   },
 }
 
-export const CHAT_PREVIEW_LIMIT = 2
+export const CHAT_PREVIEW_LIMIT = 3
