@@ -250,14 +250,31 @@ export default function ChatPage() {
           openOffer()
           return
         }
-        throw new Error(data.error || 'Não foi possível receber a resposta.')
+        const failure = new Error(data.error || 'Não foi possível receber a resposta.')
+        failure.code = data.code
+        throw failure
       }
       setMessages(data.messages)
       if (['photo', 'video'].includes(data.mediaRequest)) requestMedia(data.mediaRequest, true)
     } catch (error) {
       if (error.name !== 'AbortError') {
+        // The server may have finished even if the response was lost. Recover without sending twice.
+        for (let attempt = 0; attempt < (error.code === 'busy' ? 6 : 2); attempt++) {
+          if (controller.signal.aborted) return
+          await new Promise(resolve => setTimeout(resolve, attempt ? 1500 : 500))
+          try {
+            const recovered = await fetch('/api/chat', { signal: controller.signal })
+            const latest = await recovered.json()
+            const recoveredUser = latest.messages?.filter(m => m.role === 'user').at(-1)
+            if (recovered.ok && latest.messages?.length >= previous.length + 2 && recoveredUser?.text === content) {
+              setMessages(latest.messages)
+              return
+            }
+          } catch { /* Keep the original message available when offline. */ }
+        }
+        if (controller.signal.aborted) return
         setMessages(previous)
-        setDraft(content)
+        setDraft(current => current || content)
         setChatError(error.message || 'Tente novamente em instantes.')
       }
     } finally {
