@@ -402,20 +402,20 @@ export default function ChatPage() {
                   <span className="chat-lock-circle">
                     <LockKeyhole size={24} />
                   </span>
-                  <span className="chat-eyebrow">UMA FOTO PARA VOCÊ</span>
-                  <h2>A foto de {name} está bloqueada</h2>
+                  <span className="chat-eyebrow">PRÉVIA DA FOTO · BLOQUEADA</span>
+                  <h2>Olha essa foto de {name} 💕</h2>
                   <p>
-                    Pedir fotos é um recurso Premium, também incluído no Luxo.
-                    Escolha seu plano para ter acesso.
+                    Ficou curioso? Escolha Premium ou Luxo para acessar o
+                    recurso de fotos e continuar a conversa.
                   </p>
                   <button
                     type="button"
                     className="chat-primary"
                     onClick={openOffer}
                   >
-                    <LockKeyhole size={16} /> Ver planos para fotos
+                    <LockKeyhole size={16} /> Quero desbloquear · Ver planos
                   </button>
-                  <small>Premium ou Luxo · Pagamento único</small>
+                  <small>Prévia da personagem escolhida · Premium ou Luxo</small>
                 </div>
               </div>
               <p className="chat-locked-caption">
