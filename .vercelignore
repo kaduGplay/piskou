@@ -1,0 +1,11 @@
+# Nunca enviar chaves nem arquivos locais para a Vercel (as variáveis ficam no painel).
+.env
+.env.*
+!.env.example
+
+# Backup do build antigo e artefatos locais.
+original-build
+dist
+node_modules
+.vercel
+.DS_Store
