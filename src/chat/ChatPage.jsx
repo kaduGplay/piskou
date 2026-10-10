@@ -44,6 +44,8 @@ export default function ChatPage() {
   const [chatError, setChatError] = useState('')
   const [draft, setDraft] = useState('')
   const [typing, setTyping] = useState(false)
+  const [paywallReached, setPaywallReached] = useState(false)
+  const paywallTimer = useRef(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const [photoRequested, setPhotoRequested] = useState(false)
@@ -76,11 +78,12 @@ export default function ChatPage() {
     return () => {
       controller.abort()
       requestRef.current?.abort()
+      clearTimeout(paywallTimer.current)
     }
   }, [sel])
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages, typing, photoRequested])
+  }, [messages, typing, photoRequested, paywallReached])
   useEffect(() => {
     if (!profileOpen) return
     const previous = document.activeElement
@@ -120,8 +123,21 @@ export default function ChatPage() {
   const send = async (text = draft) => {
     const content = text.trim().slice(0, 500)
     if (loading || typing || sendGuard.current) return
-    if (sent >= FREE_MESSAGES) return openOffer()
     if (!content) return
+    if (locked) {
+      if (paywallReached) return openOffer()
+      sendGuard.current = true
+      setMessages((prev) => [...prev, { role: 'user', text: content }])
+      setDraft('')
+      setTyping(true)
+      paywallTimer.current = setTimeout(() => {
+        setTyping(false)
+        sendGuard.current = false
+        setPaywallReached(true)
+        openOffer()
+      }, 1200)
+      return
+    }
     sendGuard.current = true
     setMessages((prev) => [...prev, { role: 'user', text: content }])
     setDraft('')
@@ -145,7 +161,8 @@ export default function ChatPage() {
       if (!response.ok) {
         if (data.locked && data.messages) {
           setMessages(data.messages)
-          setOfferOpen(true)
+          setPaywallReached(true)
+          openOffer()
           return
         }
         throw new Error(data.error || 'Não foi possível receber a resposta.')
@@ -361,9 +378,9 @@ export default function ChatPage() {
               </div>
             </div>
           )}
-          {(locked || photoRequested) && (
+          {(paywallReached || photoRequested) && (
             <div className="chat-locked-wrap">
-              {locked && (
+              {paywallReached && (
                 <div className="chat-continue-notice">
                   <LockKeyhole size={19} />
                   <div>
@@ -426,7 +443,7 @@ export default function ChatPage() {
                   type="button"
                   key={text}
                   onClick={() => send(text)}
-                  disabled={loading || typing || sent >= FREE_MESSAGES}
+                  disabled={loading || typing}
                 >
                   {text}
                 </button>
@@ -448,24 +465,24 @@ export default function ChatPage() {
             <input
               aria-label="Sua mensagem"
               placeholder={
-                locked
+                paywallReached
                   ? 'Desbloqueie para continuar a conversa…'
                   : `Escreva para ${name}…`
               }
               maxLength={500}
               value={draft}
-              disabled={loading || locked || typing || sent >= FREE_MESSAGES}
+              disabled={loading || paywallReached || typing}
               onChange={(event) => setDraft(event.target.value)}
             />
             <button
-              type={locked ? 'button' : 'submit'}
-              onClick={locked ? openOffer : undefined}
+              type={paywallReached ? 'button' : 'submit'}
+              onClick={paywallReached ? openOffer : undefined}
               disabled={
-                !locked && (loading || typing || sent >= FREE_MESSAGES || !draft.trim())
+                !paywallReached && (loading || typing || !draft.trim())
               }
-              aria-label={locked ? 'Desbloquear conversa' : 'Enviar mensagem'}
+              aria-label={paywallReached ? 'Desbloquear conversa' : 'Enviar mensagem'}
             >
-              {locked ? <LockKeyhole size={19} /> : <Send size={19} />}
+              {paywallReached ? <LockKeyhole size={19} /> : <Send size={19} />}
             </button>
           </form>
           <p>
