@@ -113,8 +113,8 @@ O `html`/`body` do site não rolam (o funil rola dentro de `.creator-body`), ent
 
 A Void **bloqueia consultas repetidas de status**: a resposta é "Tentativa de polling bloqueada. Receba atualizações via webhook", com bloqueio de 5 minutos. Por isso o fluxo é este:
 
-1. `api/checkout.js` cria o PIX na Void (`POST /pix/receive`) com o identificador `piskou_<uuid>` e um endereço de aviso assinado (`/api/webhook?order=…&sig=…`, um HMAC da chave secreta). Depois grava a cobrança no banco.
-2. Quando o status muda, a Void chama `api/webhook.js`. O aviso só é aceito com assinatura válida e para uma cobrança gravada daquele mesmo pedido. O status é conferido uma vez na Void (`GET /transactions?id=…`); se ela limitar a consulta, vale o status do aviso.
+1. `api/checkout.js` cria o PIX na Void (`POST /pix/receive`) com o identificador `piskou_<uuid>` e um único endereço fixo de aviso assinado (`/api/webhook?order=<âncora>&sig=…`, um HMAC da chave secreta), reutilizado entre cobranças. Depois grava a cobrança no banco.
+2. Quando o status muda, a Void chama `api/webhook.js`. O aviso só é aceito com assinatura válida e para uma cobrança gravada no banco. No callback compartilhado, o pedido real é resolvido pelo ID da transação; callbacks antigos por pedido continuam compatíveis. O status é conferido uma vez na Void (`GET /transactions?id=…`); se ela limitar a consulta, vale o status do aviso.
 3. A tela do PIX consulta `api/checkout-status.js` a cada 5 s, por até 1 hora. Essa rota lê o banco e nunca a Void. No Supabase, registros expiram após dois dias, deixam de aparecer nas consultas e são removidos na próxima escrita.
 
 O telefone e o CPF fixos existem porque o checkout não pede esses dados, e a Void recusa cobrança sem telefone, apesar de a documentação dizer que é opcional.
@@ -157,3 +157,5 @@ O criador oferece 12 personalidades, 24 profissões e profissão personalizada (
 Pedidos de foto ou vídeo digitados nas três mensagens gratuitas são identificados pela IA via saída estruturada; a resposta respeita o perfil e a interface mostra a prévia bloqueada após 2 s, sem duplicar mensagens. Menções casuais ou pedidos negados não devem acionar mídia. A mídia continua ilustrativa. O banner de planos no topo desaparece após 4 s da abertura do chat.
 
 Geração: uma retentativa automática para falhas temporárias de rede, HTTP 408/429/5xx ou saída incompleta, dentro da mesma reserva. Recusas do modelo viram redirecionamento seguro. Se o navegador perder a resposta, consulta o histórico antes de pedir reenvio; mensagens concluídas são recuperadas sem duplicação. Uma indisponibilidade persistente ainda pode impedir respostas, preservando o texto e o saldo gratuito. Testes de geração: `node --test tests/chat-model.test.js`.
+
+`VOIDPAY_CALLBACK_ANCHOR` permite reutilizar o endereço de um webhook existente quando a cota da Void já está cheia, sem excluir registros. Não altere essa âncora a cada pedido: URLs distintas criam webhooks distintos e a Void limita a conta a 20.

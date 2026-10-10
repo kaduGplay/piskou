@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { missingStoreConfig } from './store.js'
+import { chargeKey, missingStoreConfig, store } from './store.js'
 
 // Integração com a Void Payments (só PIX).
 // Credenciais: VOIDPAY_PUBLIC_KEY e VOIDPAY_SECRET_KEY nas variáveis de ambiente do servidor.
@@ -96,13 +96,14 @@ async function getTransaction(id) {
   }
 }
 
-// A Void avisa mudanças de status no callbackUrl. Assinamos o próprio URL com HMAC da chave secreta,
-// assim o webhook só aceita avisos de pedidos criados por nós, sem precisar de banco de dados.
+// Use a stable signed callback: unique URLs per order exhaust the gateway webhook quota.
+// Each transaction is matched to its order in the private payment store.
 function callbackSignature(orderId) {
   return createHmac('sha256', credentials().secretKey).update(`callback:${orderId}`).digest('hex')
 }
 
-function callbackUrl(siteUrl, orderId) {
+function callbackUrl(siteUrl) {
+  const orderId = process.env.VOIDPAY_CALLBACK_ANCHOR || 'shared-v1'
   if (!siteUrl) return undefined
   const url = new URL('/api/webhook', siteUrl)
   url.searchParams.set('order', orderId)
@@ -144,7 +145,7 @@ export const voidpayGateway = {
       },
       products: [{ id: order.plan.id, name: `Piskou ${order.plan.name}`, quantity: 1, price: amount }],
       metadata: { provider: 'Piskou Checkout', orderId: order.id, plan: order.plan.id, ...order.metadata.tracking },
-      callbackUrl: callbackUrl(order.siteUrl, order.id),
+      callbackUrl: callbackUrl(order.siteUrl),
     })
 
     if (FAILED_CREATE_STATUSES.includes(data.status)) {
@@ -153,7 +154,7 @@ export const voidpayGateway = {
     }
     return {
       id: data.transactionId,
-      status: STATUS_MAP[data.transactionStatus] ?? 'pending',
+      status: STATUS_MAP[data.transactionStatus ?? data.status] ?? 'pending',
       pix: { copyPaste: data.pix?.code, expiresAt: data.pix?.expiresAt ?? null },
     }
   },
@@ -161,13 +162,23 @@ export const voidpayGateway = {
   // O URL assinado prova que o aviso veio da Void para um pedido nosso. Quando possível, o status é
   // conferido na própria Void (uma consulta por aviso); se a Void limitar a consulta, vale o status do aviso.
   async handleWebhook(req) {
-    const orderId = req.query?.order
-    if (!isValidCallback(orderId, req.query?.sig)) throw new GatewayError('Assinatura do callback inválida.')
+    const callbackOrder = req.query?.order
+    if (!isValidCallback(callbackOrder, req.query?.sig)) throw new GatewayError('Assinatura do callback inválida.')
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
     const transactionId = body.transactionId ?? body.id ?? body.transaction?.id ?? body.data?.id
     if (typeof transactionId !== 'string') {
       throw new GatewayError(`Aviso sem ID de transação (campos: ${Object.keys(body).join(', ')}).`)
     }
+    // Shared callback resolves the actual order from our private charge record.
+    // Older, per-order callbacks remain valid for charges created before this fix.
+    let orderId = callbackOrder
+    if (callbackOrder === (process.env.VOIDPAY_CALLBACK_ANCHOR || 'shared-v1')) {
+      const charge = await store.get(chargeKey(transactionId))
+      if (!charge?.orderId) throw new GatewayError('Cobrança do aviso não encontrada.')
+      orderId = charge.orderId
+    }
+    const reportedOrder = body.clientIdentifier ?? body.metadata?.orderId
+    if (reportedOrder && reportedOrder !== orderId) throw new GatewayError('Pedido do aviso não corresponde à cobrança.')
     let rawStatus = body.transactionStatus ?? body.status ?? body.transaction?.status ?? body.data?.status
     let verified = false
     try {
