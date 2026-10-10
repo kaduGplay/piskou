@@ -154,4 +154,4 @@ Pedidos de foto e vídeo têm apresentação em etapas: pedido do visitante, ind
 
 O criador oferece 12 personalidades, 24 profissões e profissão personalizada (até 60 caracteres). Carinho, humor e tamanho das respostas também são configuráveis, exibidos no perfil e enviados ao servidor para orientar a IA. Fotos e vídeos aparecem apenas quando solicitados nos respectivos botões.
 
-Pedidos de foto ou vídeo digitados nas três mensagens gratuitas são identificados pela IA via saída estruturada; a resposta respeita o perfil e a interface mostra a prévia bloqueada após 2 s, sem duplicar mensagens. Menções casuais ou pedidos negados não devem acionar mídia. A mídia continua ilustrativa. O banner de planos no topo desaparece após 10 s da abertura do chat.
+Pedidos de foto ou vídeo digitados nas três mensagens gratuitas são identificados pela IA via saída estruturada; a resposta respeita o perfil e a interface mostra a prévia bloqueada após 2 s, sem duplicar mensagens. Menções casuais ou pedidos negados não devem acionar mídia. A mídia continua ilustrativa. O banner de planos no topo desaparece após 4 s da abertura do chat.

@@ -83,7 +83,7 @@ export default function ChatPage() {
     messages.filter((m) => m.role === 'character').length >= FREE_MESSAGES
 
   useEffect(() => {
-    const timer = setTimeout(() => setBannerVisible(false), 10_000)
+    const timer = setTimeout(() => setBannerVisible(false), 4_000)
     return () => clearTimeout(timer)
   }, [])
 
