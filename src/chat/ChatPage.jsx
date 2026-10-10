@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import {
   DEFAULT_SELECTION,
+  CHAT_PREFERENCES,
   EVENTS,
   getResultImage,
   track,
@@ -49,6 +50,7 @@ export default function ChatPage() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const [photoRequested, setPhotoRequested] = useState(false)
+  const appRef = useRef(null)
   const endRef = useRef(null)
   const requestRef = useRef(null)
   const sendGuard = useRef(false)
@@ -57,6 +59,19 @@ export default function ChatPage() {
   const sent = messages.filter((m) => m.role === 'user').length
   const locked =
     messages.filter((m) => m.role === 'character').length >= FREE_MESSAGES
+
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+    const resize = () => {
+      // Preserve manual pinch zoom; only adapt the layout at normal scale.
+      if (Math.abs(viewport.scale - 1) > 0.01) return
+      appRef.current?.style.setProperty('--chat-viewport-height', `${viewport.height}px`)
+    }
+    resize()
+    viewport.addEventListener('resize', resize)
+    return () => viewport.removeEventListener('resize', resize)
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -202,6 +217,7 @@ export default function ChatPage() {
           {[
             ['Estilo', sel.style === 'anime' ? 'Anime' : 'Realista'],
             ['Personalidade', sel.personality],
+            ...Object.entries(CHAT_PREFERENCES).map(([key, setting]) => [setting.title, sel[key]]),
             ['Relacionamento', sel.relationship],
             ['Profissão', sel.occupation],
             ['Cabelo', `${sel.hairColor} · ${sel.hairStyle}`],
@@ -224,7 +240,7 @@ export default function ChatPage() {
   )
 
   return (
-    <div className="chat-app">
+    <div className="chat-app" ref={appRef}>
       <aside
         className="chat-sidebar"
         aria-label="Conversas"

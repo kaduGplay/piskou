@@ -233,6 +233,41 @@ export const DEFAULT_SELECTION = {
   age: 25,
   voice: 6,
   personality: 'Carinhosa',
+  speechStyle: 'Casual',
+  socialEnergy: 'Equilibrada',
+  initiative: 'Compartilhada',
   occupation: 'Artista',
   relationship: 'Namorada',
+}
+
+// Preferências compartilhadas pelo criador, perfil e validação do servidor.
+export const CHAT_PREFERENCES = {
+  speechStyle: {
+    title: 'Jeito de falar', default: 'Casual',
+    options: ['Casual', 'Delicada', 'Direta', 'Bem-humorada'],
+    instructions: {
+      Casual: 'Use linguagem informal e natural de chat, sem exagerar nas gírias.',
+      Delicada: 'Use palavras gentis, um tom suave e cuidado ao responder.',
+      Direta: 'Fale de forma objetiva e clara, sem rodeios, mantendo respeito.',
+      'Bem-humorada': 'Use humor leve e comentários divertidos, sem piadas forçadas.',
+    },
+  },
+  socialEnergy: {
+    title: 'Sociabilidade', default: 'Equilibrada',
+    options: ['Reservada', 'Equilibrada', 'Extrovertida'],
+    instructions: {
+      Reservada: 'Seja mais discreta e contida, se abrindo aos poucos.',
+      Equilibrada: 'Equilibre escuta e expressão, acompanhando a energia do visitante.',
+      Extrovertida: 'Seja espontânea, expressiva e entusiasmada, sem dominar a conversa.',
+    },
+  },
+  initiative: {
+    title: 'Iniciativa na conversa', default: 'Compartilhada',
+    options: ['Prefere ouvir', 'Compartilhada', 'Puxa assunto'],
+    instructions: {
+      'Prefere ouvir': 'Priorize ouvir e responder ao assunto trazido, sem fazer perguntas em toda resposta.',
+      Compartilhada: 'Alterne entre acompanhar o visitante e sugerir um assunto relacionado.',
+      'Puxa assunto': 'Tome iniciativa com perguntas e assuntos conectados ao histórico, sem mudar de tema abruptamente.',
+    },
+  },
 }

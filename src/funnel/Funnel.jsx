@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import {
   BODY_TYPES,
+  CHAT_PREFERENCES,
   BREAST_SIZES,
   BUTT_SIZES,
   DEFAULT_SELECTION,
@@ -47,6 +48,7 @@ const STEP_ICONS = [CircleUserRound, MapPin, Smile, PersonStanding, FileText, Im
 const AGES = Array.from({ length: 53 }, (_, i) => i + 18)
 
 const CHOICE_SHEETS = {
+  ...Object.fromEntries(Object.entries(CHAT_PREFERENCES).map(([key, setting]) => [key, { title: setting.title, icon: Smile, options: setting.options.map(value => ({ value, label: value })) }])),
   voice: { title: 'Voz', icon: AudioLines, options: VOICES.map((v, i) => ({ value: i, label: v.label })) },
   personality: { title: 'Personalidade', icon: Smile, options: PERSONALITIES.map((v) => ({ value: v, label: v })) },
   occupation: { title: 'Profissão', icon: BriefcaseBusiness, options: OCCUPATIONS.map((v) => ({ value: v, label: v })) },
@@ -679,7 +681,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
               <AgeCarousel age={sel.age} onChange={(v) => update('age', v)} />
               <div className="creator-detail-label">
                 <strong>Detalhes da personalidade</strong>
-                <span>Toque para alterar</span>
+                <span>Defina como ela conversa com você</span>
               </div>
               <div className="creator-details-grid">
                 <VoiceTile
@@ -688,7 +690,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                   onPlay={() => toggleVoice()}
                   onOpen={() => setOpenSheet('voice')}
                 />
-                {['personality', 'occupation', 'relationship'].map((key) => (
+                {['personality', 'speechStyle', 'socialEnergy', 'initiative', 'occupation', 'relationship'].map((key) => (
                   <DetailTile
                     key={key}
                     title={CHOICE_SHEETS[key].title}
@@ -770,6 +772,9 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                     <SummaryRow title="Idade" value={`${sel.age} anos`} />
                     <SummaryRow title="Voz" value={VOICES[sel.voice].label} />
                     <SummaryRow title="Personalidade" value={sel.personality} />
+                    {Object.entries(CHAT_PREFERENCES).map(([key, setting]) => (
+                      <SummaryRow key={key} title={setting.title} value={sel[key]} />
+                    ))}
                     <SummaryRow title="Profissão" value={sel.occupation} />
                     <SummaryRow title="Relacionamento" value={sel.relationship} />
                   </>

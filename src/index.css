@@ -537,3 +537,10 @@ select:focus-visible {
   syntax: "*";
   inherits: false;
 }
+
+/* Prevent automatic focus zoom on touch devices without disabling accessibility zoom. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), textarea, select {
+    font-size: 16px !important;
+  }
+}
