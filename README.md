@@ -147,3 +147,5 @@ Mantidos como estavam no site no ar:
 No celular, os campos de texto usam fonte mínima de 16 px para evitar o zoom automático ao focar no iOS, mantendo o zoom manual disponível. O chat acompanha a altura do Visual Viewport quando o teclado abre ou fecha.
 
 O chat fixa seu contêiner na área visível e acompanha altura e deslocamento do Visual Viewport. Apenas a lista de mensagens rola; durante o teclado, banner e sugestões ficam ocultos para dar espaço ao histórico. O campo permanece habilitado e focado durante o envio. Controles nativos de navegação entre campos do Safari/iOS não são personalizáveis pelo site.
+
+Pedir um vídeo mostra uma mensagem de prévia adaptada ao jeito de falar, sociabilidade, personalidade e relacionamento, seguida de uma imagem ilustrativa fortemente borrada com botão para os planos. Não gera vídeo, não chama a API e não consome as mensagens gratuitas.

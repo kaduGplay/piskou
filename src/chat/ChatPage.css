@@ -947,3 +947,7 @@ body.chat-page {
     padding-bottom: 12px;
   }
 }
+
+.chat-video-preview { margin-top: 20px; }
+.chat-locked-video > img { filter: blur(36px) brightness(0.5); transform: scale(1.3); }
+.chat-profile-details > .chat-primary + .chat-primary { margin-top: 10px; }

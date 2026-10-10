@@ -6,6 +6,8 @@ import {
   Heart,
   LockKeyhole,
   MessageCircle,
+  Play,
+  Video,
   Send,
   ShieldCheck,
   Sparkles,
@@ -26,6 +28,19 @@ import './ChatPage.css'
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
 const FREE_MESSAGES = CHAT_PREVIEW_LIMIT
 const UPGRADE_DELAY_MS = 2_000
+
+function videoPreviewMessage(selection) {
+  const affectionate = selection.relationship !== 'Confidente'
+  const address = affectionate ? ', amor' : ''
+  if (selection.speechStyle === 'Direta') return `Aqui está a prévia do vídeo${address}.`
+  if (selection.speechStyle === 'Bem-humorada' || selection.personality === 'Divertida')
+    return `Bateu a curiosidade${address}? Dá uma olhada nesta prévia 💕`
+  if (selection.socialEnergy === 'Reservada' || selection.personality === 'Reservada' || selection.speechStyle === 'Delicada')
+    return `Aqui vai uma pequena prévia${address}. Espero que goste 💕`
+  if (selection.socialEnergy === 'Extrovertida' || selection.personality === 'Confiante')
+    return `Olha só esta prévia${address}! Quero saber o que achou 💕`
+  return `Aqui está uma prévia para você${address} 💕`
+}
 
 function readSelection() {
   try {
@@ -51,6 +66,7 @@ export default function ChatPage() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const [photoRequested, setPhotoRequested] = useState(false)
+  const [videoRequested, setVideoRequested] = useState(false)
   const appRef = useRef(null)
   const messagesRef = useRef(null)
   const requestRef = useRef(null)
@@ -130,7 +146,7 @@ export default function ChatPage() {
   useEffect(() => {
     const list = messagesRef.current
     list?.scrollTo({ top: list.scrollHeight, behavior: typing ? 'auto' : 'smooth' })
-  }, [messages, typing, photoRequested, paywallReached])
+  }, [messages, typing, photoRequested, videoRequested, paywallReached])
   useEffect(() => {
     if (!profileOpen) return
     const previous = document.activeElement
@@ -167,6 +183,11 @@ export default function ChatPage() {
     setProfileOpen(false)
     setPhotoRequested(true)
     track('ChatFotoSolicitada', { visual_style: sel.style })
+  }
+  const requestVideo = () => {
+    setProfileOpen(false)
+    setVideoRequested(true)
+    track('ChatVideoSolicitado', { visual_style: sel.style })
   }
   const send = async (text = draft) => {
     const content = text.trim().slice(0, 500)
@@ -264,6 +285,9 @@ export default function ChatPage() {
         </dl>
         <button type="button" className="chat-primary" onClick={requestPhoto}>
           <LockKeyhole size={17} /> Pedir uma foto · Premium
+        </button>
+        <button type="button" className="chat-primary" onClick={requestVideo}>
+          <Video size={17} /> Pedir um vídeo · Prévia
         </button>
         <p className="chat-profile-note">
           Fotos disponíveis a partir do Premium.
@@ -474,6 +498,32 @@ export default function ChatPage() {
               </p>
             </div>
           )}
+          {videoRequested && (
+            <div className="chat-video-preview">
+              <div className="chat-message character">
+                <img className="chat-message-avatar" src={image} alt="" />
+                <div className="chat-bubble">
+                  <p>{videoPreviewMessage(sel)}</p>
+                  <span>{name} · Prévia</span>
+                </div>
+              </div>
+              <div className="chat-locked-wrap">
+                <div className="chat-locked-media chat-locked-video">
+                  <img src={image} alt={`Imagem ilustrativa da prévia de vídeo de ${name}`} />
+                  <div className="chat-locked-copy">
+                    <span className="chat-lock-circle"><Play size={24} fill="currentColor" /></span>
+                    <span className="chat-eyebrow">PRÉVIA DE VÍDEO · BLOQUEADA</span>
+                    <h2>Uma prévia de {name} para você</h2>
+                    <p>Conheça os planos e os recursos de vídeo do Luxo.</p>
+                    <button type="button" className="chat-primary" onClick={openOffer}>
+                      <LockKeyhole size={16} /> Desbloquear · Ver planos
+                    </button>
+                    <small>Imagem ilustrativa da personagem · Nenhum vídeo gerado</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <footer className="chat-composer">
           {chatError && (
@@ -503,6 +553,9 @@ export default function ChatPage() {
               onClick={requestPhoto}
             >
               <LockKeyhole size={13} /> Pedir uma foto · Premium
+            </button>
+            <button type="button" className="chat-photo-request" onClick={requestVideo}>
+              <Video size={13} /> Pedir um vídeo
             </button>
           </div>
           <form
