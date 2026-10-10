@@ -15,6 +15,7 @@ import {
 import {
   DEFAULT_SELECTION,
   CHAT_PREFERENCES,
+  CHAT_PREVIEW_LIMIT,
   EVENTS,
   getResultImage,
   track,
@@ -23,7 +24,7 @@ import { PLANS, SELECTION_STORAGE_KEY, formatBRL } from '../shared/checkout.js'
 import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
-const FREE_MESSAGES = 3
+const FREE_MESSAGES = CHAT_PREVIEW_LIMIT
 
 function readSelection() {
   try {
@@ -46,7 +47,6 @@ export default function ChatPage() {
   const [draft, setDraft] = useState('')
   const [typing, setTyping] = useState(false)
   const [paywallReached, setPaywallReached] = useState(false)
-  const paywallTimer = useRef(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const [photoRequested, setPhotoRequested] = useState(false)
@@ -82,6 +82,7 @@ export default function ChatPage() {
         const data = await response.json()
         if (!response.ok) throw new Error(data.error)
         setMessages(data.messages || [])
+        setPaywallReached((data.messages || []).filter(m => m.role === 'character').length >= FREE_MESSAGES)
       })
       .catch((error) => {
         if (error.name !== 'AbortError')
@@ -93,7 +94,6 @@ export default function ChatPage() {
     return () => {
       controller.abort()
       requestRef.current?.abort()
-      clearTimeout(paywallTimer.current)
     }
   }, [sel])
   useEffect(() => {
@@ -139,20 +139,7 @@ export default function ChatPage() {
     const content = text.trim().slice(0, 500)
     if (loading || typing || sendGuard.current) return
     if (!content) return
-    if (locked) {
-      if (paywallReached) return openOffer()
-      sendGuard.current = true
-      setMessages((prev) => [...prev, { role: 'user', text: content }])
-      setDraft('')
-      setTyping(true)
-      paywallTimer.current = setTimeout(() => {
-        setTyping(false)
-        sendGuard.current = false
-        setPaywallReached(true)
-        openOffer()
-      }, 1200)
-      return
-    }
+    if (locked) return openOffer()
     sendGuard.current = true
     setMessages((prev) => [...prev, { role: 'user', text: content }])
     setDraft('')
@@ -183,6 +170,7 @@ export default function ChatPage() {
         throw new Error(data.error || 'Não foi possível receber a resposta.')
       }
       setMessages(data.messages)
+      setPaywallReached(data.messages.filter(m => m.role === 'character').length >= FREE_MESSAGES)
     } catch (error) {
       if (error.name !== 'AbortError') {
         setMessages(previous)
@@ -344,12 +332,12 @@ export default function ChatPage() {
             </button>
             <span className="chat-eyebrow">FEITA DO SEU JEITO</span>
             <h1>
-              {messages.length ? `Você e ${name}` : `Diga oi para ${name}`}
+              {messages.length ? `Você e ${name}` : `Que tal mandar um oi para ${name}?`}
             </h1>
             <p>
               {messages.length
                 ? 'Toda conexão começa com uma conversa.'
-                : 'Escolha uma sugestão ou escreva do seu jeito. Você tem 3 mensagens gratuitas para conhecer sua personagem.'}
+                : `Escolha uma sugestão ou escreva do seu jeito. Você tem ${FREE_MESSAGES} mensagens gratuitas para conhecer sua personagem.`}
             </p>
             {!messages.length && (
               <button
@@ -400,8 +388,8 @@ export default function ChatPage() {
                 <div className="chat-continue-notice">
                   <LockKeyhole size={19} />
                   <div>
-                    <strong>Sua conversa com {name} só começou</strong>
-                    <p>Vocês ainda têm muito para conversar. Escolha seu acesso e continue conhecendo {name}.</p>
+                    <strong>Continue conversando com {name}</strong>
+                    <p>Para continuar conversando com {name}, escolha seu plano.</p>
                     <button
                       type="button"
                       className="chat-continue-button"
@@ -452,7 +440,7 @@ export default function ChatPage() {
           <div className="chat-suggestions">
             {!locked &&
               (sent === 0
-                ? ['Oi! 💕', 'Como você está?', 'Quero te conhecer']
+                ? ['Oi! 💕', 'Olá! Como foi seu dia?', 'Quero te conhecer melhor']
                 : ['Me conta mais sobre você', 'O que você gosta de fazer?']
               ).map((text) => (
                 <button

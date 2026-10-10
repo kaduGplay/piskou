@@ -1,3 +1,4 @@
+import { CHAT_PREVIEW_LIMIT } from '../src/funnel/data.js'
 import { randomUUID } from 'node:crypto'
 import {
   chatDatabase,
@@ -32,7 +33,7 @@ export default async function handler(req, res) {
   try {
     session = chatSession(req, res, req.method === 'POST')
     if (req.method === 'GET') {
-      if (!session) return res.status(200).json({ messages: [], remaining: 3 })
+      if (!session) return res.status(200).json({ messages: [], remaining: CHAT_PREVIEW_LIMIT })
       const rows = await chatDatabase(
         `piskou_chat_sessions?id=eq.${session}&select=messages,selection&expires_at=gt.${encodeURIComponent(new Date().toISOString())}`,
       )
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
           )
         ) {
           chatSession(req, res, true, true)
-          return res.status(200).json({ messages: [], remaining: 3 })
+          return res.status(200).json({ messages: [], remaining: CHAT_PREVIEW_LIMIT })
         }
       }
       const messages = row?.messages || []
@@ -64,7 +65,7 @@ export default async function handler(req, res) {
         .json({
           messages,
           selection: row?.selection,
-          remaining: Math.max(0, 3 - messages.length / 2),
+          remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2),
         })
     }
     const selection = chatSelection(req.body?.selection)
@@ -153,7 +154,7 @@ export default async function handler(req, res) {
     lease = null
     return res
       .status(200)
-      .json({ messages, remaining: Math.max(0, 3 - messages.length / 2) })
+      .json({ messages, remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2) })
   } catch (error) {
     if (session && lease)
       await chatDatabase('rpc/piskou_chat_finish', {
