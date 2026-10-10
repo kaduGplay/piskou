@@ -121,7 +121,18 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
         store: false,
-        max_output_tokens: 220,
+        max_output_tokens: 320,
+        text: { format: {
+          type: 'json_schema', name: 'chat_reply', strict: true,
+          schema: {
+            type: 'object', additionalProperties: false,
+            properties: {
+              reply: { type: 'string' },
+              mediaRequest: { type: 'string', enum: ['none', 'photo', 'video'] },
+            },
+            required: ['reply', 'mediaRequest'],
+          },
+        } },
         instructions: chatInstructions(selection, claim.turn),
         input: [
           ...claim.messages.map((m) => ({
@@ -138,12 +149,15 @@ export default async function handler(req, res) {
       throw new Error('OpenAI request failed')
     }
     const data = await response.json()
-    const reply = (data.output || [])
+    const output = (data.output || [])
       .flatMap((o) => o.content || [])
       .filter((c) => c.type === 'output_text')
       .map((c) => c.text)
       .join('\n')
       .trim()
+    const parsed = JSON.parse(output)
+    const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : ''
+    const mediaRequest = ['photo', 'video'].includes(parsed.mediaRequest) ? parsed.mediaRequest : null
     if (!reply) throw new Error('Empty model response')
     const messages = await chatDatabase('rpc/piskou_chat_finish', {
       p_id: session,
@@ -154,7 +168,7 @@ export default async function handler(req, res) {
     lease = null
     return res
       .status(200)
-      .json({ messages, remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2) })
+      .json({ messages, mediaRequest, remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2) })
   } catch (error) {
     if (session && lease)
       await chatDatabase('rpc/piskou_chat_finish', {

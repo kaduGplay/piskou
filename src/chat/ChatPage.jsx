@@ -59,6 +59,7 @@ export default function ChatPage() {
   const image = getResultImage(sel).src
   const name = sel.name || 'Sua personagem'
   const [messages, setMessages] = useState([])
+  const [bannerVisible, setBannerVisible] = useState(true)
   const [loading, setLoading] = useState(true)
   const [chatError, setChatError] = useState('')
   const [draft, setDraft] = useState('')
@@ -80,6 +81,11 @@ export default function ChatPage() {
   const sent = messages.filter((m) => m.role === 'user').length
   const locked =
     messages.filter((m) => m.role === 'character').length >= FREE_MESSAGES
+
+  useEffect(() => {
+    const timer = setTimeout(() => setBannerVisible(false), 10_000)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     const viewport = window.visualViewport
@@ -183,19 +189,19 @@ export default function ChatPage() {
     setProfileOpen(false)
     setOfferOpen(true)
   }
-  const requestMedia = (kind) => {
-    if (loading || typing || mediaBusy.current) return
+  const requestMedia = (kind, fromChat = false) => {
+    if ((!fromChat && (loading || typing)) || mediaBusy.current) return
     setProfileOpen(false)
     mediaBusy.current = true
     const id = crypto.randomUUID()
-    setMediaRequests(previous => [...previous, { id, kind, phase: 'typing' }])
+    setMediaRequests(previous => [...previous, { id, kind, fromChat, phase: fromChat ? 'reply' : 'typing' }])
     track(kind === 'video' ? 'ChatVideoSolicitado' : 'ChatFotoSolicitada', { visual_style: sel.style })
     const advance = (phase) => setMediaRequests(previous => previous.map(item => item.id === id ? { ...item, phase } : item))
-    mediaTimers.current.push(setTimeout(() => advance('reply'), 3000))
+    if (!fromChat) mediaTimers.current.push(setTimeout(() => advance('reply'), 3000))
     mediaTimers.current.push(setTimeout(() => {
       advance('media')
       mediaBusy.current = false
-    }, 5000))
+    }, fromChat ? 2000 : 5000))
   }
   const requestPhoto = () => requestMedia('photo')
   const requestVideo = () => requestMedia('video')
@@ -247,6 +253,7 @@ export default function ChatPage() {
         throw new Error(data.error || 'Não foi possível receber a resposta.')
       }
       setMessages(data.messages)
+      if (['photo', 'video'].includes(data.mediaRequest)) requestMedia(data.mediaRequest, true)
     } catch (error) {
       if (error.name !== 'AbortError') {
         setMessages(previous)
@@ -376,7 +383,7 @@ export default function ChatPage() {
             <UserRound size={21} />
           </button>
         </header>
-        <div className="chat-upgrade">
+        {bannerVisible && <div className="chat-upgrade">
           <span className="chat-upgrade-heart">
             <Heart size={20} fill="currentColor" />
           </span>
@@ -390,7 +397,7 @@ export default function ChatPage() {
           <button type="button" onClick={openOffer}>
             Ver planos <ChevronRight size={14} />
           </button>
-        </div>
+        </div>}
         <div
           className="chat-messages"
           ref={messagesRef}
@@ -485,13 +492,13 @@ export default function ChatPage() {
           )}
           {mediaRequests.map(item => (
             <div className="chat-media-request" key={item.id}>
-              <div className="chat-message user">
+              {!item.fromChat && <div className="chat-message user">
                 <div className="chat-bubble">
                   <p>{item.kind === 'video' ? 'Quero ver uma prévia de vídeo 💕' : 'Quero ver uma prévia de foto 💕'}</p>
                   <span>Você <CheckCheck size={13} /></span>
                 </div>
-              </div>
-              <div className="chat-message character">
+              </div>}
+              {!item.fromChat && <div className="chat-message character">
                 <img className="chat-message-avatar" src={image} alt="" />
                 {item.phase === 'typing' ? (
                   <div className="chat-typing" aria-label={`${name} está digitando`}><i /><i /><i /></div>
@@ -501,7 +508,7 @@ export default function ChatPage() {
                     <span>{name} · Prévia</span>
                   </div>
                 )}
-              </div>
+              </div>}
               {item.phase === 'reply' && <p className="chat-media-loading" role="status">Carregando prévia…</p>}
               {item.phase === 'media' && (
                 <div className="chat-locked-wrap">
