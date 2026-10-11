@@ -1,3 +1,4 @@
+import { sendAnalytics } from '../shared/analytics.js'
 // Dados do funil: opções do quiz, mídia de cada card, regra da imagem final e eventos de rastreio.
 
 export const VOICES = [
@@ -150,6 +151,7 @@ export function getResultImage(sel) {
 
 // Envia o evento para o Meta Pixel (se carregado) e para o gtag/dataLayer.
 export function track(event, params = {}) {
+  sendAnalytics(event, params)
   sendToMetaPixel(event, params)
   const payload = { vertical: 'realista_anime', ...params }
   if (typeof window.gtag === 'function') {

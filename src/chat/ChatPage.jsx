@@ -260,6 +260,7 @@ export default function ChatPage() {
         setTyping(false)
         sendGuard.current = false
         setPaywallReached(true)
+        track('ChatLimiteExibido')
       }, UPGRADE_DELAY_MS)
       return
     }
@@ -297,6 +298,7 @@ export default function ChatPage() {
         throw failure
       }
       setMessages(data.messages)
+      track('ChatRespostaRecebida')
       if (['photo', 'video'].includes(data.mediaRequest))
         requestMedia(data.mediaRequest, true)
     } catch (error) {
@@ -325,6 +327,7 @@ export default function ChatPage() {
               recoveredUser?.text === content
             ) {
               setMessages(latest.messages)
+              track('ChatRespostaRecebida')
               return
             }
           } catch {
@@ -335,6 +338,7 @@ export default function ChatPage() {
         setMessages(previous)
         setDraft((current) => current || content)
         setChatError(error.message || 'Tente novamente em instantes.')
+        track('ChatErro')
       }
     } finally {
       setTyping(false)

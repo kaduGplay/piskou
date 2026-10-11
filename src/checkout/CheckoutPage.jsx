@@ -1,3 +1,4 @@
+import { analyticsIdentity } from '../shared/analytics.js'
 import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import {
@@ -282,6 +283,7 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
+          analyticsSession: analyticsIdentity().session,
           method,
           customer,
           cardToken,
@@ -290,6 +292,7 @@ export default function CheckoutPage() {
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
+        track('CheckoutErro')
         if (data.fields) setErrors(data.fields)
         setServerError(data.error || 'Não foi possível processar o pagamento. Tente novamente.')
         return
@@ -310,6 +313,7 @@ export default function CheckoutPage() {
         setPhase('processing')
       }
     } catch {
+      track('CheckoutErro')
       setServerError('Sem conexão. Verifique sua internet e tente novamente.')
     } finally {
       setSubmitting(false)

@@ -1,3 +1,4 @@
+import { UUID } from './_lib/analytics.js'
 import { randomUUID } from 'node:crypto'
 import { PLANS, pickCampaignParams, toCents, validateCustomer } from '../src/shared/checkout.js'
 import { getGateway } from './_lib/gateway.js'
@@ -19,7 +20,7 @@ export default async function handler(req, res) {
   const gateway = getGateway()
   if (!gateway) return res.status(503).json({ error: 'O pagamento está indisponível no momento.' })
 
-  const { planId, method, customer, cardToken, tracking } = req.body ?? {}
+  const { planId, method, customer, cardToken, tracking, analyticsSession } = req.body ?? {}
   const plan = PLANS[planId]
   if (!plan) return res.status(400).json({ error: 'Plano inválido.' })
   if (!gateway.methods.includes(method)) return res.status(400).json({ error: 'Forma de pagamento indisponível.' })
@@ -48,6 +49,7 @@ export default async function handler(req, res) {
     // Com confirmação por webhook, o pedido precisa ficar registrado para o aviso e a tela do PIX se encontrarem.
     if (gateway.confirmsByWebhook && charge.id) {
       await store.set(chargeKey(charge.id), {
+        analyticsSession: UUID.test(analyticsSession || '') ? analyticsSession : null,
         orderId: order.id,
         planId: plan.id,
         amount: plan.price,

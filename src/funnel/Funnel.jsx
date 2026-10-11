@@ -466,6 +466,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
 
   useEffect(() => {
     track(EVENTS.QUIZ_START)
+    track(EVENTS.STEP_VIEW, { step: STEPS[initialStep].key, visual_style: sel.style })
     return () => audioRef.current?.pause()
   }, [])
 

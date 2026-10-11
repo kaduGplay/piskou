@@ -159,3 +159,28 @@ Pedidos de foto ou vídeo digitados nas três mensagens gratuitas são identific
 Geração: uma retentativa automática para falhas temporárias de rede, HTTP 408/429/5xx ou saída incompleta, dentro da mesma reserva. Recusas do modelo viram redirecionamento seguro. Se o navegador perder a resposta, consulta o histórico antes de pedir reenvio; mensagens concluídas são recuperadas sem duplicação. Uma indisponibilidade persistente ainda pode impedir respostas, preservando o texto e o saldo gratuito. Testes de geração: `node --test tests/chat-model.test.js`.
 
 `VOIDPAY_CALLBACK_ANCHOR` permite reutilizar o endereço de um webhook existente quando a cota da Void já está cheia, sem excluir registros. Não altere essa âncora a cada pedido: URLs distintas criam webhooks distintos e a Void limita a conta a 20.
+
+
+### Painel de administração
+
+Acesse `/admin` com a senha `ADMIN_PASSWORD` configurada somente no servidor.
+A sessão de acesso dura 8 horas, usa cookie HttpOnly e expira ao trocar a senha.
+O login permite até 8 tentativas por rede a cada 15 minutos.
+
+As métricas próprias começam após a instalação da migração `funnel_analytics`.
+Não coletam nomes, e-mails, conversas, dados de cartão ou IP em texto. O IP é usado
+somente como HMAC temporário para limitar requisições. Os identificadores de visitante
+ficam no navegador. Uma sessão é renovada após 30 minutos sem atividade; múltiplas
+abas podem criar sessões diferentes. Eventos são deduplicados por sessão e etapa.
+Atividade visível envia heartbeat a cada 30 segundos; online significa atividade nos
+últimos 90 segundos. O painel consulta os agregados a cada 15 segundos.
+
+Os filtros usam sessões iniciadas no período (horário de Brasília), incluindo o dia
+atual. As taxas entre etapas exigem a mesma sessão passando pela anterior primeiro.
+Entradas diretas aparecem nos totais de cada etapa. O gargalo é a maior proporção de
+sessões que ainda não avançaram, com no mínimo 5 sessões na etapa anterior; sessões
+em andamento também entram nessa diferença. O painel não é contado nas visitas.
+PIX e pagamento aprovado são registrados no servidor, por sessão (não representam
+quantidade de transações nem receita). O histórico é retido por até 90 dias, com
+limpeza ao consultar o painel. Bloqueadores e armazenamento indisponível podem
+reduzir a precisão. Métricas indisponíveis nunca impedem o fluxo de chat ou checkout.
