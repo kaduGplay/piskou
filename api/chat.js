@@ -33,18 +33,23 @@ export default async function handler(req, res) {
   }
   let session, lease
   try {
-    session = chatSession(req, res, req.method === 'POST')
+    session = chatSession(req, res, true)
     if (req.method === 'GET') {
       if (!session)
         return res
           .status(200)
-          .json({ messages: [], remaining: 0, requiresPayment: true })
+          .json({
+            messages: [],
+            remaining: CHAT_PREVIEW_LIMIT,
+            requiresPayment: false,
+            hasPaidAccess: false,
+          })
       if (req.query?.access === '1')
         return res
           .status(200)
           .json(await chatDatabase('rpc/piskou_chat_access', { p_id: session }))
       const rows = await chatDatabase(
-        `piskou_chat_sessions?id=eq.${session}&select=messages,selection,allowance,unlimited&expires_at=gt.${encodeURIComponent(new Date().toISOString())}`,
+        `piskou_chat_sessions?id=eq.${session}&select=messages,selection,allowance,unlimited,trial_allowance`,
       )
       const row = rows[0]
       let requested
@@ -67,7 +72,12 @@ export default async function handler(req, res) {
           chatSession(req, res, true, true)
           return res
             .status(200)
-            .json({ messages: [], remaining: 0, requiresPayment: true })
+            .json({
+              messages: [],
+              remaining: CHAT_PREVIEW_LIMIT,
+              requiresPayment: false,
+              hasPaidAccess: false,
+            })
         }
       }
       const messages = row?.messages || []
@@ -76,9 +86,15 @@ export default async function handler(req, res) {
         selection: row?.selection,
         remaining: row?.unlimited
           ? null
-          : Math.max(0, (row?.allowance || 0) - messages.length / 2),
+          : Math.max(
+              0,
+              (row?.allowance ?? CHAT_PREVIEW_LIMIT) - messages.length / 2,
+            ),
         unlimited: row?.unlimited === true,
-        requiresPayment: !row || (!row.allowance && !row.unlimited),
+        requiresPayment: !!row && !row.allowance && !row.unlimited,
+        hasPaidAccess:
+          !!row &&
+          (row.unlimited || row.allowance > (row.trial_allowance || 0)),
       })
     }
     if (req.body?.action === 'log') {

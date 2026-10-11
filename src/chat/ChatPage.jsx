@@ -55,6 +55,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true)
   const [remaining, setRemaining] = useState(0)
   const [requiresPayment, setRequiresPayment] = useState(false)
+  const [hasPaidAccess, setHasPaidAccess] = useState(false)
   const [chatError, setChatError] = useState('')
   const [draft, setDraft] = useState(() =>
     String(readProgress().draft || '').slice(0, 500),
@@ -167,6 +168,7 @@ export default function ChatPage() {
         setMessages(data.messages || [])
         setRemaining(data.remaining)
         setRequiresPayment(data.requiresPayment === true)
+        setHasPaidAccess(data.hasPaidAccess === true)
         setPaywallReached(false)
         if (data.requiresPayment) setOfferOpen(true)
       })
@@ -201,7 +203,8 @@ export default function ChatPage() {
         if (!alive) return
         if (
           data.remaining !== remaining ||
-          data.requiresPayment !== requiresPayment
+          data.requiresPayment !== requiresPayment ||
+          data.hasPaidAccess !== hasPaidAccess
         ) {
           if (
             !data.requiresPayment &&
@@ -225,6 +228,7 @@ export default function ChatPage() {
           if (alive) {
             setRemaining(data.remaining)
             setRequiresPayment(data.requiresPayment === true)
+            setHasPaidAccess(data.hasPaidAccess === true)
           }
         }
       } catch {
@@ -240,7 +244,7 @@ export default function ChatPage() {
       clearInterval(timer)
       document.removeEventListener('visibilitychange', check)
     }
-  }, [loading, typing, remaining, requiresPayment, paywallReached])
+  }, [loading, typing, remaining, requiresPayment, paywallReached, hasPaidAccess])
   useEffect(() => {
     const list = messagesRef.current
     list?.scrollTo({
@@ -898,7 +902,7 @@ export default function ChatPage() {
           }
         >
           <PaywallSheet
-            source={requiresPayment ? undefined : locked ? 'messages' : 'chat'}
+            source={requiresPayment || (locked && !hasPaidAccess) ? undefined : locked ? 'messages' : 'chat'}
             sel={sel}
             onClose={() => setOfferOpen(false)}
           />

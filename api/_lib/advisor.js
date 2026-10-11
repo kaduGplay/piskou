@@ -41,7 +41,7 @@ export async function advisorReply(
     }),
     product: {
       includedPaidMessages: CHAT_PREVIEW_LIMIT,
-      paywall: `Planos antes do chat. Após pagamento confirmado, ${CHAT_PREVIEW_LIMIT} mensagens incluídas; após usá-las, oferta de mais 120 por R$ 9,90 ou texto ilimitado nesta conversa por R$ 19,90.`,
+      paywall: `${CHAT_PREVIEW_LIMIT} mensagens gratuitas antes dos planos. Após pagamento confirmado, 6 mensagens adicionais incluídas; após usá-las, oferta de mais 120 por R$ 9,90 ou texto ilimitado nesta conversa por R$ 19,90.`,
       plans: Object.values(PLANS),
     },
     selectedConversation: chat
