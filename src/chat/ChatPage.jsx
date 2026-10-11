@@ -11,6 +11,7 @@ import {
   CheckCheck,
   ChevronRight,
   Heart,
+  Image as ImageIcon,
   LockKeyhole,
   MessageCircle,
   Play,
@@ -487,17 +488,17 @@ export default function ChatPage() {
           type="button"
           className="chat-primary"
           disabled={loading || typing || mediaPending}
-          onClick={requestPhoto}
+          onClick={requestVideo}
         >
-          <LockKeyhole size={17} /> Pedir uma foto · Premium
+          <Video size={17} /> Pedir um vídeo
         </button>
         <button
           type="button"
           className="chat-primary"
           disabled={loading || typing || mediaPending}
-          onClick={requestVideo}
+          onClick={requestPhoto}
         >
-          <Video size={17} /> Pedir um vídeo
+          <ImageIcon size={17} /> Pedir uma foto
         </button>
         <p className="chat-profile-note">
           Fotos disponíveis a partir do Premium.
@@ -778,8 +779,7 @@ export default function ChatPage() {
           )}
           {loading && <p role="status">Abrindo sua conversa…</p>}
           <div className="chat-suggestions">
-            {!locked &&
-              (sent === 0
+            {(sent === 0
                 ? [
                     'Oi! 💕',
                     'Olá! Como foi seu dia?',
@@ -800,17 +800,17 @@ export default function ChatPage() {
               type="button"
               className="chat-photo-request"
               disabled={loading || typing || mediaPending}
-              onClick={requestPhoto}
+              onClick={requestVideo}
             >
-              <LockKeyhole size={13} /> Pedir uma foto · Premium
+              <Video size={13} /> Pedir um vídeo
             </button>
             <button
               type="button"
               className="chat-photo-request"
               disabled={loading || typing || mediaPending}
-              onClick={requestVideo}
+              onClick={requestPhoto}
             >
-              <Video size={13} /> Pedir um vídeo
+              <ImageIcon size={13} /> Pedir uma foto
             </button>
           </div>
           <form

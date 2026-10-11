@@ -137,3 +137,14 @@ test('character photo requests explain subscription instead of claiming delivery
   assert.match(result.reply, /Premium/)
   assert.ok(!result.reply.includes('Aqui está'))
 })
+
+test('character hobbies stay consistent and vary with personality and identity', async () => {
+  const { characterInterests, chatInstructions } = await import('../api/_lib/chat.js')
+  const calm = { ...DEFAULT_SELECTION, name: 'Lia', personality: 'Tranquila' }
+  const adventure = { ...calm, personality: 'Aventureira' }
+  assert.deepEqual(characterInterests(calm), characterInterests({ ...calm }))
+  assert.notDeepEqual(characterInterests(calm), characterInterests(adventure))
+  assert.ok(characterInterests(adventure).some(value => /trilhas|viagem|paisagens/.test(value)))
+  assert.ok(chatInstructions(calm, 0).includes('Interesses já estabelecidos no histórico têm prioridade'))
+  assert.ok(chatInstructions(calm, 0).includes('Nunca finja ser humana'))
+})

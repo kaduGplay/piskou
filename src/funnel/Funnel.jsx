@@ -594,7 +594,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                 <h1>
                   Crie sua <em>garota</em> dos sonhos
                 </h1>
-                <span>Toque no visual que você prefere para continuar. Você pode mudar depois.</span>
+                <span>Compare os dois estilos, escolha o seu favorito e toque em continuar.</span>
               </div>
               <div className="creator-style-grid">
                 {[
@@ -606,12 +606,11 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                     type="button"
                     className={`creator-style${sel.style === option.key ? ' selected' : ''}`}
                     aria-pressed={sel.style === option.key}
-                    onClick={() => { update('style', option.key); goToStep(1, option.key) }}
+                    onClick={() => update('style', option.key)}
                   >
                     <OptionMedia
                       media={getOptionMedia(option.key, 'style', option.key)}
-                      selected={sel.style === option.key}
-                      animate={false}
+                      selected
                       eager
                     />
                     <strong>Escolher {option.label.toLowerCase()} <ArrowRight size={16} aria-hidden="true" /></strong>
