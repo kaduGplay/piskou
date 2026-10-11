@@ -42,6 +42,9 @@ export default async function handler(req, res) {
       '1',
       '2',
       '3',
+      '4',
+      '5',
+      '6',
     ].includes(b.step || '') ||
     JSON.stringify(b).length > 1800
   )

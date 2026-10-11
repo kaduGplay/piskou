@@ -1,3 +1,4 @@
+import { CHAT_PREVIEW_LIMIT } from '../../src/funnel/data.js'
 import { PLANS } from '../../src/shared/checkout.js'
 import { chatDatabase } from './chat.js'
 import { UUID } from './analytics.js'
@@ -39,9 +40,9 @@ export async function advisorReply(
       }
     }),
     product: {
-      freeMessages: 3,
+      freeMessages: CHAT_PREVIEW_LIMIT,
       paywall:
-        'Ao tentar a quarta mensagem, após 2 segundos digitando; planos opcionais também nos pedidos de mídia.',
+        `Ao tentar continuar após ${CHAT_PREVIEW_LIMIT} mensagens gratuitas, após 2 segundos digitando; planos opcionais também nos pedidos de mídia.`,
       plans: Object.values(PLANS),
     },
     selectedConversation: chat
