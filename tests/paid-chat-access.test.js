@@ -33,6 +33,9 @@ test('message products have the authorized fixed prices', () => {
   assert.equal(PLANS['messages-six'].price, PLANS['premium-access'].price)
   assert.equal(PLANS['messages-unlimited'].price, PLANS['luxury-access'].price)
   assert.equal(PLANS['messages-six'].purpose, 'messages')
+  assert.equal(PLANS['messages-120'].price, PLANS['premium-access'].price)
+  assert.equal(PLANS['messages-120'].messageCount, 120)
+  assert.equal(PLANS['messages-120'].purpose, 'messages')
 })
 test('unlimited conversation keeps recent context within bounded model input', async () => {
   let request

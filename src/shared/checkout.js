@@ -2,6 +2,15 @@
 // e o servidor cobra estes valores, ignorando qualquer preço que venha do navegador.
 
 export const PLANS = {
+  'messages-120': {
+    id: 'messages-120',
+    tier: 'premium',
+    name: 'Mais 120 mensagens',
+    price: 23.85,
+    bonusCount: 0,
+    purpose: 'messages',
+    messageCount: 120,
+  },
   'messages-six': {
     id: 'messages-six',
     tier: 'premium',

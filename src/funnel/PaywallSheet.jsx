@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
+  Check,
+  MessageCircle,
+  Infinity,
   ChevronDown,
   CreditCard,
   Crown,
@@ -92,6 +95,35 @@ export default function PaywallSheet({ sel, onClose, source }) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [onClose])
 
+  useEffect(() => {
+    if (source !== 'messages') return
+    const previousFocus = document.activeElement
+    const dialog = document
+      .getElementById('message-plans-title')
+      ?.closest('[role="dialog"]')
+    dialog?.querySelector('button')?.focus()
+    const trapFocus = (event) => {
+      if (event.key !== 'Tab' || !dialog) return
+      const controls = [
+        ...dialog.querySelectorAll('button, a[href], input:checked'),
+      ]
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first?.focus()
+      }
+    }
+    dialog?.addEventListener('keydown', trapFocus)
+    return () => {
+      dialog?.removeEventListener('keydown', trapFocus)
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
+  }, [source])
+
   const goToCheckout = (event, chosen) =>
     trackThenNavigate(event, () => {
       try {
@@ -107,72 +139,114 @@ export default function PaywallSheet({ sel, onClose, source }) {
       })
     })
 
-  if (source === 'messages')
+  if (source === 'messages') {
+    const chosen =
+      CATALOG[tier === 'luxury' ? 'messages-unlimited' : 'messages-120']
     return (
       <div
         className="paywall-backdrop"
-        role="presentation"
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) onClose()
         }}
       >
-        <section
-          className="paywall-sheet"
+        <motion.section
+          className="message-upgrade"
           role="dialog"
           aria-modal="true"
           aria-labelledby="message-plans-title"
+          aria-describedby="message-plans-description"
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
         >
           <button
-            className="paywall-close"
+            className="message-upgrade-close"
             type="button"
             onClick={onClose}
             aria-label="Fechar oferta"
           >
             <X size={20} />
           </button>
-          <div className="paywall-scroll">
-            <div className="paywall-inner">
-              <h1 id="message-plans-title">
-                Continue conversando com {characterName}
-              </h1>
-              <p>
-                Você usou as mensagens incluídas. Escolha como quer continuar,
-                sem perder sua conversa.
-              </p>
-              <div className="paywall-plans">
-                {['messages-six', 'messages-unlimited'].map((id) => {
-                  const option = CATALOG[id]
-                  return (
-                    <a
-                      key={id}
-                      className="paywall-plan"
-                      href={checkoutHref(option, window.location.search)}
-                      onClickCapture={(event) => goToCheckout(event, option)}
-                    >
-                      <span className="paywall-plan-copy">
-                        <strong>{option.name}</strong>
-                        <small>
-                          {id === 'messages-six'
-                            ? '6 novas mensagens para esta conversa'
-                            : 'Conversa por texto sem limite de mensagens nesta personagem · sem renovação automática'}
-                        </small>
-                      </span>
-                      <span className="paywall-plan-price">
-                        {formatBRL(option.price)}
-                      </span>
-                    </a>
-                  )
-                })}
-              </div>
-              <p>
-                Pagamento único. O pacote ilimitado vale para esta conversa
-                durante a disponibilidade do serviço, sem cobrança por mensagem.
-              </p>
-            </div>
+          <div className="message-upgrade-icon">
+            <MessageCircle size={28} />
           </div>
-        </section>
+          <span className="message-upgrade-eyebrow">A conversa continua</span>
+          <h1 id="message-plans-title">
+            Ainda tem muito para conversar com <em>{characterName}</em>
+          </h1>
+          <p id="message-plans-description">
+            Retome de onde vocês pararam. Sua conversa e suas escolhas continuam
+            aqui.
+          </p>
+          <div
+            className="message-upgrade-options"
+            role="radiogroup"
+            aria-label="Escolha como continuar"
+          >
+            {[
+              ['premium', 'messages-120'],
+              ['luxury', 'messages-unlimited'],
+            ].map(([value, id]) => {
+              const option = CATALOG[id]
+              const unlimited = value === 'luxury'
+              return (
+                <label
+                  key={id}
+                  className={`message-upgrade-option${tier === value ? ' selected' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="message-package"
+                    value={value}
+                    checked={tier === value}
+                    onChange={() => setTier(value)}
+                  />
+                  <span className="message-upgrade-radio" aria-hidden="true">
+                    {tier === value && <Check size={13} />}
+                  </span>
+                  <span className="message-upgrade-option-copy">
+                    <strong>
+                      {unlimited ? (
+                        <>
+                          <Infinity size={19} /> Mensagens ilimitadas
+                        </>
+                      ) : (
+                        'Mais 120 mensagens'
+                      )}
+                    </strong>
+                    <small>
+                      {unlimited
+                        ? 'Converse sem contar mensagens'
+                        : 'Mais espaço para conhecer vocês dois'}
+                    </small>
+                  </span>
+                  <span className="message-upgrade-price">
+                    <strong>{formatBRL(option.price)}</strong>
+                    <small>pagamento único</small>
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+          <a
+            className="message-upgrade-cta"
+            href={checkoutHref(chosen, window.location.search)}
+            onClickCapture={(event) => goToCheckout(event, chosen)}
+          >
+            Continuar com{' '}
+            {tier === 'luxury' ? 'mensagens ilimitadas' : '120 mensagens'}{' '}
+            <ArrowRight size={19} />
+          </a>
+          <div className="message-upgrade-trust">
+            <ShieldCheck size={16} /> Sem assinatura ou renovação automática
+          </div>
+          <p className="message-upgrade-details">
+            Mensagens por texto nesta conversa. O acesso ilimitado vale durante
+            a disponibilidade do serviço.
+          </p>
+        </motion.section>
       </div>
     )
+  }
 
   return (
     <div

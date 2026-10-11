@@ -47,7 +47,7 @@ export function PlanPicker({ planId, onChange }) {
     <section className="checkout-plans" id="checkout-plans" aria-labelledby="plans-title">
       <h2 id="plans-title">Escolha seu plano</h2>
       <div role="radiogroup" aria-labelledby="plans-title">
-        {(PLANS[planId]?.purpose === 'messages' ? [PLANS['messages-six'],PLANS['messages-unlimited']] : [PREMIUM,LUXURY]).map((plan) => {
+        {(PLANS[planId]?.purpose === 'messages' ? [PLANS[planId === 'messages-six' ? 'messages-six' : 'messages-120'],PLANS['messages-unlimited']] : [PREMIUM,LUXURY]).map((plan) => {
           const luxury = plan.tier === 'luxury'
           const Icon = luxury ? Crown : Gem
           const selected = planId === plan.id
@@ -66,7 +66,7 @@ export function PlanPicker({ planId, onChange }) {
                 <strong>
                   <Icon size={16} aria-hidden="true" /> {plan.name}
                 </strong>
-                <small>{plan.purpose === 'messages' ? (plan.id === 'messages-six' ? '6 mensagens adicionais nesta conversa' : 'Texto ilimitado nesta conversa, sem renovação automática') : 'Personagem e conversa por texto'}</small>
+                <small>{plan.purpose === 'messages' ? (plan.id !== 'messages-unlimited' ? `${plan.messageCount || 6} mensagens adicionais nesta conversa` : 'Texto ilimitado nesta conversa, sem renovação automática') : 'Personagem e conversa por texto'}</small>
                 {luxury && <em>Só {LUXURY_EXTRA} a mais que o Premium</em>}
               </span>
               <span className="checkout-plan-price">
@@ -99,7 +99,7 @@ export function TrustBadges() {
 
 // O que o plano escolhido entrega. No Luxo mostra os bônus; no Premium, o que fica de fora e o convite para o Luxo.
 export function PlanIncludes({ plan, onUpgrade }) {
-  if (plan.purpose === 'messages') return <section className="checkout-includes"><h2>{plan.name}</h2><p>{plan.id === 'messages-six' ? 'Adiciona 6 mensagens à sua conversa atual. Não reinicia o histórico.' : 'Mensagens por texto ilimitadas nesta conversa durante a disponibilidade do serviço. Sem renovação automática.'}</p></section>
+  if (plan.purpose === 'messages') return <section className="checkout-includes"><h2>{plan.name}</h2><p>{plan.id !== 'messages-unlimited' ? `Adiciona ${plan.messageCount || 6} mensagens à sua conversa atual. Não reinicia o histórico.` : 'Mensagens por texto ilimitadas nesta conversa durante a disponibilidade do serviço. Sem renovação automática.'}</p></section>
   const luxury = plan.tier === 'luxury'
   return (
     <section className={`checkout-includes${luxury ? ' luxury' : ''}`} aria-labelledby="includes-title">
