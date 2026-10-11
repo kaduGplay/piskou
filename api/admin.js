@@ -1,3 +1,4 @@
+import { adminConversation } from './_lib/advisor.js'
 import { createHmac } from 'node:crypto'
 import { chatDatabase } from './_lib/chat.js'
 import { sameOrigin } from './_lib/analytics.js'
@@ -13,6 +14,17 @@ export default async function handler(req, res) {
   if (!process.env.ADMIN_PASSWORD || !process.env.CHAT_SESSION_SECRET)
     return res.status(503).json({ error: 'Painel não configurado' })
   try {
+    const action = req.query?.action || req.body?.action
+    if (['chats', 'advisor'].includes(action)) {
+      if (!authorized(req))
+        return res.status(401).json({ error: 'Entre para acessar o painel' })
+      if (req.method === 'POST' && !sameOrigin(req))
+        return res.status(403).json({ error: 'Origem inválida' })
+      const days = Number(req.query?.days || req.body?.days || 7)
+      if (![1, 7, 30, 90].includes(days))
+        return res.status(400).json({ error: 'Período inválido' })
+      return await adminConversation(req, res, days)
+    }
     if (req.method === 'POST') {
       if (!sameOrigin(req))
         return res.status(403).json({ error: 'Origem inválida' })

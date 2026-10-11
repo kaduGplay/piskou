@@ -184,3 +184,28 @@ PIX e pagamento aprovado são registrados no servidor, por sessão (não represe
 quantidade de transações nem receita). O histórico é retido por até 90 dias, com
 limpeza ao consultar o painel. Bloqueadores e armazenamento indisponível podem
 reduzir a precisão. Métricas indisponíveis nunca impedem o fluxo de chat ou checkout.
+
+### Conversas dos leads e analista do painel
+
+O painel `/admin` tem abas de métricas, conversas e análise com IA, protegidas pelo
+mesmo login. A lista de leads é paginada em 25 conversas e usa o período selecionado.
+Cada conversa mostra as configurações da personagem, os textos, pedidos de mídia,
+tentativas após o limite grátis e a trajetória no funil quando há vínculo de sessão.
+Os códigos são anônimos: o nome mostrado é o da personagem, não o do visitante.
+
+A migração `admin_chat_history_advisor` preserva textos em um arquivo privado por
+até 90 dias, independente da expiração de 2 dias da sessão de chat. Não duplica
+imagens em base64 no arquivo. Conversas ainda existentes são importadas; conversas
+já excluídas não podem ser recuperadas, e horários antigos não estavam disponíveis.
+A limpeza do arquivo ocorre na consulta administrativa. O diário de pedidos locais
+usa a sessão assinada do visitante, limita 30 eventos por conversa e deduplica IDs.
+
+O analista usa a Responses API com o modelo `OPENAI_MODEL` e `store: false`, somente
+quando o administrador envia uma pergunta. O servidor fornece todas as métricas do
+período selecionado e o contexto do produto. Uma conversa individual só é anexada
+quando selecionada no painel; e-mails, números e padrões de chaves são mascarados
+nos textos e no perfil enviados à OpenAI. As sugestões são apenas para leitura.
+O histórico do administrador fica no Supabase por até 90 dias; a interface mostra
+as últimas 100 análises e o modelo recebe as últimas 12. As respostas indicam o
+período e o horário do snapshot utilizado. Pedidos são serializados e têm ID para
+recuperar a mesma resposta em caso de repetição. Limite de 30 análises em 15 minutos.

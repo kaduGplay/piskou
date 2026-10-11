@@ -1,3 +1,4 @@
+import { UUID } from './_lib/analytics.js'
 import { generateChatImage } from './_lib/images.js'
 import { generateChatReply } from './_lib/model.js'
 import { CHAT_PREVIEW_LIMIT } from '../src/funnel/data.js'
@@ -72,6 +73,43 @@ export default async function handler(req, res) {
         remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2),
       })
     }
+    if (req.body?.action === 'log') {
+      const selection = chatSelection(req.body.selection)
+      const { eventId, kind, text, analyticsSession } = req.body
+      if (
+        !selection ||
+        !UUID.test(eventId || '') ||
+        !['limit', 'photo', 'video'].includes(kind) ||
+        typeof text !== 'string' ||
+        text.length > 500
+      )
+        return res.status(400).json({ error: 'Registro inválido' })
+      const ip = String(
+        req.headers['x-vercel-forwarded-for'] ||
+          req.headers['x-forwarded-for'] ||
+          req.socket?.remoteAddress ||
+          'unknown',
+      )
+        .split(',')[0]
+        .trim()
+      const allowed = await chatDatabase('rpc/piskou_analytics_limit', {
+        p_key: `chat-log:${chatSignature(ip)}`,
+        p_max: 120,
+      })
+      if (!allowed)
+        return res.status(429).json({ error: 'Limite de registros atingido' })
+      await chatDatabase('rpc/piskou_chat_journal', {
+        p_id: session,
+        p_selection: selection,
+        p_analytics: UUID.test(analyticsSession || '')
+          ? analyticsSession
+          : null,
+        p_event: eventId,
+        p_kind: kind,
+        p_text: text,
+      })
+      return res.status(200).json({ ok: true })
+    }
     const selection = chatSelection(req.body?.selection)
     const message =
       typeof req.body?.message === 'string' ? req.body.message.trim() : ''
@@ -115,12 +153,19 @@ export default async function handler(req, res) {
         messages: claim.messages,
       })
     }
-    let { reply, mediaRequest, imagePrompt } = await generateChatReply(
-      selection,
-      claim.messages,
-      message,
-      claim.turn,
-    )
+    let [{ reply, mediaRequest, imagePrompt }] = await Promise.all([
+      generateChatReply(selection, claim.messages, message, claim.turn),
+      chatDatabase('rpc/piskou_chat_journal', {
+        p_id: session,
+        p_selection: selection,
+        p_analytics: UUID.test(req.body?.analyticsSession || '')
+          ? req.body.analyticsSession
+          : null,
+        p_event: null,
+        p_kind: null,
+        p_text: null,
+      }).catch((error) => console.error('chat journal:', error.message)),
+    ])
     let media = null
     if (mediaRequest === 'image') {
       try {

@@ -1,3 +1,4 @@
+import { analyticsIdentity } from '../shared/analytics.js'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
@@ -215,11 +216,32 @@ export default function ChatPage() {
     setProfileOpen(false)
     setOfferOpen(true)
   }
+  const logChatAction = (kind, text, eventId = crypto.randomUUID()) => {
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'log',
+        selection: sel,
+        analyticsSession: analyticsIdentity().session,
+        eventId,
+        kind,
+        text,
+      }),
+      keepalive: true,
+    }).catch(() => {})
+  }
   const requestMedia = (kind, fromChat = false) => {
     if ((!fromChat && (loading || typing)) || mediaBusy.current) return
     setProfileOpen(false)
     mediaBusy.current = true
     const id = crypto.randomUUID()
+    if (!fromChat)
+      logChatAction(
+        kind,
+        kind === 'video' ? 'Me manda um vídeo?' : 'Me manda uma foto sua?',
+        id,
+      )
     setMediaRequests((previous) => [
       ...previous,
       { id, kind, fromChat, phase: fromChat ? 'reply' : 'typing' },
@@ -251,6 +273,7 @@ export default function ChatPage() {
     if (!content) return
     if (locked) {
       if (paywallReached) return openOffer()
+      logChatAction('limit', content)
       sendGuard.current = true
       setMessages((previous) => [...previous, { role: 'user', text: content }])
       setDraft('')
@@ -280,7 +303,11 @@ export default function ChatPage() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content, selection: sel }),
+        body: JSON.stringify({
+          message: content,
+          selection: sel,
+          analyticsSession: analyticsIdentity().session,
+        }),
         signal: controller.signal,
       })
       const data = await response.json()
