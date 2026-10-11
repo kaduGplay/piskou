@@ -1421,3 +1421,21 @@
 .creator-custom-occupation input { flex: 1; min-width: 0; padding: 12px; border: 1px solid #ffffff30; border-radius: 12px; background: #24212a; color: white; font-size: 16px; }
 .creator-custom-occupation button { padding: 10px 16px; border-radius: 12px; background: #e950a3; color: white; }
 .creator-custom-occupation button:disabled { opacity: .45; }
+
+.creator-chat-transition {
+  min-height: 100dvh; box-sizing: border-box; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 32px 24px;
+  background: radial-gradient(ellipse at 50% 35%, #352031 0%, #100e14 65%);
+  color: #faf5f9; text-align: center; font-family: Outfit, sans-serif;
+}
+.creator-transition-portrait { position: relative; margin-bottom: 28px; }
+.creator-transition-portrait img { width: 130px; height: 130px; object-fit: cover; object-position: top; border-radius: 50%; border: 3px solid #c66b9b; box-shadow: 0 0 48px #e7479a25; }
+.creator-transition-portrait span { position: absolute; bottom: 3px; right: 0; display: grid; place-items: center; width: 40px; height: 40px; color: #ff8cc6; background: #332132; border: 4px solid #1e1520; border-radius: 50%; }
+.creator-chat-transition h1 { max-width: 380px; font-size: clamp(25px, 6vw, 34px); line-height: 1.2; margin: 12px 0; }
+.creator-chat-transition > p:not(.creator-transition-eyebrow) { color: #c0b2c3; margin: 0; }
+.creator-transition-eyebrow { font-size: 11px; letter-spacing: .2em; color: #ee9cc8; margin: 0; }
+.creator-transition-progress { width: min(240px, 70vw); height: 4px; border-radius: 8px; background: #ffffff15; overflow: hidden; margin: 30px 0; }
+.creator-transition-progress i { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, #9d4b92, #ff71b5); transform-origin: left; animation: creator-chat-progress 2.5s linear both; }
+.creator-chat-transition small { color: #938298; font-size: 11px; }
+@keyframes creator-chat-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .creator-transition-progress i { animation: none; } }

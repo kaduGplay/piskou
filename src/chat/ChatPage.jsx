@@ -773,7 +773,7 @@ export default function ChatPage() {
             </button>
           </form>
           <p>
-            <Sparkles size={11} /> Personagem virtual · Conversa com IA · 18+
+            <Sparkles size={11} /> Personagem virtual · 18+
           </p>
         </footer>
       </main>

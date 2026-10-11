@@ -455,6 +455,7 @@ function SummaryRow({ title, value, image, color }) {
 
 function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onComplete }) {
   const [step, setStep] = useState(initialStep)
+  const [openingChat, setOpeningChat] = useState(false)
   const [revealDone, setRevealDone] = useState(false)
   const [paywallOpen, setPaywallOpen] = useState(initialPaywallOpen)
   const [summaryTab, setSummaryTab] = useState('appearance')
@@ -515,16 +516,42 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
       .catch(() => setPlayingVoice(null))
   }
 
+  useEffect(() => {
+    if (!openingChat) return
+    // Preload the chat while the transition is visible.
+    import('../chat/ChatPage.jsx').catch(() => {})
+    const timer = setTimeout(() => {
+      window.location.assign(`/chat${window.location.search}`)
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [openingChat])
+
   const canContinue = step !== 4 || (sel.name.trim().length >= 2 && Number(sel.age) >= 18)
 
   const openOffer = () => {
+    if (openingChat) return
+    audioRef.current?.pause()
     onComplete()
     try { sessionStorage.setItem(SELECTION_STORAGE_KEY, JSON.stringify(sel)) } catch { /* armazenamento opcional */ }
-    window.location.assign(`/chat${window.location.search}`)
+    setOpeningChat(true)
   }
 
   const mediaImage = (field, value) => getOptionMedia(sel.style, field, value)?.image
   const hairColor = HAIR_COLORS.find((c) => c.label === sel.hairColor)?.color
+
+  if (openingChat) return (
+    <main className="creator-chat-transition" role="status" aria-live="polite" aria-busy="true">
+      <div className="creator-transition-portrait">
+        <img src={getResultImage(sel).src} alt={sel.name || 'Sua garota'} />
+        <span><Heart size={20} fill="currentColor" /></span>
+      </div>
+      <p className="creator-transition-eyebrow">UMA NOVA CONEXÃO</p>
+      <h1>Seu encontro com {sel.name || 'sua garota'} está quase pronto</h1>
+      <p>Preparando um espaço só de vocês.</p>
+      <div className="creator-transition-progress" aria-hidden="true"><i /></div>
+      <small>Personagem virtual · 18+</small>
+    </main>
+  )
 
   return (
     <div className="creator-root">
@@ -562,7 +589,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
               <div className="creator-heading">
                 <p>PASSO 01 · ESTILO</p>
                 <h1>
-                  Crie sua <em>garota de IA</em> dos sonhos
+                  Crie sua <em>garota</em> dos sonhos
                 </h1>
                 <span>Escolha o visual da sua personagem adulta.</span>
               </div>
@@ -811,7 +838,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
             disabled={!canContinue || (step === 5 && !revealDone)}
             onClick={() => (step === 5 ? openOffer() : goToStep(step + 1))}
           >
-            {step === 5 ? 'DÊ VIDA À SUA IA' : step === 0 ? 'COMEÇAR' : 'PRÓXIMO'} <ArrowRight size={18} />
+            {step === 5 ? `DÊ VIDA À SUA ${sel.relationship.toUpperCase()}` : step === 0 ? 'COMEÇAR' : 'PRÓXIMO'} <ArrowRight size={18} />
           </button>
         </div>
       </footer>
