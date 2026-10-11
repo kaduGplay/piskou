@@ -902,7 +902,7 @@ export default function ChatPage() {
           }
         >
           <PaywallSheet
-            source={requiresPayment || (locked && !hasPaidAccess) ? undefined : locked ? 'messages' : 'chat'}
+            source={locked && !requiresPayment ? (hasPaidAccess ? 'messages' : 'trial') : 'chat'}
             sel={sel}
             onClose={() => setOfferOpen(false)}
           />

@@ -75,7 +75,8 @@ export default function PaywallSheet({ sel, onClose, source }) {
       source: source || 'creator',
     })
   }, [])
-  const fromChat = source === 'chat'
+  const trialEnded = source === 'trial'
+  const fromChat = source === 'chat' || trialEnded
   const characterName = sel.name || 'sua personagem'
   const [tier, setTier] = useState('premium')
   const [openFaq, setOpenFaq] = useState(null)
@@ -279,7 +280,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
             <img src={result.src} alt="Personagem escolhida" />
             <div className="paywall-hero-copy">
               <span>
-                {fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}
+                {trialEnded ? 'SUAS MENSAGENS GRÁTIS ACABARAM' : fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}
               </span>
               <h1 id="paywall-title">
                 {fromChat
@@ -287,7 +288,9 @@ export default function PaywallSheet({ sel, onClose, source }) {
                   : `Dê vida à ${characterName}`}
               </h1>
               <p>
-                {fromChat
+                {trialEnded
+                  ? 'Sua conversa está salva. Escolha um plano e retome de onde vocês pararam, com a personalidade que você escolheu.'
+                  : fromChat
                   ? `Gostou de conhecer ${characterName}? Escolha seu acesso para continuar a conversa do seu jeito, com a personalidade que você escolheu.`
                   : 'Escolha o acesso que combina com você.'}
               </p>
