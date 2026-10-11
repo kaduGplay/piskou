@@ -1,3 +1,4 @@
+import AdminTransactions from './AdminTransactions.jsx'
 import AdminConversations from './AdminConversations.jsx'
 import { useEffect, useState } from 'react'
 import {
@@ -245,6 +246,7 @@ export default function AdminPage() {
           {[
             ['metrics', 'Métricas'],
             ['chats', 'Conversas dos leads'],
+            ['transactions', 'Transações'],
             ['advisor', 'Análise com IA'],
           ].map(([key, label]) => (
             <button
@@ -286,6 +288,7 @@ export default function AdminPage() {
             </p>
           </section>
         )}
+        <AdminTransactions active={tab === 'transactions'} days={days} />
         <AdminConversations active={tab} days={days} />
         <div hidden={tab !== 'metrics'}>
           {!data ? (

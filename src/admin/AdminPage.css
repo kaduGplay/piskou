@@ -741,3 +741,16 @@ html.admin-open,
     padding: 10px;
   }
 }
+
+.admin-transactions-list { display: grid; gap: 16px; margin-top: 18px; }
+.admin-transaction { border: 1px solid #39303f; border-radius: 14px; padding: 18px; min-width: 0; overflow-wrap: anywhere; }
+.admin-transaction-heading { display: flex; justify-content: space-between; gap: 12px; }
+.admin-transaction p { margin: 10px 0; }
+.admin-transactions label { display: grid; gap: 8px; margin: 12px 0; }
+.admin-transactions select, .admin-transactions textarea { width: 100%; max-width: 100%; background: #211b29; color: #fff; border: 1px solid #51415c; border-radius: 8px; padding: 10px; font: inherit; font-size: 16px; }
+.admin-transactions textarea { min-height: 90px; resize: vertical; }
+.admin-transactions button { padding: 10px 14px; border: 1px solid #51415c; border-radius: 8px; background: #302039; color: #fff; cursor: pointer; }
+.admin-transactions button:disabled { opacity: .5; cursor: default; }
+.admin-transaction details { margin-top: 14px; }
+.admin-transaction-id { display: block; color: #bbaec4; margin-bottom: 14px; }
+.admin-transaction-pagination { display: flex; gap: 12px; align-items: center; margin-top: 20px; }

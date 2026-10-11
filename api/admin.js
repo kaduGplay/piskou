@@ -1,3 +1,4 @@
+import { adminTransactions } from './_lib/transactions.js'
 import { learningProfile } from './_lib/learning.js'
 import { adminConversation } from './_lib/advisor.js'
 import { createHmac } from 'node:crypto'
@@ -16,7 +17,7 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: 'Painel não configurado' })
   try {
     const action = req.query?.action || req.body?.action
-    if (['chats', 'advisor'].includes(action)) {
+    if (['chats', 'advisor', 'transactions'].includes(action)) {
       if (!authorized(req))
         return res.status(401).json({ error: 'Entre para acessar o painel' })
       if (req.method === 'POST' && !sameOrigin(req))
@@ -24,6 +25,8 @@ export default async function handler(req, res) {
       const days = Number(req.query?.days || req.body?.days || 7)
       if (![1, 7, 30, 90].includes(days))
         return res.status(400).json({ error: 'Período inválido' })
+      if (action === 'transactions')
+        return await adminTransactions(req, res, days)
       return await adminConversation(req, res, days)
     }
     if (req.method === 'POST') {

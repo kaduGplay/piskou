@@ -88,6 +88,10 @@ export default async function handler(req, res) {
     // Com confirmação por webhook, o pedido precisa ficar registrado para o aviso e a tela do PIX se encontrarem.
     if (charge.id) {
       await store.set(chargeKey(charge.id), {
+        customer: {
+          name: String(customer.name).trim(),
+          email: String(customer.email).trim(),
+        },
         chatId: session,
         selection,
         analyticsSession: UUID.test(analyticsSession || '')
