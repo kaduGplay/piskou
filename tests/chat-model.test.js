@@ -105,3 +105,35 @@ test('model refusal produces a safe response instead of a parsing error', async 
   assert.ok(result.reply)
   assert.equal(result.mediaRequest, null)
 })
+
+test('character photo requests explain subscription instead of claiming delivery', async () => {
+  const result = await generateChatReply(
+    DEFAULT_SELECTION,
+    [],
+    'Me manda uma foto sua',
+    0,
+    async () =>
+      new Response(
+        JSON.stringify({
+          output: [
+            {
+              content: [
+                {
+                  type: 'output_text',
+                  text: JSON.stringify({
+                    reply: 'Aqui está a minha foto',
+                    mediaRequest: 'photo',
+                    imagePrompt: '',
+                  }),
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    async () => {},
+  )
+  assert.equal(result.mediaRequest, 'photo')
+  assert.match(result.reply, /Premium/)
+  assert.ok(!result.reply.includes('Aqui está'))
+})

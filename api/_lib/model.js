@@ -1,3 +1,4 @@
+import { mediaOfferMessage } from '../../src/shared/mediaOffer.js'
 import { chatInstructions } from './chat.js'
 import { learningProfile, learnedInstructions } from './learning.js'
 
@@ -91,7 +92,9 @@ export async function generateChatReply(
         : null
       if (!reply) throw new Error('Empty model response')
       return {
-        reply,
+        reply: ['photo', 'video'].includes(mediaRequest)
+          ? mediaOfferMessage(selection, mediaRequest)
+          : reply,
         mediaRequest,
         imagePrompt: String(parsed.imagePrompt || '').slice(0, 1500),
       }

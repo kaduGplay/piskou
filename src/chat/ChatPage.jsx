@@ -1,3 +1,4 @@
+import { mediaOfferMessage } from '../shared/mediaOffer.js'
 import {
   readSavedSelection,
   readProgress,
@@ -34,33 +35,6 @@ import './ChatPage.css'
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
 const FREE_MESSAGES = CHAT_PREVIEW_LIMIT
 const UPGRADE_DELAY_MS = 2_000
-
-function mediaPreviewMessage(selection, kind) {
-  const media = kind === 'video' ? 'o vídeo' : 'a foto'
-  const affectionate =
-    selection.relationship !== 'Confidente' &&
-    selection.affection !== 'Discreta'
-  const address = affectionate ? ', amor' : ''
-  if (selection.speechStyle === 'Direta' || selection.humor === 'Mais séria')
-    return `Aqui está ${media}${address}.`
-  if (
-    selection.speechStyle === 'Bem-humorada' ||
-    selection.personality === 'Divertida'
-  )
-    return `Bateu a curiosidade${address}? Dá uma olhada aqui 💕`
-  if (
-    selection.socialEnergy === 'Reservada' ||
-    selection.personality === 'Reservada' ||
-    selection.speechStyle === 'Delicada'
-  )
-    return `Aqui está${address}. Espero que goste 💕`
-  if (
-    selection.socialEnergy === 'Extrovertida' ||
-    selection.personality === 'Confiante'
-  )
-    return `Olha só${address}! Quero saber o que achou 💕`
-  return `Aqui está para você${address} 💕`
-}
 
 function readSelection() {
   try {
@@ -691,56 +665,33 @@ export default function ChatPage() {
                     </div>
                   ) : (
                     <div className="chat-bubble">
-                      <p>{mediaPreviewMessage(sel, item.kind)}</p>
+                      <p>{mediaOfferMessage(sel, item.kind)}</p>
                       <span>{name}</span>
                     </div>
                   )}
                 </div>
               )}
-              {item.phase === 'reply' && (
-                <p className="chat-media-loading" role="status">
-                  Preparando…
-                </p>
-              )}
-              {item.phase === 'media' && (
+              {item.phase !== 'typing' && (
                 <div className="chat-locked-wrap">
-                  <div
-                    className={`chat-locked-media${item.kind === 'video' ? ' chat-locked-video' : ''}`}
-                  >
-                    <img
-                      src={image}
-                      alt={`Imagem ilustrativa ${item.kind === 'video' ? 'do vídeo' : 'da foto'} de ${name}`}
-                    />
-                    <div className="chat-locked-copy">
-                      <span className="chat-lock-circle">
-                        {item.kind === 'video' ? (
-                          <Play size={24} fill="currentColor" />
-                        ) : (
-                          <LockKeyhole size={24} />
-                        )}
-                      </span>
-                      <span className="chat-eyebrow">
+                  <div className="chat-continue-notice">
+                    <LockKeyhole size={19} />
+                    <div>
+                      <strong>
                         {item.kind === 'video'
-                          ? 'VÍDEO BLOQUEADO'
-                          : 'FOTO BLOQUEADA'}
-                      </span>
-                      <h2>Veja {name}</h2>
+                          ? 'Vídeos no plano Luxo'
+                          : 'Fotos nos planos Premium e Luxo'}
+                      </strong>
                       <p>
-                        {item.kind === 'video'
-                          ? 'Conheça os planos e os recursos de vídeo do Luxo.'
-                          : 'Conheça os planos e o recurso de fotos do Premium e Luxo.'}
+                        Conheça os recursos e escolha o plano que combina com
+                        você.
                       </p>
                       <button
                         type="button"
-                        className="chat-primary"
+                        className="chat-continue-button"
                         onClick={openOffer}
                       >
-                        <LockKeyhole size={16} /> Desbloquear · Ver planos
+                        Ver planos <ChevronRight size={14} />
                       </button>
-                      <small>
-                        Imagem ilustrativa da personagem · Nenhuma mídia nova
-                        gerada
-                      </small>
                     </div>
                   </div>
                 </div>
