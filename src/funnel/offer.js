@@ -76,7 +76,7 @@ export const PLAN_BENEFITS = {
   premium: [
     { icon: 'character', text: 'Personagem configurada por você' },
     { icon: 'personality', text: 'Personalidade e voz escolhidas' },
-    { icon: 'chat', text: '6 mensagens por texto incluídas; novas mensagens vendidas separadamente' },
+    { icon: 'chat', text: 'Conversa individual por texto' },
     { icon: 'photos', text: 'Pedidos de fotos da sua personagem' },
   ],
   luxury: [

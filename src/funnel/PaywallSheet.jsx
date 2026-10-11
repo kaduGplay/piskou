@@ -215,7 +215,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
               <p>
                 {fromChat
                   ? `Gostou de conhecer ${characterName}? Escolha seu acesso para continuar a conversa do seu jeito, com a personalidade que você escolheu.`
-                  : 'Os dois planos incluem 6 mensagens nesta conversa. Depois, continue com mais 6 por R$ 23,85 ou mensagens ilimitadas por R$ 48,85, em uma nova compra.'}
+                  : 'Escolha o acesso que combina com você.'}
               </p>
             </div>
           </div>

@@ -66,7 +66,7 @@ export function PlanPicker({ planId, onChange }) {
                 <strong>
                   <Icon size={16} aria-hidden="true" /> {plan.name}
                 </strong>
-                <small>{plan.purpose === 'messages' ? (plan.id === 'messages-six' ? '6 mensagens adicionais nesta conversa' : 'Texto ilimitado nesta conversa, sem renovação automática') : 'Inclui 6 mensagens; depois, continuação vendida separadamente'}</small>
+                <small>{plan.purpose === 'messages' ? (plan.id === 'messages-six' ? '6 mensagens adicionais nesta conversa' : 'Texto ilimitado nesta conversa, sem renovação automática') : 'Personagem e conversa por texto'}</small>
                 {luxury && <em>Só {LUXURY_EXTRA} a mais que o Premium</em>}
               </span>
               <span className="checkout-plan-price">
