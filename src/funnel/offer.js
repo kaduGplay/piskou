@@ -165,7 +165,7 @@ export const FAQ = [
   {
     question: 'Quando recebo acesso?',
     answer:
-      'Você pode experimentar o chat com 6 mensagens gratuitas. Após a confirmação do pagamento, recebe mais 6 mensagens. Depois, pode comprar mais 120 por R$ 23,85 ou mensagens ilimitadas nesta conversa por R$ 48,85.',
+      'Você pode experimentar o chat com 12 mensagens gratuitas. Após a confirmação do pagamento, recebe mais 6 mensagens. Depois, pode comprar mais 120 por R$ 23,85 ou mensagens ilimitadas nesta conversa por R$ 48,85.',
   },
   {
     question: 'Onde faço o pagamento?',
