@@ -30,7 +30,7 @@ const FREE_MESSAGES = CHAT_PREVIEW_LIMIT
 const UPGRADE_DELAY_MS = 2_000
 
 function mediaPreviewMessage(selection, kind) {
-  const media = kind === 'video' ? 'do vídeo' : 'da foto'
+  const media = kind === 'video' ? 'o vídeo' : 'a foto'
   const affectionate =
     selection.relationship !== 'Confidente' &&
     selection.affection !== 'Discreta'
