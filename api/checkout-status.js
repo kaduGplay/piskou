@@ -27,7 +27,14 @@ export default async function handler(req, res) {
     if (gateway.confirmsByWebhook) {
       status = saved.status ?? null
     } else {
-      status = await gateway.getChargeStatus(id)
+      const gatewayStatus = await gateway.getChargeStatus(id)
+      if (gatewayStatus)
+        await store.set(chargeKey(id), {
+          ...saved,
+          status: gatewayStatus,
+          gatewayStatus,
+        })
+      status = (await store.get(chargeKey(id)))?.status || null
     }
     if (status === 'paid') {
       if (saved.status !== 'paid')
@@ -40,7 +47,9 @@ export default async function handler(req, res) {
     if (!status)
       return res.status(404).json({ error: 'Cobrança não encontrada.' })
     res.setHeader('Cache-Control', 'no-store')
-    return res.status(200).json({ id, status })
+    return res
+      .status(200)
+      .json({ id, status, source: saved.statusSource || 'gateway' })
   } catch (error) {
     console.error('checkout-status: falha ao consultar cobrança', error.message)
     return res

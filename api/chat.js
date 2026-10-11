@@ -39,6 +39,10 @@ export default async function handler(req, res) {
         return res
           .status(200)
           .json({ messages: [], remaining: 0, requiresPayment: true })
+      if (req.query?.access === '1')
+        return res
+          .status(200)
+          .json(await chatDatabase('rpc/piskou_chat_access', { p_id: session }))
       const rows = await chatDatabase(
         `piskou_chat_sessions?id=eq.${session}&select=messages,selection,allowance,unlimited&expires_at=gt.${encodeURIComponent(new Date().toISOString())}`,
       )

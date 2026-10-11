@@ -200,7 +200,7 @@ export default function CheckoutPage() {
 
   // Enquanto o PIX (ou um cartão em análise) não é confirmado, consulta o status a cada 5 s, por até 1 hora.
   useEffect(() => {
-    if (!charge || (phase !== 'pix' && phase !== 'processing')) return
+    if (!charge) return
     let stopped = false
     const startedAt = Date.now()
     const check = async () => {
@@ -214,10 +214,17 @@ export default function CheckoutPage() {
         const { status } = await response.json()
         if (stopped) return
         if (status === 'paid') approve(charge)
-        else if (status === 'expired') setPhase('expired')
+        else if (status === 'expired') { approvedRef.current=false; setPhase('expired') }
         else if (status === 'failed') {
+          approvedRef.current=false;
           setPhase('form')
           setServerError('Pagamento não aprovado. Tente novamente ou use outra forma de pagamento.')
+        }
+        else if (status === 'pending' || status === 'processing') {
+          approvedRef.current=false;
+          const freshPix=charge.method==='pix' && charge.pix?.copyPaste && (!charge.pix.expiresAt || new Date(charge.pix.expiresAt).getTime()>Date.now())
+          if (freshPix) setPhase('pix')
+          else if (phase !== 'expired') setPhase('processing')
         }
       } catch {
         // tenta de novo no próximo intervalo
@@ -566,7 +573,7 @@ export default function CheckoutPage() {
           <section className="checkout-status" aria-live="polite">
             <LoaderCircle className="checkout-spin" size={36} />
             <h1>Processando pagamento</h1>
-            <p>Estamos confirmando com a operadora do cartão. Não feche esta página.</p>
+            <p>Estamos conferindo a confirmação do seu pagamento. Esta tela atualiza automaticamente.</p>
           </section>
         )}
 

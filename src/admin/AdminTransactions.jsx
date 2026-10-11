@@ -17,7 +17,8 @@ function Transaction({ item, onSaved }) {
     [note, setNote] = useState(''),
     [revision, setRevision] = useState(0),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState('')
+    [error, setError] = useState(''),
+    [notice, setNotice] = useState('')
   const guard = useRef(false)
   async function save(event) {
     event.preventDefault()
@@ -39,6 +40,11 @@ function Transaction({ item, onSaved }) {
       })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error)
+      setNotice(
+        d.legacy
+          ? 'Status salvo. Esta cobrança antiga não tem vínculo com uma conversa; o acesso não pode ser liberado automaticamente.'
+          : 'Status atualizado no checkout e no acesso.',
+      )
       setEditing(false)
       onSaved()
     } catch (e) {
@@ -75,6 +81,7 @@ function Transaction({ item, onSaved }) {
         <br />
         Pedido: {item.order_id || '—'}
       </small>
+      {notice && <p role="status">{notice}</p>}
       {item.note && <p>Observação: {item.note}</p>}
       {!editing ? (
         <button
@@ -115,8 +122,9 @@ function Transaction({ item, onSaved }) {
             disabled={busy}
           />
           <p>
-            A marcação é interna. Não altera o gateway nem libera ou remove
-            créditos do chat.
+            Marcar como pago confirma o checkout e libera o acesso. Outros
+            status retiram os créditos desta compra. Acompanhar o gateway remove
+            a alteração manual.
           </p>
           {error && (
             <p role="alert" className="admin-error">
@@ -210,8 +218,9 @@ export default function AdminTransactions({ active, days }) {
         período selecionado acima.
       </p>
       <p>
-        “Pago pelo gateway” é uma confirmação do pagamento. Marcações manuais
-        são apenas para sua conferência interna.
+        O status manual vale no checkout e no acesso ao chat. O status do
+        gateway continua visível para conferência. Alterar o status não
+        movimenta nem estorna dinheiro no banco.
       </p>
       {data && (
         <div className="admin-cards">
@@ -222,7 +231,7 @@ export default function AdminTransactions({ active, days }) {
               'Valor confirmado pelo gateway',
               formatBRL(Number(data.summary.gatewayPaidAmount) || 0),
             ],
-            ['Marcadas pagas, sem confirmação', data.summary.manualPaid],
+            ['Confirmadas manualmente', data.summary.manualPaid],
           ].map(([title, value]) => (
             <article key={title}>
               <span>{title}</span>

@@ -36,25 +36,25 @@ export default async function handler(req, res) {
     })
     return res.status(404).json({ error: 'Cobrança não encontrada.' })
   }
-  if (charge.status !== event.status) {
+  if ((charge.gatewayStatus || charge.status) !== event.status) {
     await store.set(key, {
       ...charge,
       status: event.status,
+      gatewayStatus: event.status,
       updatedAt: new Date().toISOString(),
     })
   }
-  if (event.status === 'paid' && charge.chatId) {
+  const effective = await store.get(key)
+  if (effective?.status === 'paid' && charge.chatId) {
     try {
       await chatDatabase('rpc/piskou_chat_grant', {
         p_id: charge.chatId,
         p_charge: event.id,
       })
     } catch {
-      return res
-        .status(503)
-        .json({
-          error: 'Pagamento confirmado; liberação pendente. Tente novamente.',
-        })
+      return res.status(503).json({
+        error: 'Pagamento confirmado; liberação pendente. Tente novamente.',
+      })
     }
   }
   return res.status(200).json({ received: true })

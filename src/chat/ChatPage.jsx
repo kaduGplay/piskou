@@ -185,6 +185,63 @@ export default function ChatPage() {
     }
   }, [sel])
   useEffect(() => {
+    if (loading || typing) return
+    let alive = true,
+      inFlight = false
+    const controller = new AbortController()
+    const check = async () => {
+      if (inFlight || document.visibilityState !== 'visible') return
+      inFlight = true
+      try {
+        const r = await fetch('/api/chat?access=1', {
+          signal: controller.signal,
+        })
+        if (!r.ok) return
+        const data = await r.json()
+        if (!alive) return
+        if (
+          data.remaining !== remaining ||
+          data.requiresPayment !== requiresPayment
+        ) {
+          if (
+            !data.requiresPayment &&
+            (data.remaining === null || data.remaining > 0) &&
+            (requiresPayment || paywallReached || remaining === 0)
+          ) {
+            const history = await fetch('/api/chat', {
+              signal: controller.signal,
+            })
+            if (history.ok && alive) {
+              const saved = await history.json()
+              if (alive) setMessages(saved.messages || [])
+            }
+            if (!alive) return
+            setPaywallReached(false)
+            setOfferOpen(false)
+          } else if (data.requiresPayment) {
+            setPaywallReached(false)
+            setOfferOpen(true)
+          }
+          if (alive) {
+            setRemaining(data.remaining)
+            setRequiresPayment(data.requiresPayment === true)
+          }
+        }
+      } catch {
+      } finally {
+        inFlight = false
+      }
+    }
+    const timer = setInterval(check, 5000)
+    document.addEventListener('visibilitychange', check)
+    return () => {
+      alive = false
+      controller.abort()
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', check)
+    }
+  }, [loading, typing, remaining, requiresPayment, paywallReached])
+  useEffect(() => {
     const list = messagesRef.current
     list?.scrollTo({
       top: list.scrollHeight,
