@@ -173,7 +173,7 @@ somente como HMAC temporário para limitar requisições. Os identificadores de 
 ficam no navegador. Uma sessão é renovada após 30 minutos sem atividade; múltiplas
 abas podem criar sessões diferentes. Eventos são deduplicados por sessão e etapa.
 Atividade visível envia heartbeat a cada 30 segundos; online significa atividade nos
-últimos 90 segundos. O painel consulta os agregados a cada 15 segundos.
+últimos 90 segundos. O painel consulta os agregados a cada 5 segundos enquanto autenticado e com a aba visível.
 
 Os filtros usam sessões iniciadas no período (horário de Brasília), incluindo o dia
 atual. As taxas entre etapas exigem a mesma sessão passando pela anterior primeiro.

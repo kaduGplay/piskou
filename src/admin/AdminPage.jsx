@@ -40,9 +40,11 @@ export default function AdminPage() {
   }, [])
   useEffect(() => {
     let alive = true,
+      inFlight = false,
       controller
     const load = async () => {
-      if (document.visibilityState === 'hidden') return
+      if (document.visibilityState === 'hidden' || inFlight) return
+      inFlight = true
       controller = new AbortController()
       try {
         const r = await fetch(`/api/admin?days=${days}`, {
@@ -61,10 +63,12 @@ export default function AdminPage() {
         setError('')
       } catch (e) {
         if (alive && e.name !== 'AbortError') setError(e.message)
+      } finally {
+        inFlight = false
       }
     }
     load()
-    const timer = setInterval(load, 15000)
+    const timer = logged === true ? setInterval(load, 5000) : null
     document.addEventListener('visibilitychange', load)
     return () => {
       alive = false
@@ -359,7 +363,7 @@ export default function AdminPage() {
                     <h2>
                       <span className="admin-live-dot" /> Acontecendo agora
                     </h2>
-                    <p>Atualização automática a cada 15 segundos.</p>
+                    <p>Atualização automática a cada 5 segundos.</p>
                   </div>
                 </div>
                 {data.live.length ? (
