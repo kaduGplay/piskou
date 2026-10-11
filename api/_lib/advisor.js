@@ -40,9 +40,8 @@ export async function advisorReply(
       }
     }),
     product: {
-      freeMessages: CHAT_PREVIEW_LIMIT,
-      paywall:
-        `Ao tentar continuar após ${CHAT_PREVIEW_LIMIT} mensagens gratuitas, após 2 segundos digitando; planos opcionais também nos pedidos de mídia.`,
+      includedPaidMessages: CHAT_PREVIEW_LIMIT,
+      paywall: `Planos antes do chat. Após pagamento confirmado, ${CHAT_PREVIEW_LIMIT} mensagens incluídas; após usá-las, oferta de mais 6 por R$ 23,85 ou texto ilimitado nesta conversa por R$ 48,85.`,
       plans: Object.values(PLANS),
     },
     selectedConversation: chat

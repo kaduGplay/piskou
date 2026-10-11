@@ -33,7 +33,6 @@ import { PLANS, SELECTION_STORAGE_KEY, formatBRL } from '../shared/checkout.js'
 import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
-const FREE_MESSAGES = CHAT_PREVIEW_LIMIT
 const UPGRADE_DELAY_MS = 2_000
 
 function readSelection() {
@@ -54,6 +53,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([])
   const [bannerVisible, setBannerVisible] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [remaining, setRemaining] = useState(0)
+  const [requiresPayment, setRequiresPayment] = useState(false)
   const [chatError, setChatError] = useState('')
   const [draft, setDraft] = useState(() =>
     String(readProgress().draft || '').slice(0, 500),
@@ -97,8 +98,7 @@ export default function ChatPage() {
   const profileTrigger = useRef(null)
   const mediaPending = mediaRequests.some((item) => item.phase !== 'media')
   const sent = messages.filter((m) => m.role === 'user').length
-  const locked =
-    messages.filter((m) => m.role === 'character').length >= FREE_MESSAGES
+  const locked = remaining !== null && remaining <= 0
 
   useEffect(() => {
     const timer = setTimeout(() => setBannerVisible(false), 4_000)
@@ -165,6 +165,10 @@ export default function ChatPage() {
         const data = await response.json()
         if (!response.ok) throw new Error(data.error)
         setMessages(data.messages || [])
+        setRemaining(data.remaining)
+        setRequiresPayment(data.requiresPayment === true)
+        setPaywallReached(false)
+        if (data.requiresPayment) setOfferOpen(true)
       })
       .catch((error) => {
         if (error.name !== 'AbortError')
@@ -214,7 +218,6 @@ export default function ChatPage() {
   }, [profileOpen])
 
   const openOffer = () => {
-    track(EVENTS.OFFER_VIEW, { visual_style: sel.style, source: 'chat' })
     if (document.activeElement?.matches('input, textarea'))
       document.activeElement.blur()
     setProfileOpen(false)
@@ -276,7 +279,7 @@ export default function ChatPage() {
     if (loading || typing || sendGuard.current || mediaBusy.current) return
     if (!content) return
     if (locked) {
-      if (paywallReached) return openOffer()
+      if (paywallReached || requiresPayment) return openOffer()
       logChatAction('limit', content)
       sendGuard.current = true
       setMessages((previous) => [...previous, { role: 'user', text: content }])
@@ -287,6 +290,7 @@ export default function ChatPage() {
         setTyping(false)
         sendGuard.current = false
         setPaywallReached(true)
+        setOfferOpen(true)
         track('ChatLimiteExibido')
       }, UPGRADE_DELAY_MS)
       return
@@ -318,6 +322,8 @@ export default function ChatPage() {
       if (!response.ok) {
         if (data.locked && data.messages) {
           setMessages(data.messages)
+          setRequiresPayment(data.requiresPayment === true)
+          setRemaining(0)
           setPaywallReached(true)
           openOffer()
           return
@@ -329,6 +335,7 @@ export default function ChatPage() {
         throw failure
       }
       setMessages(data.messages)
+      setRemaining(data.remaining)
       track('ChatRespostaRecebida')
       if (['photo', 'video'].includes(data.mediaRequest))
         requestMedia(data.mediaRequest, true)
@@ -358,6 +365,7 @@ export default function ChatPage() {
               recoveredUser?.text === content
             ) {
               setMessages(latest.messages)
+              setRemaining(latest.remaining)
               track('ChatRespostaRecebida')
               return
             }
@@ -552,7 +560,9 @@ export default function ChatPage() {
             <p>
               {messages.length
                 ? 'Toda conexão começa com uma conversa.'
-                : `Escolha uma sugestão ou escreva do seu jeito. Você tem ${FREE_MESSAGES} mensagens gratuitas para conhecer sua personagem.`}
+                : remaining === null
+                  ? 'Converse do seu jeito. Suas mensagens por texto são ilimitadas nesta conversa.'
+                  : `Escolha uma sugestão ou escreva do seu jeito. Você tem ${remaining} mensagens disponíveis nesta conversa.`}
             </p>
             {!messages.length && (
               <button
@@ -831,7 +841,7 @@ export default function ChatPage() {
           }
         >
           <PaywallSheet
-            source="chat"
+            source={requiresPayment ? undefined : locked ? 'messages' : 'chat'}
             sel={sel}
             onClose={() => setOfferOpen(false)}
           />

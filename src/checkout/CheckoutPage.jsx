@@ -121,6 +121,17 @@ export default function CheckoutPage() {
   const [now, setNow] = useState(Date.now())
   const [stickyVisible, setStickyVisible] = useState(false)
   const approvedRef = useRef(false)
+  useEffect(() => {
+    try {
+      const saved=JSON.parse(localStorage.getItem('piskou:pendingCharge') || 'null')
+      if(saved && saved.planId===planId && Date.now()-saved.createdAt<90*86400000) { setCharge(saved); setPhase('processing') }
+    } catch {}
+  }, [])
+  useEffect(() => {
+    if(phase !== 'paid') return
+    const timer=setTimeout(()=>window.location.assign('/chat'),1500)
+    return ()=>clearTimeout(timer)
+  }, [phase])
   const formRef = useRef(null)
   const submitRef = useRef(null)
   const luxury = plan.tier === 'luxury'
@@ -164,7 +175,7 @@ export default function CheckoutPage() {
   }
 
   const upgradeToLuxury = () => {
-    choosePlan('luxury-access')
+    choosePlan(plan.purpose === 'messages' ? 'messages-unlimited' : 'luxury-access')
     document.getElementById('checkout-plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
@@ -175,6 +186,7 @@ export default function CheckoutPage() {
 
   const approve = (paidCharge) => {
     setPhase('paid')
+    try { localStorage.removeItem('piskou:pendingCharge') } catch {}
     if (approvedRef.current) return
     approvedRef.current = true
     track(EVENTS.PAYMENT_APPROVED, {
@@ -284,6 +296,7 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
+          selection,
           analyticsSession: analyticsIdentity().session,
           method,
           customer,
@@ -299,6 +312,7 @@ export default function CheckoutPage() {
         return
       }
       setCharge(data)
+      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,method,createdAt:Date.now(),pix:data.pix})) } catch {} }
       if (data.status === 'paid') approve(data)
       else if (data.status === 'failed') {
         setServerError(
@@ -306,6 +320,8 @@ export default function CheckoutPage() {
             ? 'Não foi possível gerar o PIX agora. Tente novamente em instantes.'
             : 'Pagamento recusado. Confira os dados do cartão ou pague com PIX.',
         )
+      } else if (data.status === 'processing') {
+        setPhase('processing')
       } else if (method === 'pix') {
         setNow(Date.now())
         setPhase('pix')
@@ -589,8 +605,9 @@ export default function CheckoutPage() {
             <CircleCheck size={44} />
             <h1>Pagamento aprovado!</h1>
             <p>
-              Enviamos o acesso para <strong>{customer.email.trim()}</strong>. Se não encontrar, confira a caixa de spam.
+              Seu acesso foi confirmado. Estamos abrindo sua conversa.
             </p>
+            <a href="/chat">Ir para a conversa</a>
           </section>
         )}
       </main>

@@ -38,9 +38,9 @@ export default async function handler(req, res) {
       if (!session)
         return res
           .status(200)
-          .json({ messages: [], remaining: CHAT_PREVIEW_LIMIT })
+          .json({ messages: [], remaining: 0, requiresPayment: true })
       const rows = await chatDatabase(
-        `piskou_chat_sessions?id=eq.${session}&select=messages,selection&expires_at=gt.${encodeURIComponent(new Date().toISOString())}`,
+        `piskou_chat_sessions?id=eq.${session}&select=messages,selection,allowance,unlimited&expires_at=gt.${encodeURIComponent(new Date().toISOString())}`,
       )
       const row = rows[0]
       let requested
@@ -63,14 +63,18 @@ export default async function handler(req, res) {
           chatSession(req, res, true, true)
           return res
             .status(200)
-            .json({ messages: [], remaining: CHAT_PREVIEW_LIMIT })
+            .json({ messages: [], remaining: 0, requiresPayment: true })
         }
       }
       const messages = row?.messages || []
       return res.status(200).json({
         messages,
         selection: row?.selection,
-        remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2),
+        remaining: row?.unlimited
+          ? null
+          : Math.max(0, (row?.allowance || 0) - messages.length / 2),
+        unlimited: row?.unlimited === true,
+        requiresPayment: !row || (!row.allowance && !row.unlimited),
       })
     }
     if (req.body?.action === 'log') {
@@ -140,16 +144,16 @@ export default async function handler(req, res) {
           ? 409
           : 429
       return res.status(status).json({
-        error:
-          claim.error === 'limit'
-            ? 'Escolha um plano para continuar.'
-            : claim.error === 'selection_changed'
-              ? 'Esta conversa pertence a outra personagem. Volte à personagem original.'
-              : claim.error === 'busy'
-                ? 'A resposta anterior ainda está sendo preparada.'
-                : 'O limite de novas conversas nesta rede foi atingido. Sua conversa já iniciada continua disponível.',
+        error: ['limit', 'payment_required'].includes(claim.error)
+          ? 'Escolha um plano para continuar.'
+          : claim.error === 'selection_changed'
+            ? 'Esta conversa pertence a outra personagem. Volte à personagem original.'
+            : claim.error === 'busy'
+              ? 'A resposta anterior ainda está sendo preparada.'
+              : 'O limite de novas conversas nesta rede foi atingido. Sua conversa já iniciada continua disponível.',
         code: claim.error,
-        locked: claim.error === 'limit',
+        locked: ['limit', 'payment_required'].includes(claim.error),
+        requiresPayment: claim.error === 'payment_required',
         messages: claim.messages,
       })
     }
@@ -188,7 +192,10 @@ export default async function handler(req, res) {
     return res.status(200).json({
       messages,
       mediaRequest,
-      remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2),
+      remaining: claim.unlimited
+        ? null
+        : Math.max(0, claim.allowance - messages.length / 2),
+      unlimited: claim.unlimited === true,
     })
   } catch (error) {
     if (session && lease)

@@ -10,8 +10,21 @@ import {
   X,
 } from 'lucide-react'
 import { EVENTS, getResultImage, track } from './data.js'
-import { BENEFIT_ICONS, BONUS_ICONS, FAQ, PLAN_BENEFITS, PLAN_BONUSES, TESTIMONIALS, TRUST } from './offer.js'
-import { CAMPAIGN_PARAMS, PLANS as CATALOG, SELECTION_STORAGE_KEY, formatBRL } from '../shared/checkout.js'
+import {
+  BENEFIT_ICONS,
+  BONUS_ICONS,
+  FAQ,
+  PLAN_BENEFITS,
+  PLAN_BONUSES,
+  TESTIMONIALS,
+  TRUST,
+} from './offer.js'
+import {
+  CAMPAIGN_PARAMS,
+  PLANS as CATALOG,
+  SELECTION_STORAGE_KEY,
+  formatBRL,
+} from '../shared/checkout.js'
 import './PaywallSheet.css'
 
 const PLANS = {
@@ -38,7 +51,10 @@ function trackThenNavigate(event, trackFn, location = window.location) {
   } catch {
     // segue para o checkout mesmo se o rastreio falhar
   }
-  setTimeout(() => location.assign(href), typeof window.fbq === 'function' ? 300 : 0)
+  setTimeout(
+    () => location.assign(href),
+    typeof window.fbq === 'function' ? 300 : 0,
+  )
 }
 
 const Laurel = ({ right = false }) => (
@@ -50,6 +66,12 @@ const Laurel = ({ right = false }) => (
 )
 
 export default function PaywallSheet({ sel, onClose, source }) {
+  useEffect(() => {
+    track(EVENTS.OFFER_VIEW, {
+      visual_style: sel.style,
+      source: source || 'creator',
+    })
+  }, [])
   const fromChat = source === 'chat'
   const characterName = sel.name || 'sua personagem'
   const [tier, setTier] = useState('premium')
@@ -77,8 +99,80 @@ export default function PaywallSheet({ sel, onClose, source }) {
       } catch {
         // sem storage o checkout só não mostra a personagem no resumo
       }
-      track(EVENTS.CHECKOUT_CLICK, { plan: chosen.id, value: chosen.price, currency: 'BRL', visual_style: sel.style })
+      track(EVENTS.CHECKOUT_CLICK, {
+        plan: chosen.id,
+        value: chosen.price,
+        currency: 'BRL',
+        visual_style: sel.style,
+      })
     })
+
+  if (source === 'messages')
+    return (
+      <div
+        className="paywall-backdrop"
+        role="presentation"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) onClose()
+        }}
+      >
+        <section
+          className="paywall-sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="message-plans-title"
+        >
+          <button
+            className="paywall-close"
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar oferta"
+          >
+            <X size={20} />
+          </button>
+          <div className="paywall-scroll">
+            <div className="paywall-inner">
+              <h1 id="message-plans-title">
+                Continue conversando com {characterName}
+              </h1>
+              <p>
+                Você usou as mensagens incluídas. Escolha como quer continuar,
+                sem perder sua conversa.
+              </p>
+              <div className="paywall-plans">
+                {['messages-six', 'messages-unlimited'].map((id) => {
+                  const option = CATALOG[id]
+                  return (
+                    <a
+                      key={id}
+                      className="paywall-plan"
+                      href={checkoutHref(option, window.location.search)}
+                      onClickCapture={(event) => goToCheckout(event, option)}
+                    >
+                      <span className="paywall-plan-copy">
+                        <strong>{option.name}</strong>
+                        <small>
+                          {id === 'messages-six'
+                            ? '6 novas mensagens para esta conversa'
+                            : 'Conversa por texto sem limite de mensagens nesta personagem · sem renovação automática'}
+                        </small>
+                      </span>
+                      <span className="paywall-plan-price">
+                        {formatBRL(option.price)}
+                      </span>
+                    </a>
+                  )
+                })}
+              </div>
+              <p>
+                Pagamento único. O pacote ilimitado vale para esta conversa
+                durante a disponibilidade do serviço, sem cobrança por mensagem.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    )
 
   return (
     <div
@@ -98,21 +192,40 @@ export default function PaywallSheet({ sel, onClose, source }) {
         exit={{ y: '100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 35 }}
       >
-        <button className="paywall-close" type="button" onClick={onClose} aria-label="Fechar oferta">
+        <button
+          className="paywall-close"
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar oferta"
+        >
           <X size={20} />
         </button>
         <div className="paywall-scroll">
           <div className="paywall-hero">
             <img src={result.src} alt="Personagem escolhida" />
             <div className="paywall-hero-copy">
-              <span>{fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}</span>
-              <h1 id="paywall-title">{fromChat ? `Continue conversando com ${characterName}` : `Dê vida à ${characterName}`}</h1>
-              <p>{fromChat ? `Gostou de conhecer ${characterName}? Escolha seu acesso para continuar a conversa do seu jeito, com a personalidade que você escolheu.` : 'Escolha o acesso que combina com você.'}</p>
+              <span>
+                {fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}
+              </span>
+              <h1 id="paywall-title">
+                {fromChat
+                  ? `Continue conversando com ${characterName}`
+                  : `Dê vida à ${characterName}`}
+              </h1>
+              <p>
+                {fromChat
+                  ? `Gostou de conhecer ${characterName}? Escolha seu acesso para continuar a conversa do seu jeito, com a personalidade que você escolheu.`
+                  : 'Os dois planos incluem 6 mensagens nesta conversa. Depois, continue com mais 6 por R$ 23,85 ou mensagens ilimitadas por R$ 48,85, em uma nova compra.'}
+              </p>
             </div>
           </div>
 
           <div className="paywall-inner">
-            <div className="paywall-tier-tabs" role="tablist" aria-label="Categoria do plano">
+            <div
+              className="paywall-tier-tabs"
+              role="tablist"
+              aria-label="Categoria do plano"
+            >
               <button
                 type="button"
                 role="tab"
@@ -133,7 +246,11 @@ export default function PaywallSheet({ sel, onClose, source }) {
               </button>
             </div>
 
-            <div className="paywall-plans" role="group" aria-label="Escolha seu plano">
+            <div
+              className="paywall-plans"
+              role="group"
+              aria-label="Escolha seu plano"
+            >
               {Object.entries(PLANS).map(([key, [option]]) => (
                 <button
                   key={option.id}
@@ -144,11 +261,21 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 >
                   <span className="paywall-plan-copy">
                     <span>
-                      {key === 'luxury' ? <Crown size={17} aria-hidden="true" /> : <Gem size={17} aria-hidden="true" />}
+                      {key === 'luxury' ? (
+                        <Crown size={17} aria-hidden="true" />
+                      ) : (
+                        <Gem size={17} aria-hidden="true" />
+                      )}
                       {option.name}
                     </span>
                     <small>
-                      {fromChat ? (option.bonusCount ? `Conversa + ${option.bonusCount} bônus incluídos` : `Continue sua conversa com ${characterName}`) : (option.bonusCount ? `${option.bonusCount} bônus incluídos` : 'Personagem e conversa por texto')}
+                      {fromChat
+                        ? option.bonusCount
+                          ? `Conversa + ${option.bonusCount} bônus incluídos`
+                          : `Continue sua conversa com ${characterName}`
+                        : option.bonusCount
+                          ? `${option.bonusCount} bônus incluídos`
+                          : 'Personagem e conversa por texto'}
                     </small>
                   </span>
                   <span className="paywall-plan-price">
@@ -162,7 +289,8 @@ export default function PaywallSheet({ sel, onClose, source }) {
             <div className="paywall-one-payment">
               <CreditCard size={17} aria-hidden="true" />
               <span>
-                <strong>Sem assinatura. Sem mensalidade.</strong> Você paga uma única vez.
+                <strong>Sem assinatura. Sem mensalidade.</strong> Você paga uma
+                única vez.
               </span>
             </div>
 
@@ -179,14 +307,22 @@ export default function PaywallSheet({ sel, onClose, source }) {
               })}
               <ul
                 className={`paywall-bonus-summary${isLuxury ? '' : ' excluded'}`}
-                aria-label={isLuxury ? 'Bônus incluídos no Luxo' : 'Bônus não incluídos no Premium'}
+                aria-label={
+                  isLuxury
+                    ? 'Bônus incluídos no Luxo'
+                    : 'Bônus não incluídos no Premium'
+                }
               >
                 {bonuses.map((bonus) => {
                   const Icon = isLuxury ? BONUS_ICONS[bonus.id] : X
                   return (
                     <li key={bonus.id}>
                       <Icon size={18} aria-hidden="true" />
-                      {isLuxury ? <span>{bonus.title}</span> : <s>{bonus.title}</s>}
+                      {isLuxury ? (
+                        <span>{bonus.title}</span>
+                      ) : (
+                        <s>{bonus.title}</s>
+                      )}
                     </li>
                   )
                 })}
@@ -198,10 +334,14 @@ export default function PaywallSheet({ sel, onClose, source }) {
               className={`paywall-cta${isLuxury ? ' luxury' : ''}`}
               onClickCapture={(event) => goToCheckout(event, plan)}
             >
-              {fromChat ? 'CONTINUAR A CONVERSA' : `LIBERAR ${plan.name.toUpperCase()}`} · {formatBRL(plan.price)} <ArrowRight size={17} />
+              {fromChat
+                ? 'CONTINUAR A CONVERSA'
+                : `LIBERAR ${plan.name.toUpperCase()}`}{' '}
+              · {formatBRL(plan.price)} <ArrowRight size={17} />
             </a>
             <p className="paywall-checkout-note">
-              <ShieldCheck size={14} aria-hidden="true" /> Pagamento seguro via PIX · Sem renovação automática
+              <ShieldCheck size={14} aria-hidden="true" /> Pagamento seguro via
+              PIX · Sem renovação automática
             </p>
 
             <div className="paywall-trust">
@@ -217,13 +357,25 @@ export default function PaywallSheet({ sel, onClose, source }) {
               <div className="paywall-bonus-heading">
                 <span>INCLUÍDOS NO LUXO</span>
                 <h2 id="bonus-title">8 Bonus incluso</h2>
-                <p>{isLuxury ? 'Todos incluídos no pagamento único do Luxo.' : 'Exclusivos do Luxo. Não incluídos no Premium.'}</p>
+                <p>
+                  {isLuxury
+                    ? 'Todos incluídos no pagamento único do Luxo.'
+                    : 'Exclusivos do Luxo. Não incluídos no Premium.'}
+                </p>
               </div>
               {/* Dois grupos iguais para o letreiro rolar sem emenda; o segundo é só visual. */}
-              <div className="paywall-bonus-window" aria-label="Bônus exclusivos do Luxo">
+              <div
+                className="paywall-bonus-window"
+                aria-label="Bônus exclusivos do Luxo"
+              >
                 <div className="paywall-bonus-rail">
                   {[0, 1].map((group) => (
-                    <div key={group} className="paywall-bonus-group" aria-hidden={group === 1} inert={group === 1}>
+                    <div
+                      key={group}
+                      className="paywall-bonus-group"
+                      aria-hidden={group === 1}
+                      inert={group === 1}
+                    >
                       {bonuses.map((bonus) => (
                         <article key={bonus.id}>
                           <img
@@ -239,7 +391,11 @@ export default function PaywallSheet({ sel, onClose, source }) {
                   ))}
                 </div>
               </div>
-              <a href={luxuryHref} className="paywall-bonus-cta" onClickCapture={(event) => goToCheckout(event, luxuryPlan)}>
+              <a
+                href={luxuryHref}
+                className="paywall-bonus-cta"
+                onClickCapture={(event) => goToCheckout(event, luxuryPlan)}
+              >
                 QUERO O LUXO COM OS 8 BÔNUS <ArrowRight size={16} />
               </a>
             </section>
@@ -247,13 +403,25 @@ export default function PaywallSheet({ sel, onClose, source }) {
             {TESTIMONIALS.length > 0 && (
               <section className="paywall-proof" aria-labelledby="proof-title">
                 <h2 id="proof-title">Depoimentos</h2>
-                <div className="paywall-proof-window" aria-label="Depoimentos de clientes">
+                <div
+                  className="paywall-proof-window"
+                  aria-label="Depoimentos de clientes"
+                >
                   <div className="paywall-proof-track">
                     {[0, 1].map((group) => (
-                      <div key={group} className="paywall-proof-group" aria-hidden={group === 1} inert={group === 1}>
+                      <div
+                        key={group}
+                        className="paywall-proof-group"
+                        aria-hidden={group === 1}
+                        inert={group === 1}
+                      >
                         {TESTIMONIALS.map((item) => (
                           <article key={item.id}>
-                            <img src={item.image} alt={`Depoimento ${item.id} anonimizado: ${item.quote}`} loading="lazy" />
+                            <img
+                              src={item.image}
+                              alt={`Depoimento ${item.id} anonimizado: ${item.quote}`}
+                              loading="lazy"
+                            />
                           </article>
                         ))}
                       </div>

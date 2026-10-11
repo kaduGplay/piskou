@@ -536,7 +536,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
     audioRef.current?.pause()
     onComplete()
     try { sessionStorage.setItem(SELECTION_STORAGE_KEY, JSON.stringify(sel)) } catch { /* armazenamento opcional */ }
-    setOpeningChat(true)
+    setPaywallOpen(true)
   }
 
   const mediaImage = (field, value) => getOptionMedia(sel.style, field, value)?.image

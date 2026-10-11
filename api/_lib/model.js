@@ -49,7 +49,7 @@ export async function generateChatReply(
           instructions:
             chatInstructions(selection, turn) + '\n' + styleInstructions,
           input: [
-            ...history.map((m) => ({
+            ...history.slice(-24).map((m) => ({
               role: m.role === 'character' ? 'assistant' : 'user',
               content: m.text,
             })),

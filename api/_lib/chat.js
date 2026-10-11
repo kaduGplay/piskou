@@ -41,11 +41,17 @@ export function chatSignature(value) {
     .digest('hex')
 }
 export function chatSession(req, res, create = false, reset = false) {
-  const cookie = String(req.headers.cookie || '')
-    .split(';')
-    .map((x) => x.trim())
-    .find((x) => x.startsWith('piskou_chat='))
-    ?.slice(12)
+  const cookie =
+    String(req.headers.cookie || '')
+      .split(';')
+      .map((x) => x.trim())
+      .find((x) => x.startsWith('piskou_access='))
+      ?.slice(14) ||
+    String(req.headers.cookie || '')
+      .split(';')
+      .map((x) => x.trim())
+      .find((x) => x.startsWith('piskou_chat='))
+      ?.slice(12)
   if (cookie && !reset) {
     const [id, sig] = cookie.split('.')
     if (/^[a-f0-9-]{36}$/.test(id || '') && /^[a-f0-9]{64}$/.test(sig || '')) {
@@ -53,7 +59,7 @@ export function chatSession(req, res, create = false, reset = false) {
       if (timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
         res.setHeader(
           'Set-Cookie',
-          `piskou_chat=${id}.${sig}; Path=/api/chat; HttpOnly; SameSite=Lax; Max-Age=7776000${process.env.VERCEL ? '; Secure' : ''}`,
+          `piskou_access=${id}.${sig}; Path=/api; HttpOnly; SameSite=Lax; Max-Age=7776000${process.env.VERCEL ? '; Secure' : ''}`,
         )
         return id
       }
@@ -63,7 +69,7 @@ export function chatSession(req, res, create = false, reset = false) {
   const id = randomUUID()
   res.setHeader(
     'Set-Cookie',
-    `piskou_chat=${id}.${chatSignature(id)}; Path=/api/chat; HttpOnly; SameSite=Lax; Max-Age=7776000${process.env.VERCEL ? '; Secure' : ''}`,
+    `piskou_access=${id}.${chatSignature(id)}; Path=/api; HttpOnly; SameSite=Lax; Max-Age=7776000${process.env.VERCEL ? '; Secure' : ''}`,
   )
   return id
 }
@@ -134,5 +140,5 @@ Sua saída segue o esquema JSON: reply é a resposta natural; mediaRequest é no
 Diferencie rigorosamente o assunto: photo e video SOMENTE quando o visitante pede mídia DA PRÓPRIA PERSONAGEM ("foto sua", "quero te ver"). Nesses casos explique com naturalidade que fotos exigem Premium ou Luxo e vídeos exigem Luxo. A interface mostrará um botão de ver planos. Não diga que enviou uma mídia, não prometa conteúdo inexistente e não ofereça nudez.
 image é para OUTROS assuntos: desenhos, pinturas, paisagens, animais, objetos, receitas, etc. A imagem será gerada e exibida sem bloqueio. Escreva imagePrompt com o assunto específico e detalhes do contexto, nunca use o avatar como substituto. Se você ofereceu mostrar um desenho e a pessoa respondeu "sim", isso é image, NÃO photo. Considere a última oferta e o histórico para entender confirmações curtas. Só gere quando houver pedido ou aceitação clara; não em saudações, comentários ou recusas. Para image, reply pode ser "Aqui está! O que achou?" adaptado à personalidade. Não chame imagens de prévias. Não ofereça enviar vídeos de outros assuntos, pois não há geração de vídeo.
 Pedidos sexuais explícitos, nudez ou conteúdo proibido devem ser redirecionados sem mídia (none e imagePrompt vazio). Não gere imagens íntimas, de menores ou de pessoas reais. Nunca esconda ser uma personagem virtual quando perguntado.
-Esta é a resposta ${turn + 1} de ${CHAT_PREVIEW_LIMIT} da prévia. Converse normalmente, inclusive na última resposta gratuita. Não encerre com convite para continuar, não mencione limite, planos, pagamento ou foto bloqueada, exceto para explicar o acesso a fotos/vídeos quando solicitado e não fale da personagem na terceira pessoa. A interface cuida da oferta separadamente.`
+Esta é a resposta ${turn + 1} da conversa paga. Converse normalmente, inclusive na última resposta gratuita. Não encerre com convite para continuar, não mencione limite, planos, pagamento ou foto bloqueada, exceto para explicar o acesso a fotos/vídeos quando solicitado e não fale da personagem na terceira pessoa. A interface cuida da oferta separadamente.`
 }

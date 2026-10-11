@@ -47,7 +47,7 @@ export function PlanPicker({ planId, onChange }) {
     <section className="checkout-plans" id="checkout-plans" aria-labelledby="plans-title">
       <h2 id="plans-title">Escolha seu plano</h2>
       <div role="radiogroup" aria-labelledby="plans-title">
-        {[PREMIUM, LUXURY].map((plan) => {
+        {(PLANS[planId]?.purpose === 'messages' ? [PLANS['messages-six'],PLANS['messages-unlimited']] : [PREMIUM,LUXURY]).map((plan) => {
           const luxury = plan.tier === 'luxury'
           const Icon = luxury ? Crown : Gem
           const selected = planId === plan.id
@@ -66,7 +66,7 @@ export function PlanPicker({ planId, onChange }) {
                 <strong>
                   <Icon size={16} aria-hidden="true" /> {plan.name}
                 </strong>
-                <small>{luxury ? `Tudo do Premium + ${plan.bonusCount} bônus` : 'Personagem e conversa por texto'}</small>
+                <small>{plan.purpose === 'messages' ? (plan.id === 'messages-six' ? '6 mensagens adicionais nesta conversa' : 'Texto ilimitado nesta conversa, sem renovação automática') : 'Inclui 6 mensagens; depois, continuação vendida separadamente'}</small>
                 {luxury && <em>Só {LUXURY_EXTRA} a mais que o Premium</em>}
               </span>
               <span className="checkout-plan-price">
@@ -88,7 +88,7 @@ export function TrustBadges() {
         <BadgeCheck size={16} aria-hidden="true" /> Pagamento único, sem mensalidade
       </li>
       <li>
-        <Mail size={16} aria-hidden="true" /> Acesso enviado por e-mail
+        <Mail size={16} aria-hidden="true" /> Acesso liberado após confirmação
       </li>
       <li>
         <ShieldCheck size={16} aria-hidden="true" /> {TRUST.subtitle}
@@ -99,6 +99,7 @@ export function TrustBadges() {
 
 // O que o plano escolhido entrega. No Luxo mostra os bônus; no Premium, o que fica de fora e o convite para o Luxo.
 export function PlanIncludes({ plan, onUpgrade }) {
+  if (plan.purpose === 'messages') return <section className="checkout-includes"><h2>{plan.name}</h2><p>{plan.id === 'messages-six' ? 'Adiciona 6 mensagens à sua conversa atual. Não reinicia o histórico.' : 'Mensagens por texto ilimitadas nesta conversa durante a disponibilidade do serviço. Sem renovação automática.'}</p></section>
   const luxury = plan.tier === 'luxury'
   return (
     <section className={`checkout-includes${luxury ? ' luxury' : ''}`} aria-labelledby="includes-title">
@@ -169,7 +170,7 @@ export function PlanIncludes({ plan, onUpgrade }) {
 export function HowItWorks({ name }) {
   const steps = [
     { icon: QrCode, title: 'Pague com PIX', text: 'A confirmação é na hora, direto no app do seu banco.' },
-    { icon: Mail, title: 'Receba o acesso', text: 'O login chega no e-mail que você informar aqui.' },
+    { icon: Mail, title: 'Aguarde a confirmação', text: 'Assim que o pagamento for confirmado, sua conversa abre automaticamente.' },
     {
       icon: MessageCircle,
       title: `Converse com ${name || 'sua personagem'}`,
@@ -281,7 +282,7 @@ export function OrderSummary({ plan, selection }) {
           <PlanIcon size={14} aria-hidden="true" /> Piskou {plan.name}
         </span>
         <strong>{selection?.name ? `${selection.name}, ${selection.age} anos` : 'Sua personagem'}</strong>
-        <small>{plan.bonusCount ? `${plan.bonusCount} bônus incluídos` : 'Personagem e conversa por texto'}</small>
+        <small>{plan.purpose === 'messages' ? plan.name : '6 mensagens incluídas · continuação vendida separadamente'}</small>
       </div>
       <div className="checkout-summary-price">
         <strong>{formatBRL(plan.price)}</strong>

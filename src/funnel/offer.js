@@ -76,7 +76,7 @@ export const PLAN_BENEFITS = {
   premium: [
     { icon: 'character', text: 'Personagem configurada por você' },
     { icon: 'personality', text: 'Personalidade e voz escolhidas' },
-    { icon: 'chat', text: 'Conversa individual por texto' },
+    { icon: 'chat', text: '6 mensagens por texto incluídas; novas mensagens vendidas separadamente' },
     { icon: 'photos', text: 'Pedidos de fotos da sua personagem' },
   ],
   luxury: [
@@ -165,7 +165,7 @@ export const FAQ = [
   {
     question: 'Quando recebo acesso?',
     answer:
-      'Após a confirmação do pagamento, o acesso é enviado ao e-mail informado na compra. Confira seu e-mail e a pasta de spam.',
+      'Após a confirmação do pagamento, você entra no chat com 6 mensagens incluídas. Depois, pode comprar mais 6 por R$ 23,85 ou mensagens ilimitadas nesta conversa por R$ 48,85.',
   },
   {
     question: 'Onde faço o pagamento?',

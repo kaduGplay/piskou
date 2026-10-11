@@ -2,7 +2,7 @@
 // As funções da Vercel não compartilham memória: em produção usamos Supabase ou Redis.
 // Fora da Vercel (npm run dev), usa um Map em memória: o servidor local é um processo só.
 
-const TTL_SECONDS = 2 * 24 * 60 * 60
+const TTL_SECONDS = 90 * 24 * 60 * 60
 const memory = (globalThis.__piskouMemoryStore ??= new Map())
 
 function supabaseConfig() {

@@ -2,8 +2,36 @@
 // e o servidor cobra estes valores, ignorando qualquer preço que venha do navegador.
 
 export const PLANS = {
-  'premium-access': { id: 'premium-access', tier: 'premium', name: 'Premium', price: 23.85, bonusCount: 0 },
-  'luxury-access': { id: 'luxury-access', tier: 'luxury', name: 'Luxo', price: 48.85, bonusCount: 8 },
+  'messages-six': {
+    id: 'messages-six',
+    tier: 'premium',
+    name: 'Mais 6 mensagens',
+    price: 23.85,
+    bonusCount: 0,
+    purpose: 'messages',
+  },
+  'messages-unlimited': {
+    id: 'messages-unlimited',
+    tier: 'luxury',
+    name: 'Mensagens ilimitadas',
+    price: 48.85,
+    bonusCount: 0,
+    purpose: 'messages',
+  },
+  'premium-access': {
+    id: 'premium-access',
+    tier: 'premium',
+    name: 'Premium',
+    price: 23.85,
+    bonusCount: 0,
+  },
+  'luxury-access': {
+    id: 'luxury-access',
+    tier: 'luxury',
+    name: 'Luxo',
+    price: 48.85,
+    bonusCount: 8,
+  },
 }
 
 // sessionStorage: o paywall guarda a personagem aqui e o checkout lê para mostrar no resumo.
@@ -13,20 +41,33 @@ export const formatBRL = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`
 export const toCents = (value) => Math.round(value * 100)
 
 // Parâmetros de campanha levados do anúncio até o pedido (atribuição de venda).
-export const CAMPAIGN_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'src', 'sck']
+export const CAMPAIGN_PARAMS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+  'src',
+  'sck',
+]
 
 export function pickCampaignParams(source) {
-  const params = source instanceof URLSearchParams ? Object.fromEntries(source) : source ?? {}
+  const params =
+    source instanceof URLSearchParams
+      ? Object.fromEntries(source)
+      : (source ?? {})
   const picked = {}
   for (const key of CAMPAIGN_PARAMS) {
-    if (typeof params[key] === 'string' && params[key]) picked[key] = params[key].slice(0, 200)
+    if (typeof params[key] === 'string' && params[key])
+      picked[key] = params[key].slice(0, 200)
   }
   return picked
 }
 
 export const onlyDigits = (value = '') => String(value).replace(/\D/g, '')
 
-export const isValidEmail = (value = '') => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(value).trim())
+export const isValidEmail = (value = '') =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(value).trim())
 
 // Devolve { campo: mensagem } com os erros dos dados do comprador (vazio = tudo certo).
 // O checkout pede só como a pessoa quer ser chamada e o e-mail da conta.
