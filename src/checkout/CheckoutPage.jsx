@@ -1,3 +1,4 @@
+import { readSavedSelection } from '../shared/progress.js'
 import { analyticsIdentity } from '../shared/analytics.js'
 import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
@@ -78,7 +79,7 @@ function validateCard(card) {
 
 function readSelection() {
   try {
-    return JSON.parse(sessionStorage.getItem(SELECTION_STORAGE_KEY) ?? 'null')
+    return readSavedSelection()
   } catch {
     return null
   }
@@ -341,7 +342,7 @@ export default function CheckoutPage() {
   return (
     <div className="checkout-root">
       <header className="checkout-topbar">
-        <a href="/" className="checkout-back" onClick={goBack} aria-label="Voltar">
+        <a href="/chat" className="checkout-back" onClick={goBack} aria-label="Voltar">
           <ArrowLeft size={20} />
         </a>
         <div className="checkout-brand">

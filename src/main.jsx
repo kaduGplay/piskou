@@ -1,8 +1,10 @@
+import { resumeVisit } from './shared/progress.js'
 import { startAnalytics } from './shared/analytics.js'
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 
+resumeVisit()
 startAnalytics()
 const AdminPage = lazy(() => import('./admin/AdminPage.jsx'))
 const Funnel = lazy(() => import('./funnel/Funnel.jsx'))

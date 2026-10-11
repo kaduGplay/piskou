@@ -1,3 +1,8 @@
+import {
+  readSavedSelection,
+  readProgress,
+  saveProgress,
+} from '../shared/progress.js'
 import { analyticsIdentity } from '../shared/analytics.js'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import {
@@ -61,7 +66,7 @@ function readSelection() {
   try {
     return {
       ...DEFAULT_SELECTION,
-      ...JSON.parse(sessionStorage.getItem(SELECTION_STORAGE_KEY) || 'null'),
+      ...readSavedSelection(),
     }
   } catch {
     return DEFAULT_SELECTION
@@ -76,12 +81,37 @@ export default function ChatPage() {
   const [bannerVisible, setBannerVisible] = useState(true)
   const [loading, setLoading] = useState(true)
   const [chatError, setChatError] = useState('')
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useState(() =>
+    String(readProgress().draft || '').slice(0, 500),
+  )
+  useEffect(() => {
+    saveProgress({ draft })
+  }, [draft])
   const [typing, setTyping] = useState(false)
-  const [paywallReached, setPaywallReached] = useState(false)
+  const [paywallReached, setPaywallReached] = useState(
+    () =>
+      readProgress().chatSelection === JSON.stringify(sel) &&
+      readProgress().paywallReached === true,
+  )
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
-  const [mediaRequests, setMediaRequests] = useState([])
+  const [mediaRequests, setMediaRequests] = useState(() => {
+    const saved = readProgress()
+    return saved.chatSelection === JSON.stringify(sel) &&
+      Array.isArray(saved.mediaRequests)
+      ? saved.mediaRequests
+          .slice(-30)
+          .filter((item) => ['photo', 'video'].includes(item.kind))
+          .map((item) => ({ ...item, phase: 'media' }))
+      : []
+  })
+  useEffect(() => {
+    saveProgress({
+      chatSelection: JSON.stringify(sel),
+      paywallReached,
+      mediaRequests: mediaRequests.slice(-30),
+    })
+  }, [sel, paywallReached, mediaRequests])
   const mediaTimers = useRef([])
   const mediaBusy = useRef(false)
   const appRef = useRef(null)
@@ -472,7 +502,7 @@ export default function ChatPage() {
         <header className="chat-header">
           <a
             className="chat-icon-button"
-            href={`/${window.location.search}`}
+            href={`/?edit=1&${window.location.search.slice(1)}`}
             aria-label="Voltar ao criador"
           >
             <ArrowLeft size={21} />

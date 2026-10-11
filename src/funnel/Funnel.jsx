@@ -1,3 +1,4 @@
+import { readProgress, saveProgress, readSavedSelection, saveSelection } from '../shared/progress.js'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   ArrowLeft,
@@ -455,6 +456,7 @@ function SummaryRow({ title, value, image, color }) {
 
 function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onComplete }) {
   const [step, setStep] = useState(initialStep)
+  useEffect(() => { if (!new URLSearchParams(window.location.search).has('dev')) saveProgress({ step }) }, [step])
   const [openingChat, setOpeningChat] = useState(false)
   const [revealDone, setRevealDone] = useState(false)
   const [paywallOpen, setPaywallOpen] = useState(initialPaywallOpen)
@@ -878,12 +880,13 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
 }
 
 export default function Funnel({ initialPhase = 'quiz' }) {
-  const [sel, setSel] = useState(DEFAULT_SELECTION)
+  const [sel, setSel] = useState(() => ({ ...DEFAULT_SELECTION, ...readSavedSelection() }))
+  useEffect(() => { saveSelection(sel) }, [sel])
   return (
     <Creator
       sel={sel}
       update={(key, value) => setSel((prev) => ({ ...prev, [key]: value }))}
-      initialStep={initialPhase === 'creating' || initialPhase === 'offer' ? 5 : 0}
+      initialStep={initialPhase === 'creating' || initialPhase === 'offer' ? 5 : Math.max(0, Math.min(5, Number(readProgress().step) || 0))}
       initialPaywallOpen={initialPhase === 'offer'}
       onComplete={() => track(EVENTS.QUIZ_COMPLETE, { visual_style: sel.style })}
     />
