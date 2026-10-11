@@ -1439,3 +1439,16 @@
 .creator-chat-transition small { color: #938298; font-size: 11px; }
 @keyframes creator-chat-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @media (prefers-reduced-motion: reduce) { .creator-transition-progress i { animation: none; } }
+
+/* Keep the first decision and its next action legible on narrow phones. */
+.creator-style strong {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  text-transform: none;
+}
+@media (max-width: 520px) {
+  .creator-style strong { font-size: 15px; }
+  .creator-progress-step span { max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
+}

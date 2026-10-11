@@ -17,7 +17,7 @@ export const VOICES = [
 
 export const STEPS = [
   { key: 'style', label: 'Estilo' },
-  { key: 'general', label: 'Geral' },
+  { key: 'general', label: 'Características' },
   { key: 'face', label: 'Rosto' },
   { key: 'body', label: 'Corpo' },
   { key: 'details', label: 'Detalhes' },

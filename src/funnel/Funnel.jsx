@@ -118,7 +118,7 @@ function useInfiniteRail(values, value, onChange) {
 }
 
 // Imagem do card; com o card selecionado e visível, toca o vídeo em loop por cima.
-function OptionMedia({ media, selected, eager = false }) {
+function OptionMedia({ media, selected, eager = false, animate = true }) {
   const ref = useRef(null)
   const [videoReady, setVideoReady] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -144,7 +144,7 @@ function OptionMedia({ media, selected, eager = false }) {
   return (
     <span ref={ref} className="creator-option-media" aria-hidden="true">
       <img src={media.image} alt="" loading={eager ? 'eager' : 'lazy'} />
-      {selected && visible && !reducedMotion && (
+      {animate && selected && visible && !reducedMotion && (
         <video
           key={media.video}
           src={media.video}
@@ -493,14 +493,14 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
     }
   }, [step, sel.style, sel.ethnicity, sel.hairColor, sel.bodyType, sel.breastSize, sel.buttSize])
 
-  const goToStep = (next) => {
+  const goToStep = (next, visualStyle = sel.style) => {
     audioRef.current?.pause()
     setPlayingVoice(null)
     setOpenSheet(null)
     setRevealDone(false)
     setStep(next)
     bodyRef.current?.scrollTo(0, 0)
-    track(EVENTS.STEP_VIEW, { step: STEPS[next].key, visual_style: sel.style })
+    track(EVENTS.STEP_VIEW, { step: STEPS[next].key, visual_style: visualStyle })
   }
 
   const toggleVoice = (voice = sel.voice) => {
@@ -594,7 +594,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                 <h1>
                   Crie sua <em>garota</em> dos sonhos
                 </h1>
-                <span>Escolha o visual da sua personagem adulta.</span>
+                <span>Toque no visual que você prefere para continuar. Você pode mudar depois.</span>
               </div>
               <div className="creator-style-grid">
                 {[
@@ -606,14 +606,15 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                     type="button"
                     className={`creator-style${sel.style === option.key ? ' selected' : ''}`}
                     aria-pressed={sel.style === option.key}
-                    onClick={() => update('style', option.key)}
+                    onClick={() => { update('style', option.key); goToStep(1, option.key) }}
                   >
                     <OptionMedia
                       media={getOptionMedia(option.key, 'style', option.key)}
                       selected={sel.style === option.key}
+                      animate={false}
                       eager
                     />
-                    <strong>{option.label}</strong>
+                    <strong>Escolher {option.label.toLowerCase()} <ArrowRight size={16} aria-hidden="true" /></strong>
                     {sel.style === option.key && <Check className="creator-style-check" size={18} />}
                   </button>
                 ))}
@@ -624,11 +625,11 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
           {step === 1 && (
             <>
               <div className="creator-heading">
-                <p>PASSO 02 · GERAL</p>
+                <p>PASSO 02 · CARACTERÍSTICAS</p>
                 <h1>
-                  De onde vem <em>ela?</em>
+                  Como você <em>imagina ela?</em>
                 </h1>
-                <span>Escolha a origem da sua personagem.</span>
+                <span>Escolha a aparência que mais combina com ela. Se preferir, continue com a opção selecionada.</span>
               </div>
               <OptionGrid
                 title="Origem"
@@ -841,7 +842,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
             disabled={!canContinue || (step === 5 && !revealDone)}
             onClick={() => (step === 5 ? openOffer() : goToStep(step + 1))}
           >
-            {step === 5 ? `DÊ VIDA À SUA ${sel.relationship.toUpperCase()}` : step === 0 ? 'COMEÇAR' : 'PRÓXIMO'} <ArrowRight size={18} />
+            {step === 5 ? `DÊ VIDA À SUA ${sel.relationship.toUpperCase()}` : step === 0 ? 'CONTINUAR COM ' + sel.style.toUpperCase() : step === 1 ? 'CONTINUAR PARA O ROSTO' : 'PRÓXIMO'} <ArrowRight size={18} />
           </button>
         </div>
       </footer>
