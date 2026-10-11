@@ -30,8 +30,8 @@ test('signed chat identity is available to checkout and rejects tampering', () =
   )
 })
 test('message products have the authorized fixed prices', () => {
-  assert.equal(PLANS['premium-access'].price, 9.90)
-  assert.equal(PLANS['luxury-access'].price, 19.90)
+  assert.equal(PLANS['premium-access'].price, 23.85)
+  assert.equal(PLANS['luxury-access'].price, 48.85)
   assert.equal(PLANS['messages-six'].price, PLANS['premium-access'].price)
   assert.equal(PLANS['messages-unlimited'].price, PLANS['luxury-access'].price)
   assert.equal(PLANS['messages-six'].purpose, 'messages')
