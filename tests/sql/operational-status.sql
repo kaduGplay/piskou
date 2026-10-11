@@ -2,7 +2,7 @@
 begin;
 
 do $$ declare sid uuid:=gen_random_uuid(); sel jsonb:='{"name":"Teste status","age":25,"personality":"Carinhosa","relationship":"Namorada"}'; v jsonb; l uuid; i integer; begin
- perform public.piskou_store_set('charge:test-operational',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',23.85,'status','pending','createdAt',now()));
+ perform public.piskou_store_set('charge:test-operational',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',9.90,'status','pending','createdAt',now()));
  v:=public.piskou_admin_transaction_update('test-operational','paid','pago',0);
  if (select value->>'status' from public.piskou_payment_store where key='charge:test-operational')<>'paid' then raise exception 'Checkout not paid'; end if;
  if (select allowance from public.piskou_chat_sessions where id=sid)<>6 then raise exception 'No credits'; end if;
