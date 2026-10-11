@@ -31,16 +31,29 @@ const UPGRADE_DELAY_MS = 2_000
 
 function mediaPreviewMessage(selection, kind) {
   const media = kind === 'video' ? 'do vídeo' : 'da foto'
-  const affectionate = selection.relationship !== 'Confidente' && selection.affection !== 'Discreta'
+  const affectionate =
+    selection.relationship !== 'Confidente' &&
+    selection.affection !== 'Discreta'
   const address = affectionate ? ', amor' : ''
-  if (selection.speechStyle === 'Direta' || selection.humor === 'Mais séria') return `Aqui está a prévia ${media}${address}.`
-  if (selection.speechStyle === 'Bem-humorada' || selection.personality === 'Divertida')
-    return `Bateu a curiosidade${address}? Dá uma olhada nesta prévia 💕`
-  if (selection.socialEnergy === 'Reservada' || selection.personality === 'Reservada' || selection.speechStyle === 'Delicada')
-    return `Aqui vai uma pequena prévia${address}. Espero que goste 💕`
-  if (selection.socialEnergy === 'Extrovertida' || selection.personality === 'Confiante')
-    return `Olha só esta prévia${address}! Quero saber o que achou 💕`
-  return `Aqui está uma prévia para você${address} 💕`
+  if (selection.speechStyle === 'Direta' || selection.humor === 'Mais séria')
+    return `Aqui está ${media}${address}.`
+  if (
+    selection.speechStyle === 'Bem-humorada' ||
+    selection.personality === 'Divertida'
+  )
+    return `Bateu a curiosidade${address}? Dá uma olhada aqui 💕`
+  if (
+    selection.socialEnergy === 'Reservada' ||
+    selection.personality === 'Reservada' ||
+    selection.speechStyle === 'Delicada'
+  )
+    return `Aqui está${address}. Espero que goste 💕`
+  if (
+    selection.socialEnergy === 'Extrovertida' ||
+    selection.personality === 'Confiante'
+  )
+    return `Olha só${address}! Quero saber o que achou 💕`
+  return `Aqui está para você${address} 💕`
 }
 
 function readSelection() {
@@ -77,7 +90,7 @@ export default function ChatPage() {
   const upgradeTimer = useRef(null)
   const profileRef = useRef(null)
   const profileTrigger = useRef(null)
-  const mediaPending = mediaRequests.some(item => item.phase !== 'media')
+  const mediaPending = mediaRequests.some((item) => item.phase !== 'media')
   const sent = messages.filter((m) => m.role === 'user').length
   const locked =
     messages.filter((m) => m.role === 'character').length >= FREE_MESSAGES
@@ -97,15 +110,24 @@ export default function ChatPage() {
       if (viewport && Math.abs(viewport.scale - 1) > 0.01) return
       const height = viewport?.height || window.innerHeight
       const list = messagesRef.current
-      const nearBottom = !list || list.scrollHeight - list.scrollTop - list.clientHeight < 80
+      const nearBottom =
+        !list || list.scrollHeight - list.scrollTop - list.clientHeight < 80
       fullHeight = Math.max(fullHeight, height)
-      const focused = appRef.current?.contains(document.activeElement) &&
+      const focused =
+        appRef.current?.contains(document.activeElement) &&
         document.activeElement?.matches('input, textarea')
       appRef.current?.style.setProperty('--chat-viewport-height', `${height}px`)
-      appRef.current?.style.setProperty('--chat-viewport-top', `${viewport?.offsetTop || 0}px`)
-      appRef.current?.classList.toggle('keyboard-open', Boolean(focused && fullHeight - height > 120))
+      appRef.current?.style.setProperty(
+        '--chat-viewport-top',
+        `${viewport?.offsetTop || 0}px`,
+      )
+      appRef.current?.classList.toggle(
+        'keyboard-open',
+        Boolean(focused && fullHeight - height > 120),
+      )
       // Scroll only the message list, never the document or its ancestors.
-      if (list && height !== previousHeight && nearBottom) list.scrollTop = list.scrollHeight
+      if (list && height !== previousHeight && nearBottom)
+        list.scrollTop = list.scrollHeight
       previousHeight = height
     }
     const schedule = () => {
@@ -155,7 +177,10 @@ export default function ChatPage() {
   }, [sel])
   useEffect(() => {
     const list = messagesRef.current
-    list?.scrollTo({ top: list.scrollHeight, behavior: typing ? 'auto' : 'smooth' })
+    list?.scrollTo({
+      top: list.scrollHeight,
+      behavior: typing ? 'auto' : 'smooth',
+    })
   }, [messages, typing, mediaRequests, paywallReached])
   useEffect(() => {
     if (!profileOpen) return
@@ -185,7 +210,8 @@ export default function ChatPage() {
 
   const openOffer = () => {
     track(EVENTS.OFFER_VIEW, { visual_style: sel.style, source: 'chat' })
-    if (document.activeElement?.matches('input, textarea')) document.activeElement.blur()
+    if (document.activeElement?.matches('input, textarea'))
+      document.activeElement.blur()
     setProfileOpen(false)
     setOfferOpen(true)
   }
@@ -194,14 +220,28 @@ export default function ChatPage() {
     setProfileOpen(false)
     mediaBusy.current = true
     const id = crypto.randomUUID()
-    setMediaRequests(previous => [...previous, { id, kind, fromChat, phase: fromChat ? 'reply' : 'typing' }])
-    track(kind === 'video' ? 'ChatVideoSolicitado' : 'ChatFotoSolicitada', { visual_style: sel.style })
-    const advance = (phase) => setMediaRequests(previous => previous.map(item => item.id === id ? { ...item, phase } : item))
-    if (!fromChat) mediaTimers.current.push(setTimeout(() => advance('reply'), 3000))
-    mediaTimers.current.push(setTimeout(() => {
-      advance('media')
-      mediaBusy.current = false
-    }, fromChat ? 2000 : 5000))
+    setMediaRequests((previous) => [
+      ...previous,
+      { id, kind, fromChat, phase: fromChat ? 'reply' : 'typing' },
+    ])
+    track(kind === 'video' ? 'ChatVideoSolicitado' : 'ChatFotoSolicitada', {
+      visual_style: sel.style,
+    })
+    const advance = (phase) =>
+      setMediaRequests((previous) =>
+        previous.map((item) => (item.id === id ? { ...item, phase } : item)),
+      )
+    if (!fromChat)
+      mediaTimers.current.push(setTimeout(() => advance('reply'), 3000))
+    mediaTimers.current.push(
+      setTimeout(
+        () => {
+          advance('media')
+          mediaBusy.current = false
+        },
+        fromChat ? 2000 : 5000,
+      ),
+    )
   }
   const requestPhoto = () => requestMedia('photo')
   const requestVideo = () => requestMedia('video')
@@ -250,31 +290,50 @@ export default function ChatPage() {
           openOffer()
           return
         }
-        const failure = new Error(data.error || 'Não foi possível receber a resposta.')
+        const failure = new Error(
+          data.error || 'Não foi possível receber a resposta.',
+        )
         failure.code = data.code
         throw failure
       }
       setMessages(data.messages)
-      if (['photo', 'video'].includes(data.mediaRequest)) requestMedia(data.mediaRequest, true)
+      if (['photo', 'video'].includes(data.mediaRequest))
+        requestMedia(data.mediaRequest, true)
     } catch (error) {
       if (error.name !== 'AbortError') {
         // The server may have finished even if the response was lost. Recover without sending twice.
-        for (let attempt = 0; attempt < (error.code === 'busy' ? 6 : 2); attempt++) {
+        for (
+          let attempt = 0;
+          attempt < (error.code === 'busy' ? 6 : 2);
+          attempt++
+        ) {
           if (controller.signal.aborted) return
-          await new Promise(resolve => setTimeout(resolve, attempt ? 1500 : 500))
+          await new Promise((resolve) =>
+            setTimeout(resolve, attempt ? 1500 : 500),
+          )
           try {
-            const recovered = await fetch('/api/chat', { signal: controller.signal })
+            const recovered = await fetch('/api/chat', {
+              signal: controller.signal,
+            })
             const latest = await recovered.json()
-            const recoveredUser = latest.messages?.filter(m => m.role === 'user').at(-1)
-            if (recovered.ok && latest.messages?.length >= previous.length + 2 && recoveredUser?.text === content) {
+            const recoveredUser = latest.messages
+              ?.filter((m) => m.role === 'user')
+              .at(-1)
+            if (
+              recovered.ok &&
+              latest.messages?.length >= previous.length + 2 &&
+              recoveredUser?.text === content
+            ) {
               setMessages(latest.messages)
               return
             }
-          } catch { /* Keep the original message available when offline. */ }
+          } catch {
+            /* Keep the original message available when offline. */
+          }
         }
         if (controller.signal.aborted) return
         setMessages(previous)
-        setDraft(current => current || content)
+        setDraft((current) => current || content)
         setChatError(error.message || 'Tente novamente em instantes.')
       }
     } finally {
@@ -305,7 +364,10 @@ export default function ChatPage() {
           {[
             ['Estilo', sel.style === 'anime' ? 'Anime' : 'Realista'],
             ['Personalidade', sel.personality],
-            ...Object.entries(CHAT_PREFERENCES).map(([key, setting]) => [setting.title, sel[key]]),
+            ...Object.entries(CHAT_PREFERENCES).map(([key, setting]) => [
+              setting.title,
+              sel[key],
+            ]),
             ['Relacionamento', sel.relationship],
             ['Profissão', sel.occupation],
             ['Cabelo', `${sel.hairColor} · ${sel.hairStyle}`],
@@ -317,11 +379,21 @@ export default function ChatPage() {
             </div>
           ))}
         </dl>
-        <button type="button" className="chat-primary" disabled={loading || typing || mediaPending} onClick={requestPhoto}>
+        <button
+          type="button"
+          className="chat-primary"
+          disabled={loading || typing || mediaPending}
+          onClick={requestPhoto}
+        >
           <LockKeyhole size={17} /> Pedir uma foto · Premium
         </button>
-        <button type="button" className="chat-primary" disabled={loading || typing || mediaPending} onClick={requestVideo}>
-          <Video size={17} /> Pedir um vídeo · Prévia
+        <button
+          type="button"
+          className="chat-primary"
+          disabled={loading || typing || mediaPending}
+          onClick={requestVideo}
+        >
+          <Video size={17} /> Pedir um vídeo
         </button>
         <p className="chat-profile-note">
           Fotos disponíveis a partir do Premium.
@@ -400,21 +472,23 @@ export default function ChatPage() {
             <UserRound size={21} />
           </button>
         </header>
-        {bannerVisible && <div className="chat-upgrade">
-          <span className="chat-upgrade-heart">
-            <Heart size={20} fill="currentColor" />
-          </span>
-          <span>
-            <strong>Sua conexão começa aqui</strong>
-            <small>
-              Conheça os planos a partir de{' '}
-              {formatBRL(PLANS['premium-access'].price)}
-            </small>
-          </span>
-          <button type="button" onClick={openOffer}>
-            Ver planos <ChevronRight size={14} />
-          </button>
-        </div>}
+        {bannerVisible && (
+          <div className="chat-upgrade">
+            <span className="chat-upgrade-heart">
+              <Heart size={20} fill="currentColor" />
+            </span>
+            <span>
+              <strong>Sua conexão começa aqui</strong>
+              <small>
+                Conheça os planos a partir de{' '}
+                {formatBRL(PLANS['premium-access'].price)}
+              </small>
+            </span>
+            <button type="button" onClick={openOffer}>
+              Ver planos <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
         <div
           className="chat-messages"
           ref={messagesRef}
@@ -436,7 +510,9 @@ export default function ChatPage() {
             </button>
             <span className="chat-eyebrow">FEITA DO SEU JEITO</span>
             <h1>
-              {messages.length ? `Você e ${name}` : `Que tal mandar um oi para ${name}?`}
+              {messages.length
+                ? `Você e ${name}`
+                : `Que tal mandar um oi para ${name}?`}
             </h1>
             <p>
               {messages.length
@@ -466,6 +542,22 @@ export default function ChatPage() {
               )}
               <div className="chat-bubble">
                 <p>{message.text}</p>
+                {message.media?.src?.startsWith('data:image/jpeg;base64,') && (
+                  <figure className="chat-generated-image">
+                    <a
+                      href={message.media.src}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Abrir imagem"
+                    >
+                      <img
+                        src={message.media.src}
+                        alt="Imagem solicitada na conversa"
+                      />
+                    </a>
+                    <figcaption>Imagem gerada</figcaption>
+                  </figure>
+                )}
                 <span>
                   {message.role === 'character' ? name : 'Você'}{' '}
                   {message.role === 'user' && <CheckCheck size={13} />}
@@ -493,7 +585,9 @@ export default function ChatPage() {
                   <LockKeyhole size={19} />
                   <div>
                     <strong>Continue conversando com {name}</strong>
-                    <p>Para continuar conversando com {name}, escolha seu plano.</p>
+                    <p>
+                      Para continuar conversando com {name}, escolha seu plano.
+                    </p>
                     <button
                       type="button"
                       className="chat-continue-button"
@@ -504,42 +598,88 @@ export default function ChatPage() {
                   </div>
                 </div>
               )}
-
             </div>
           )}
-          {mediaRequests.map(item => (
+          {mediaRequests.map((item) => (
             <div className="chat-media-request" key={item.id}>
-              {!item.fromChat && <div className="chat-message user">
-                <div className="chat-bubble">
-                  <p>{item.kind === 'video' ? 'Quero ver uma prévia de vídeo 💕' : 'Quero ver uma prévia de foto 💕'}</p>
-                  <span>Você <CheckCheck size={13} /></span>
-                </div>
-              </div>}
-              {!item.fromChat && <div className="chat-message character">
-                <img className="chat-message-avatar" src={image} alt="" />
-                {item.phase === 'typing' ? (
-                  <div className="chat-typing" aria-label={`${name} está digitando`}><i /><i /><i /></div>
-                ) : (
+              {!item.fromChat && (
+                <div className="chat-message user">
                   <div className="chat-bubble">
-                    <p>{mediaPreviewMessage(sel, item.kind)}</p>
-                    <span>{name} · Prévia</span>
+                    <p>
+                      {item.kind === 'video'
+                        ? 'Me manda um vídeo? 💕'
+                        : 'Me manda uma foto sua? 💕'}
+                    </p>
+                    <span>
+                      Você <CheckCheck size={13} />
+                    </span>
                   </div>
-                )}
-              </div>}
-              {item.phase === 'reply' && <p className="chat-media-loading" role="status">Carregando prévia…</p>}
+                </div>
+              )}
+              {!item.fromChat && (
+                <div className="chat-message character">
+                  <img className="chat-message-avatar" src={image} alt="" />
+                  {item.phase === 'typing' ? (
+                    <div
+                      className="chat-typing"
+                      aria-label={`${name} está digitando`}
+                    >
+                      <i />
+                      <i />
+                      <i />
+                    </div>
+                  ) : (
+                    <div className="chat-bubble">
+                      <p>{mediaPreviewMessage(sel, item.kind)}</p>
+                      <span>{name}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {item.phase === 'reply' && (
+                <p className="chat-media-loading" role="status">
+                  Preparando…
+                </p>
+              )}
               {item.phase === 'media' && (
                 <div className="chat-locked-wrap">
-                  <div className={`chat-locked-media${item.kind === 'video' ? ' chat-locked-video' : ''}`}>
-                    <img src={image} alt={`Prévia ilustrativa ${item.kind === 'video' ? 'do vídeo' : 'da foto'} de ${name}`} />
+                  <div
+                    className={`chat-locked-media${item.kind === 'video' ? ' chat-locked-video' : ''}`}
+                  >
+                    <img
+                      src={image}
+                      alt={`Imagem ilustrativa ${item.kind === 'video' ? 'do vídeo' : 'da foto'} de ${name}`}
+                    />
                     <div className="chat-locked-copy">
-                      <span className="chat-lock-circle">{item.kind === 'video' ? <Play size={24} fill="currentColor" /> : <LockKeyhole size={24} />}</span>
-                      <span className="chat-eyebrow">PRÉVIA {item.kind === 'video' ? 'DE VÍDEO' : 'DA FOTO'} · BLOQUEADA</span>
-                      <h2>Uma prévia de {name} para você</h2>
-                      <p>{item.kind === 'video' ? 'Conheça os planos e os recursos de vídeo do Luxo.' : 'Conheça os planos e o recurso de fotos do Premium e Luxo.'}</p>
-                      <button type="button" className="chat-primary" onClick={openOffer}>
+                      <span className="chat-lock-circle">
+                        {item.kind === 'video' ? (
+                          <Play size={24} fill="currentColor" />
+                        ) : (
+                          <LockKeyhole size={24} />
+                        )}
+                      </span>
+                      <span className="chat-eyebrow">
+                        {item.kind === 'video'
+                          ? 'VÍDEO BLOQUEADO'
+                          : 'FOTO BLOQUEADA'}
+                      </span>
+                      <h2>Veja {name}</h2>
+                      <p>
+                        {item.kind === 'video'
+                          ? 'Conheça os planos e os recursos de vídeo do Luxo.'
+                          : 'Conheça os planos e o recurso de fotos do Premium e Luxo.'}
+                      </p>
+                      <button
+                        type="button"
+                        className="chat-primary"
+                        onClick={openOffer}
+                      >
                         <LockKeyhole size={16} /> Desbloquear · Ver planos
                       </button>
-                      <small>Imagem ilustrativa da personagem · Nenhuma mídia nova gerada</small>
+                      <small>
+                        Imagem ilustrativa da personagem · Nenhuma mídia nova
+                        gerada
+                      </small>
                     </div>
                   </div>
                 </div>
@@ -557,7 +697,11 @@ export default function ChatPage() {
           <div className="chat-suggestions">
             {!locked &&
               (sent === 0
-                ? ['Oi! 💕', 'Olá! Como foi seu dia?', 'Quero te conhecer melhor']
+                ? [
+                    'Oi! 💕',
+                    'Olá! Como foi seu dia?',
+                    'Quero te conhecer melhor',
+                  ]
                 : ['Me conta mais sobre você', 'O que você gosta de fazer?']
               ).map((text) => (
                 <button
@@ -572,11 +716,17 @@ export default function ChatPage() {
             <button
               type="button"
               className="chat-photo-request"
-              disabled={loading || typing || mediaPending} onClick={requestPhoto}
+              disabled={loading || typing || mediaPending}
+              onClick={requestPhoto}
             >
               <LockKeyhole size={13} /> Pedir uma foto · Premium
             </button>
-            <button type="button" className="chat-photo-request" disabled={loading || typing || mediaPending} onClick={requestVideo}>
+            <button
+              type="button"
+              className="chat-photo-request"
+              disabled={loading || typing || mediaPending}
+              onClick={requestVideo}
+            >
               <Video size={13} /> Pedir um vídeo
             </button>
           </div>
@@ -612,9 +762,12 @@ export default function ChatPage() {
               }}
               onClick={paywallReached ? openOffer : undefined}
               disabled={
-                !paywallReached && (loading || typing || mediaPending || !draft.trim())
+                !paywallReached &&
+                (loading || typing || mediaPending || !draft.trim())
               }
-              aria-label={paywallReached ? 'Desbloquear conversa' : 'Enviar mensagem'}
+              aria-label={
+                paywallReached ? 'Desbloquear conversa' : 'Enviar mensagem'
+              }
             >
               {paywallReached ? <LockKeyhole size={19} /> : <Send size={19} />}
             </button>
@@ -665,7 +818,11 @@ export default function ChatPage() {
             </div>
           }
         >
-          <PaywallSheet source="chat" sel={sel} onClose={() => setOfferOpen(false)} />
+          <PaywallSheet
+            source="chat"
+            sel={sel}
+            onClose={() => setOfferOpen(false)}
+          />
         </Suspense>
       )}
     </div>

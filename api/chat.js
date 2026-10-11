@@ -1,3 +1,4 @@
+import { generateChatImage } from './_lib/images.js'
 import { generateChatReply } from './_lib/model.js'
 import { CHAT_PREVIEW_LIMIT } from '../src/funnel/data.js'
 import { randomUUID } from 'node:crypto'
@@ -114,26 +115,36 @@ export default async function handler(req, res) {
         messages: claim.messages,
       })
     }
-    const { reply, mediaRequest } = await generateChatReply(
+    let { reply, mediaRequest, imagePrompt } = await generateChatReply(
       selection,
       claim.messages,
       message,
       claim.turn,
     )
-    const messages = await chatDatabase('rpc/piskou_chat_finish', {
+    let media = null
+    if (mediaRequest === 'image') {
+      try {
+        media = await generateChatImage(imagePrompt)
+      } catch (error) {
+        console.error('chat: image unavailable', error.message)
+        reply =
+          'Não consegui preparar essa imagem agora. Podemos continuar conversando e tentar de novo depois?'
+      }
+      mediaRequest = null
+    }
+    const messages = await chatDatabase('rpc/piskou_chat_finish_media', {
       p_id: session,
       p_lease: lease,
       p_user: message,
       p_reply: reply,
+      p_media: media,
     })
     lease = null
-    return res
-      .status(200)
-      .json({
-        messages,
-        mediaRequest,
-        remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2),
-      })
+    return res.status(200).json({
+      messages,
+      mediaRequest,
+      remaining: Math.max(0, CHAT_PREVIEW_LIMIT - messages.length / 2),
+    })
   } catch (error) {
     if (session && lease)
       await chatDatabase('rpc/piskou_chat_finish', {

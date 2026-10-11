@@ -31,12 +31,13 @@ export async function generateChatReply(
                 additionalProperties: false,
                 properties: {
                   reply: { type: 'string' },
+                  imagePrompt: { type: 'string' },
                   mediaRequest: {
                     type: 'string',
-                    enum: ['none', 'photo', 'video'],
+                    enum: ['none', 'photo', 'video', 'image'],
                   },
                 },
-                required: ['reply', 'mediaRequest'],
+                required: ['reply', 'mediaRequest', 'imagePrompt'],
               },
             },
           },
@@ -78,11 +79,17 @@ export async function generateChatReply(
         .trim()
       const parsed = JSON.parse(output)
       const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : ''
-      const mediaRequest = ['photo', 'video'].includes(parsed.mediaRequest)
+      const mediaRequest = ['photo', 'video', 'image'].includes(
+        parsed.mediaRequest,
+      )
         ? parsed.mediaRequest
         : null
       if (!reply) throw new Error('Empty model response')
-      return { reply, mediaRequest }
+      return {
+        reply,
+        mediaRequest,
+        imagePrompt: String(parsed.imagePrompt || '').slice(0, 1500),
+      }
     } catch (error) {
       lastError = error
       if (error.retryable === false || attempt === 1) break
