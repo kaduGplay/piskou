@@ -1,3 +1,4 @@
+import { learningProfile } from './_lib/learning.js'
 import { adminConversation } from './_lib/advisor.js'
 import { createHmac } from 'node:crypto'
 import { chatDatabase } from './_lib/chat.js'
@@ -70,7 +71,9 @@ export default async function handler(req, res) {
     const data = await chatDatabase('rpc/piskou_admin_report', {
       p_days: days,
     })
-    return res.status(200).json(data)
+    return res
+      .status(200)
+      .json({ ...data, learning: await learningProfile().catch(() => null) })
   } catch (error) {
     console.error('admin:', error.message)
     return res.status(503).json({

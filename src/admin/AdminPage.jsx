@@ -257,6 +257,35 @@ export default function AdminPage() {
             </button>
           ))}
         </nav>
+        {data?.learning && (
+          <section className="admin-panel">
+            <h2>Adaptação do estilo de conversa</h2>
+            <p>
+              Últimas {data.learning.conversations} conversas de até 30 dias ·{' '}
+              {data.learning.messages} mensagens dos visitantes. Atualização
+              automática a cada 5 minutos com atividade.
+            </p>
+            <p>
+              {data.learning.feedbackConversations} conversas com pedidos
+              explícitos de estilo. Só aplicamos tendências com pelo menos 20
+              conversas, 3 pedidos e maioria entre as conversas com esses
+              pedidos.
+            </p>
+            <ul>
+              {data.learning.preferences.map((p) => (
+                <li key={p.key}>
+                  {p.label}: {p.votes} conversas ·{' '}
+                  {p.active ? 'ajuste ativo' : 'sem evidência suficiente'}
+                </li>
+              ))}
+            </ul>
+            <p>
+              A personalidade escolhida e os pedidos de cada visitante têm
+              prioridade. Textos de outros visitantes não são enviados para o
+              chat. Isso ajusta o contexto das respostas; não treina o modelo.
+            </p>
+          </section>
+        )}
         <AdminConversations active={tab} days={days} />
         <div hidden={tab !== 'metrics'}>
           {!data ? (

@@ -1,4 +1,5 @@
 import { chatInstructions } from './chat.js'
+import { learningProfile, learnedInstructions } from './learning.js'
 
 export async function generateChatReply(
   selection,
@@ -8,6 +9,9 @@ export async function generateChatReply(
   fetcher = fetch,
   pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 ) {
+  const profile =
+    fetcher === fetch ? await learningProfile().catch(() => null) : null
+  const styleInstructions = learnedInstructions(profile)
   let lastError
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -41,7 +45,8 @@ export async function generateChatReply(
               },
             },
           },
-          instructions: chatInstructions(selection, turn),
+          instructions:
+            chatInstructions(selection, turn) + '\n' + styleInstructions,
           input: [
             ...history.map((m) => ({
               role: m.role === 'character' ? 'assistant' : 'user',

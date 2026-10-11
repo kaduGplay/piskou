@@ -209,3 +209,5 @@ O histórico do administrador fica no Supabase por até 90 dias; a interface mos
 as últimas 100 análises e o modelo recebe as últimas 12. As respostas indicam o
 período e o horário do snapshot utilizado. Pedidos são serializados e têm ID para
 recuperar a mesma resposta em caso de repetição. Limite de 30 análises em 15 minutos.
+
+O chat adapta seu contexto a pedidos explícitos de estilo nas últimas 200 conversas de até 30 dias. O agregado é recalculado com atividade, em cache por instância durante cinco minutos, sem chamada extra ao modelo. São contadas conversas distintas, não repetições de uma mesma pessoa: mudanças exigem 20 conversas na amostra, três pedidos e maioria entre as conversas com feedback reconhecido. O painel mostra os votos e os ajustes ativos. Essa detecção é limitada a pedidos reconhecidos em português, não mede satisfação nem treina o modelo. Preferências da personagem e pedidos do visitante atual têm prioridade; nenhum texto arquivado de outro visitante entra no prompt. Se a consulta falhar, o chat continua com o estilo individual.
