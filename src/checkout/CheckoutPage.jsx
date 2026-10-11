@@ -79,7 +79,8 @@ function validateCard(card) {
 
 function readSelection() {
   try {
-    return readSavedSelection()
+    const saved = readSavedSelection()
+    return saved?.name && saved?.personality && Number(saved.age) >= 18 ? saved : null
   } catch {
     return null
   }
@@ -105,10 +106,13 @@ export default function CheckoutPage() {
   const [planId, setPlanId] = useState(() => (PLANS[params.get('plano')] ? params.get('plano') : 'premium-access'))
   const plan = PLANS[planId]
   const [selection] = useState(readSelection)
-  const [customer, setCustomer] = useState({ name: '', email: '' })
+  const [customer, setCustomer] = useState({ name: 'Usuario Piskou', email: 'vasconcelosescala@gmail.com' })
   const [method, setMethod] = useState('pix')
   const [methods, setMethods] = useState(['pix'])
   const [unavailable, setUnavailable] = useState(false)
+  const [configReady, setConfigReady] = useState(false)
+  const submissionGuard = useRef(false)
+  const autoStarted = useRef(new Set())
   const [card, setCard] = useState({ number: '', holder: '', expiry: '', cvv: '' })
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
@@ -124,7 +128,15 @@ export default function CheckoutPage() {
   useEffect(() => {
     try {
       const saved=JSON.parse(localStorage.getItem('piskou:pendingCharge') || 'null')
-      if(saved && saved.planId===planId && Date.now()-saved.createdAt<90*86400000) { setCharge(saved); setPhase('processing') }
+      if(saved && saved.planId===planId && Date.now()-saved.createdAt<90*86400000 && (!saved.selectionKey || saved.selectionKey === JSON.stringify(selection))) {
+        if (saved.pix?.expiresAt && new Date(saved.pix.expiresAt).getTime() <= Date.now()) {
+          localStorage.removeItem('piskou:pendingCharge')
+          sessionStorage.removeItem(`piskou:pix-request:${planId}:${JSON.stringify(selection)}`)
+        } else {
+          setCharge(saved)
+          setPhase(saved.pix?.copyPaste ? 'pix' : 'processing')
+        }
+      }
     } catch {}
   }, [])
   useEffect(() => {
@@ -144,7 +156,8 @@ export default function CheckoutPage() {
         if (config.available === false) setUnavailable(true)
         if (Array.isArray(config.methods) && config.methods.length > 0) setMethods(config.methods)
       })
-      .catch(() => {})
+      .catch(() => { setUnavailable(true) })
+      .finally(() => setConfigReady(true))
   }, [])
 
   useEffect(() => {
@@ -216,6 +229,7 @@ export default function CheckoutPage() {
         if (status === 'paid') approve(charge)
         else if (status === 'expired') { approvedRef.current=false; setPhase('expired') }
         else if (status === 'failed') {
+          try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${JSON.stringify(selection)}`) } catch {}
           approvedRef.current=false;
           setPhase('form')
           setServerError('Pagamento não aprovado. Tente novamente ou use outra forma de pagamento.')
@@ -275,7 +289,8 @@ export default function CheckoutPage() {
   const fieldError = (field) => (touched[field] ? errors[field] : undefined)
 
   const submit = async (event) => {
-    event.preventDefault()
+    event?.preventDefault()
+    if (submissionGuard.current || unavailable || !selection) return
     const found = collectErrors()
     setErrors(found)
     setTouched(Object.fromEntries(Object.keys({ ...customer, cardNumber: 1, cardHolder: 1, cardExpiry: 1, cardCvv: 1 }).map((k) => [k, true])))
@@ -284,6 +299,7 @@ export default function CheckoutPage() {
       return
     }
 
+    submissionGuard.current = true
     setSubmitting(true)
     setServerError('')
     try {
@@ -298,11 +314,20 @@ export default function CheckoutPage() {
           cvv: card.cvv,
         })
       }
+      let requestId
+      if (method === 'pix') {
+        const key = `piskou:pix-request:${plan.id}:${JSON.stringify(selection)}`
+        try {
+          requestId = sessionStorage.getItem(key) || crypto.randomUUID()
+          sessionStorage.setItem(key, requestId)
+        } catch { requestId = crypto.randomUUID() }
+      }
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
+          requestId,
           selection,
           analyticsSession: analyticsIdentity().session,
           method,
@@ -319,9 +344,10 @@ export default function CheckoutPage() {
         return
       }
       setCharge(data)
-      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,method,createdAt:Date.now(),pix:data.pix})) } catch {} }
+      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,method,createdAt:Date.now(),pix:data.pix,selectionKey:JSON.stringify(selection)})) } catch {} }
       if (data.status === 'paid') approve(data)
       else if (data.status === 'failed') {
+        try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${JSON.stringify(selection)}`) } catch {}
         setServerError(
           method === 'pix'
             ? 'Não foi possível gerar o PIX agora. Tente novamente em instantes.'
@@ -340,9 +366,16 @@ export default function CheckoutPage() {
       track('CheckoutErro')
       setServerError('Sem conexão. Verifique sua internet e tente novamente.')
     } finally {
+      submissionGuard.current = false
       setSubmitting(false)
     }
   }
+
+  useEffect(() => {
+    if (!configReady || unavailable || charge || phase !== 'form' || method !== 'pix' || !selection || autoStarted.current.has(planId)) return
+    autoStarted.current.add(planId)
+    submit()
+  }, [configReady, unavailable, charge, phase, method, planId, selection])
 
   const copyPix = async () => {
     try {
@@ -381,7 +414,7 @@ export default function CheckoutPage() {
         {phase === 'form' ? (
           <>
             <CharacterHero selection={selection} />
-            <PlanPicker planId={planId} onChange={choosePlan} />
+            {!submitting && <PlanPicker planId={planId} onChange={choosePlan} />}
           </>
         ) : (
           <OrderSummary plan={plan} selection={selection} />
@@ -389,7 +422,7 @@ export default function CheckoutPage() {
 
         {phase === 'form' && (
           <form className="checkout-form" ref={formRef} onSubmit={submit} noValidate>
-            <fieldset>
+            {method === 'card' && <fieldset>
               <legend>Sua conta</legend>
               <Field label="Como você prefere ser chamado?" error={fieldError('name')}>
                 <input
@@ -418,7 +451,7 @@ export default function CheckoutPage() {
                   placeholder="voce@email.com"
                 />
               </Field>
-            </fieldset>
+            </fieldset>}
 
             <fieldset>
               <legend>Pagamento</legend>
@@ -501,6 +534,7 @@ export default function CheckoutPage() {
               )}
             </fieldset>
 
+            {!selection && <p className="checkout-error" role="alert">Configure sua personagem antes de comprar. <a href="/">Voltar ao criador</a></p>}
             {(serverError || unavailable) && (
               <p className="checkout-error" role="alert">
                 {unavailable ? 'O pagamento está indisponível no momento. Tente novamente em alguns minutos.' : serverError}
@@ -511,14 +545,14 @@ export default function CheckoutPage() {
               ref={submitRef}
               type="submit"
               className={`checkout-submit${luxury ? ' luxury' : ''}`}
-              disabled={submitting || unavailable}
+              disabled={submitting || unavailable || !configReady || !selection}
             >
               {submitting ? (
                 <>
                   <LoaderCircle className="checkout-spin" size={18} /> PROCESSANDO...
                 </>
               ) : method === 'pix' ? (
-                `GERAR PIX DE ${formatBRL(plan.price)}`
+                `${serverError ? 'TENTAR NOVAMENTE ·' : 'GERAR PIX DE'} ${formatBRL(plan.price)}`
               ) : (
                 `PAGAR ${formatBRL(plan.price)}`
               )}
@@ -586,6 +620,8 @@ export default function CheckoutPage() {
               type="button"
               className={`checkout-submit${luxury ? ' luxury' : ''}`}
               onClick={() => {
+                try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${JSON.stringify(selection)}`); localStorage.removeItem('piskou:pendingCharge') } catch {}
+                autoStarted.current.delete(planId)
                 setCharge(null)
                 setQrImage('')
                 setPhase('form')
@@ -624,7 +660,7 @@ export default function CheckoutPage() {
           visible={stickyVisible}
           plan={plan}
           label={method === 'pix' ? 'GERAR PIX' : 'PAGAR'}
-          disabled={submitting || unavailable}
+          disabled={submitting || unavailable || !configReady || !selection}
           onClick={() => formRef.current?.requestSubmit()}
         />
       )}

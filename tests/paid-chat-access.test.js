@@ -163,6 +163,27 @@ test('checkout binds purchase to signed owner and status cannot grant another br
     )
     assert.equal(own.data.status, 'paid')
     assert.equal(grants, 2) // Database idempotency handles repeated confirmations.
+    const pixRequest = {
+      method: 'POST',
+      headers: { host: 'test.local', origin: 'http://test.local', cookie },
+      body: { planId: 'luxury-access', method: 'pix', selection: DEFAULT_SELECTION,
+        requestId: '20000000-2000-4000-8000-200000000000', amount: 0.01,
+        customer: { name: 'Ignored', email: 'ignored@example.test' } },
+    }
+    const pix = response()
+    await checkout(pixRequest, pix)
+    assert.equal(pix.code, 200)
+    assert.equal(pix.data.amount, PLANS['luxury-access'].price)
+    assert.deepEqual(charges.get('charge:' + pix.data.id).customer,
+      { name: 'Usuario Piskou', email: 'vasconcelosescala@gmail.com' })
+    const repeated = response()
+    await checkout(pixRequest, repeated)
+    assert.equal(repeated.data.id, pix.data.id)
+    const noCustomer = response()
+    await checkout({ ...pixRequest, body: { ...pixRequest.body, customer: undefined } }, noCustomer)
+    assert.equal(noCustomer.code, 200)
+    assert.equal(noCustomer.data.id, pix.data.id)
+
     failGrant = true
     const deferred = response()
     await checkout({method:'POST',headers:{host:'test.local',origin:'http://test.local'},body:{planId:'premium-access',selection:DEFAULT_SELECTION,method:'card',cardToken:'test-token',customer:{name:'Teste',email:'teste@example.test'}}},deferred)

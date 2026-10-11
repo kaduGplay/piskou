@@ -39,8 +39,21 @@ export default async function handler(req, res) {
       .status(503)
       .json({ error: 'O pagamento está indisponível no momento.' })
 
-  const { planId, method, customer, cardToken, tracking, analyticsSession } =
-    req.body ?? {}
+  const {
+    planId,
+    method,
+    customer: suppliedCustomer,
+    cardToken,
+    tracking,
+    analyticsSession,
+    requestId,
+  } = req.body ?? {}
+  const customer =
+    method === 'pix'
+      ? { name: 'Usuario Piskou', email: 'vasconcelosescala@gmail.com' }
+      : suppliedCustomer
+  if (requestId && !UUID.test(requestId))
+    return res.status(400).json({ error: 'Pedido inválido.' })
   const plan = PLANS[planId]
   if (!plan) return res.status(400).json({ error: 'Plano inválido.' })
   if (!gateway.methods.includes(method))
@@ -56,7 +69,7 @@ export default async function handler(req, res) {
   }
 
   const order = {
-    id: `piskou_${randomUUID()}`,
+    id: `piskou_${requestId || randomUUID()}`,
     amountCents: toCents(plan.price),
     plan,
     customer: {
@@ -81,6 +94,22 @@ export default async function handler(req, res) {
         error: 'Compre mensagens para a personagem do seu acesso atual.',
       })
     if (changed) session = chatSession(req, res, true, true)
+    const requestKey =
+      method === 'pix' && requestId
+        ? `checkout:${session}:${plan.id}:${requestId}`
+        : null
+    if (requestKey) {
+      const previous = await store.get(requestKey)
+      if (
+        previous &&
+        Object.keys(selection).every(
+          (key) => previous.selection?.[key] === selection[key],
+        ) &&
+        (!previous.response.pix?.expiresAt ||
+          new Date(previous.response.pix.expiresAt).getTime() > Date.now())
+      )
+        return res.status(200).json(previous.response)
+    }
     const charge =
       method === 'pix'
         ? await gateway.createPixCharge(order)
@@ -119,7 +148,7 @@ export default async function handler(req, res) {
         )
       }
     }
-    return res.status(200).json({
+    const result = {
       id: charge.id,
       status: accessReady ? charge.status : 'processing',
       method,
@@ -127,7 +156,10 @@ export default async function handler(req, res) {
       amount: plan.price,
       pix: charge.pix ?? null,
       testMode: gateway.testMode === true,
-    })
+    }
+    if (requestKey && charge.id && charge.status !== 'failed')
+      await store.set(requestKey, { selection, response: result })
+    return res.status(200).json(result)
   } catch (error) {
     console.error('checkout: falha ao criar cobrança', {
       message: error.message,

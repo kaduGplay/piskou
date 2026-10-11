@@ -221,3 +221,11 @@ A entrada do criador avança para Características ao escolher explicitamente um
 A aba **Transações** do admin lista cobranças guardadas no servidor, com período, filtro de status e páginas de 50 registros. Atualiza a cada 5 segundos enquanto está visível. O status manual tem efeito operacional: “Pago” confirma o checkout e libera os créditos do pedido; pendente, falhou e expirou retiram os créditos daquela compra, preservando o histórico e o consumo já realizado. Reconfirmar a mesma cobrança não duplica créditos. “Acompanhar o gateway” remove a prioridade manual e aplica a última confirmação recebida do gateway. O checkout e o chat verificam alterações a cada 5 segundos com a tela ativa; o servidor controla o acesso mesmo se a tela estiver desatualizada. Alterar o status não movimenta dinheiro nem faz estorno no banco. A última informação do gateway é preservada separadamente e avisos posteriores não sobrescrevem uma decisão manual ativa.
 
 Alterações têm observação, revisão para evitar sobrescritas entre abas e histórico privado. Marcações manuais já existentes são sincronizadas na migração. Cobranças antigas sem vínculo com uma conversa podem ter seu status alterado, mas não liberam automaticamente o chat; o painel informa essa limitação ao salvar. Nome/e-mail do comprador aparecem nas novas cobranças. A disponibilidade dos registros segue a retenção do armazenamento de pagamentos, sem reconstrução de cobranças já expiradas.
+
+
+O checkout inicia o PIX automaticamente para o plano da URL, sem solicitar cadastro.
+Para PIX, o servidor envia o nome `Usuario Piskou` e o e-mail operacional
+`vasconcelosescala@gmail.com` para a gateway. O acesso continua vinculado ao cookie
+assinado da conversa, não a esse e-mail compartilhado. O valor vem do catálogo do
+servidor. Recarregar retoma a cobrança pendente; o identificador do pedido permite
+reutilizar a resposta de uma geração concluída, e uma falha mostra uma ação para tentar novamente.
