@@ -193,10 +193,11 @@ test('deletion and tombstones synchronize to a second authorized device', async 
 
 test('slow audio preparation does not block text persistence and deletion prevents late enqueue', async () => {
   const backend = server()
+  const snapshots = []
   let releaseAudio
   const client = createChatClient({
     selection: {},
-    onSnapshot: () => {},
+    onSnapshot: (snapshot) => snapshots.push(snapshot),
     onError: assert.fail,
     timers: fakeTimers,
     storage: memoryStorage(),
@@ -211,11 +212,16 @@ test('slow audio preparation does not block text persistence and deletion preven
   const audioId = client.send('Áudio', {
     recording: { mime: 'audio/webm', data: 'fake' },
   })
-  client.send('Texto sem esperar o áudio')
+  const textId = client.send('Texto sem esperar o áudio')
   await tick()
   await tick()
   assert.equal(backend.state.messages.length, 1)
   assert.equal(backend.state.messages[0].text, 'Texto sem esperar o áudio')
+  assert.deepEqual(snapshots.at(-1).messages.map((message) => message.id), [audioId, textId])
+  backend.state.messages.push({ id: 'reply', role: 'character', text: 'Resposta ao texto' })
+  backend.state.revision++
+  await client.sync()
+  assert.deepEqual(snapshots.at(-1).messages.map((message) => message.id), [audioId, textId, 'reply'])
   await client.remove(audioId)
   releaseAudio()
   await tick()
@@ -225,4 +231,37 @@ test('slow audio preparation does not block text persistence and deletion preven
     1,
   )
   client.dispose()
+})
+
+test('failed messages keep their position through new replies, retry confirmation and reload', async () => {
+  const backend = server(), storage = memoryStorage(), snapshots = []
+  let fail = true
+  const fetcher = (url, options) => {
+    const body = options?.body && JSON.parse(options.body)
+    if (fail && body?.action === 'enqueue' && body.message === 'Primeira')
+      return Promise.resolve(new Response(JSON.stringify({ error: 'Offline' }), { status: 503 }))
+    return backend.fetcher(url, options)
+  }
+  const options = { selection: {}, onSnapshot: (snapshot) => snapshots.push(snapshot), onError: () => {}, timers: fakeTimers, storage, fetcher }
+  const client = createChatClient(options)
+  await client.start()
+  const first = client.send('Primeira')
+  await tick(); await tick()
+  assert.equal(snapshots.at(-1).messages[0].localState, 'failed')
+  const second = client.send('Segunda')
+  await tick(); await tick()
+  backend.state.messages.push({ id: 'reply', role: 'character', text: 'Resposta' })
+  backend.state.revision++
+  await client.sync()
+  const expected = [first, second, 'reply']
+  assert.deepEqual(snapshots.at(-1).messages.map((message) => message.id), expected)
+  fail = false
+  await client.retry(first)
+  assert.deepEqual(snapshots.at(-1).messages.map((message) => message.id), expected)
+  assert.equal(snapshots.at(-1).messages[0].localState, undefined)
+  client.dispose()
+  const reopened = createChatClient(options)
+  await reopened.start()
+  assert.deepEqual(snapshots.at(-1).messages.map((message) => message.id), expected)
+  reopened.dispose()
 })

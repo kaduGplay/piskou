@@ -17,6 +17,7 @@ export function createChatClient({
     conversationId,
     canonical = [],
     outbox = [],
+    displayOrder = [],
     timer,
     processing = false,
     serial = Promise.resolve()
@@ -38,6 +39,7 @@ export function createChatClient({
   globalThis.addEventListener?.('pagehide', abandon)
   const selectionQuery = encodeURIComponent(JSON.stringify(selection))
   const key = () => 'piskou:outbox:' + conversationId
+  const orderKey = () => 'piskou:message-order:' + conversationId
   const save = () => {
     try {
       storage.setItem(key(), JSON.stringify(outbox))
@@ -46,19 +48,27 @@ export function createChatClient({
     }
   }
   const publish = (snapshot) => {
-    if (!disposed)
+    if (!disposed) {
+      const messages = new Map([
+        ...canonical.map((message) => [message.id, message]),
+        ...outbox.map((message) => [message.id, {
+          ...message,
+          role: 'user',
+          localState: message.failed ? 'failed' : 'sending',
+        }]),
+      ])
+      // Confirmation updates a bubble in place. A slow upload or failed send
+      // must never put an older bubble below newly received messages.
+      displayOrder = displayOrder.filter((id) => messages.has(id))
+      const seen = new Set(displayOrder)
+      for (const id of messages.keys()) if (!seen.has(id)) displayOrder.push(id)
+      try { storage.setItem(orderKey(), JSON.stringify(displayOrder)) } catch { /* Keep tab order if storage is full. */ }
       onSnapshot({
         ...lastSnapshot,
         ...snapshot,
-        messages: [
-          ...canonical,
-          ...outbox.map((m) => ({
-            ...m,
-            role: 'user',
-            localState: m.failed ? 'failed' : 'sending',
-          })),
-        ],
+        messages: displayOrder.map((id) => messages.get(id)),
       })
+    }
   }
   const apply = (snapshot) => {
     if (
@@ -169,6 +179,10 @@ export function createChatClient({
     if (disposed) return
     if (!conversationId) {
       conversationId = snapshot.conversationId
+      try {
+        const savedOrder = JSON.parse(storage.getItem(orderKey()) || '[]')
+        displayOrder = Array.isArray(savedOrder) ? [...new Set(savedOrder.filter((id) => typeof id === 'string'))] : []
+      } catch { displayOrder = [] }
       try {
         const saved = JSON.parse(storage.getItem(key()) || '[]')
         outbox = Array.isArray(saved)

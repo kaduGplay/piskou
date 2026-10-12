@@ -22,6 +22,7 @@ const db = new PGlite()
 const originalFetch = globalThis.fetch
 let browser,
   providerDelay = 30,
+  transcriptionDelay = 0,
   providerCalls = 0,
   canceledCalls = 0,
   providerFail = false
@@ -160,8 +161,10 @@ try {
     if (
       url.hostname === 'api.openai.com' &&
       url.pathname === '/v1/audio/transcriptions'
-    )
+    ) {
+      if (transcriptionDelay) await new Promise((resolve) => setTimeout(resolve, transcriptionDelay))
       return json({ text: 'Mensagem de áudio de teste.' })
+    }
     if (
       url.hostname === 'api.openai.com' &&
       url.pathname === '/v1/audio/speech'
@@ -581,13 +584,25 @@ try {
   // Give this isolated fixture additional credits for recorder and detached-worker checks.
   await db.exec('update public.piskou_chat_sessions set allowance=allowance+6,credit_base=credit_base+6')
   await page.reload()
+  transcriptionDelay = 4000
   await page.getByRole('button', { name: 'Gravar mensagem de áudio', exact: true }).click()
   await page.getByLabel('Gravação de áudio', { exact: true }).waitFor()
   await page.waitForTimeout(800)
   await page.getByRole('button', { name: 'Parar gravação e enviar áudio', exact: true }).click()
   await page.waitForFunction(() => !!document.querySelector('.chat-message.user .chat-audio-player'))
   const recordedBubble = page.locator('.chat-message.user').filter({ has: page.locator('.chat-audio-player') }).last()
+  const recordedId = await recordedBubble.getAttribute('data-message-id')
+  await send('Texto depois do áudio lento')
+  const orderedIds = () => page.locator('.chat-message[data-message-id]').evaluateAll((nodes) => nodes.map((node) => node.dataset.messageId))
+  const orderDuringUpload = await orderedIds()
+  assert.equal(orderDuringUpload.at(-2), recordedId)
   await recordedBubble.locator('time[datetime]').waitFor({ state: 'attached' })
+  transcriptionDelay = 0
+  assert.deepEqual((await orderedIds()).slice(0, orderDuringUpload.length), orderDuringUpload)
+  await page.reload()
+  await page.locator(`[data-message-id="${recordedId}"]`).waitFor()
+  assert.deepEqual((await orderedIds()).slice(0, orderDuringUpload.length), orderDuringUpload)
+  console.log('PASS stable bubble order: slow audio, following text, incoming response, confirmation and reload')
   assert.equal(await recordedBubble.locator('.chat-message-content > p').count(), 0)
   assert.equal(await page.locator('.chat-recording-bar').count(), 0)
   assert.equal(await page.locator('[aria-modal="true"]').count(), 0)
