@@ -42,3 +42,11 @@ test('character requests default to plan media, while explicit subjects and acce
   for (const text of ['não quero áudio', 'não manda foto', 'quero conversar sobre fotos', 'gostei 🔥🔥', 'sim']) assert.equal(requestedMedia([], text), null, text)
   assert.equal(requestedMedia(history, 'sim'), null)
 })
+
+test('time and pose modifiers describe character photos, never an unrelated generated subject', async () => {
+  const { requestedMedia } = await import('../api/_lib/image-intent.js')
+  for (const text of ['tudo bem me manda uma foto de agora', 'me envia uma foto de hoje', 'quero uma foto do momento', 'manda uma foto de frente', 'me manda uma foto de corpo inteiro', 'quero uma imagem de como você está', 'me manda uma foto sua na cozinha'])
+    assert.equal(requestedMedia([], text), 'photo', text)
+  for (const text of ['me manda uma foto de um prato de comida de agora', 'quero uma imagem de uma montanha hoje'])
+    assert.equal(requestedMedia([], text), 'image', text)
+})

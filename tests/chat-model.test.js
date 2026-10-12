@@ -230,3 +230,13 @@ test('authorized paid audio request produces a spoken reply instead of a plan of
   assert.equal(result.reply, 'Oi! Como você está?')
   assert.match(instructions, /ÁUDIO AUTORIZADO/)
 })
+
+test('photo of now routes directly to plans without camera refusal or image-provider invocation', async () => {
+  for (const message of ['tudo bem me manda uma foto de agora', 'me manda uma foto de hoje', 'quero uma foto do momento']) {
+    const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Character photo must not invoke the model or image generator') })
+    assert.equal(result.mediaRequest, 'photo')
+    assert.match(result.reply, /Premium e Luxo/)
+    assert.doesNotMatch(result.reply, /c[aâ]mera|n[aã]o (?:posso|tenho|consigo)/i)
+    assert.equal(result.imagePrompt, '')
+  }
+})

@@ -37,6 +37,9 @@ export function requestedMedia(history, message) {
   const acceptance = /^(?:sim|quero|pode|pode mandar|manda|claro|ok)[!.\s]*$/.test(text)
   const subject = acceptance ? normalize(last?.text) : text
   if (/\b(?:de voce|de ti|foto sua|imagem sua|sua foto|sua imagem|te ver|selfie)\b/.test(subject)) return 'photo'
+  // Time, pose and appearance describe the character's photo; they are not
+  // another image subject ("foto de agora" must never become an image prompt).
+  if (/\b(?:foto|imagem|retrato|fotografia)s?\s+(?:(?:atual|recente|nova)\s+)?(?:de|do|da|desse|deste)\s+(?:agora|agorinha|agr|hoje|hj|ontem|amanha|momento|dia|frente|perfil|costas|corpo(?: inteiro)?|rosto|cara|boca|olhos|cabelo|roupa|vestido|biquini|lingerie|pijama|casa|quarto|cama|verdade|como (?:voce|vc)|onde (?:voce|vc)|que (?:voce|vc))\b/.test(subject)) return 'photo'
   if (!acceptance && last && !last.media && !last.mediaRequest && /^(?:quero|manda|mande|envia|envie)\s+(?:uma\s+)?(?:imagem|foto)[!.\s🔥❤️💕]*$/u.test(text) && /\b(?:prato|comida|receita|paisagem|desenho|pintura)\b/.test(normalize(last.text)) && /(?:quer|gostaria).{0,20}ver/.test(normalize(last.text))) return 'image'
   if (/\b(?:sua|suas|seu|seus|voce|te ver|selfie)\b/.test(subject) && !/\b(?:prato|comida|receita|desenho|pintura|paisagem|cachorro|gato)\b/.test(subject)) return 'photo'
   if (/\b(?:desenha|desenhe|desenho|pintura|paisagem|prato|comida|receita|animal|cachorro|gato|montanha|flores)\b/.test(subject) || /\b(?:imagem|foto|retrato|ilustracao)\b.{0,20}\b(?:de|do|da|dos|das)\s+(?!voce\b|ti\b|si\b|sua\b|seu\b)\S+/.test(subject)) return 'image'
