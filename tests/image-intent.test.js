@@ -30,3 +30,15 @@ test('plan notice completes the photo request and does not turn agreement into a
   assert.equal(allowImageGeneration([], 'Me manda uma foto sua?'), true)
   assert.equal(allowImageGeneration([], 'Me manda um vídeo?'), true)
 })
+
+test('character requests default to plan media, while explicit subjects and accepted food offers are images', async () => {
+  const { requestedMedia } = await import('../api/_lib/image-intent.js')
+  for (const text of ['Me manda uma imagem', 'quero uma imagem de você 🔥🔥', 'me manda uma foto sua', 'quero uma foto 🔥']) assert.equal(requestedMedia([], text), 'photo', text)
+  assert.equal(requestedMedia([], 'Me manda um vídeo'), 'video')
+  assert.equal(requestedMedia([], 'Me manda um áudio falando oi'), 'audio')
+  for (const text of ['quero uma imagem de um prato de comida', 'gere uma imagem de um avião', 'desenhe uma montanha']) assert.equal(requestedMedia([], text), 'image', text)
+  const offered = [{ role: 'character', text: 'Podemos imaginar um prato de comida. Quer ver?' }]
+  assert.equal(requestedMedia(offered, 'sim'), 'image')
+  for (const text of ['não quero áudio', 'não manda foto', 'quero conversar sobre fotos', 'gostei 🔥🔥', 'sim']) assert.equal(requestedMedia([], text), null, text)
+  assert.equal(requestedMedia(history, 'sim'), null)
+})

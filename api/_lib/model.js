@@ -1,4 +1,4 @@
-import { allowMediaRequest } from './image-intent.js'
+import { allowMediaRequest, requestedMedia } from './image-intent.js'
 import { markTopicAsked, TOPIC_INSTRUCTIONS } from './open-topics.js'
 import {
   dialogueState,
@@ -48,6 +48,13 @@ export async function generateChatReply(
   if (context.characterPreferences)
     conversation.data.fictionalCharacter.biography.preferences =
       context.characterPreferences
+  const requested = requestedMedia(history, message)
+  if (['photo', 'video', 'audio'].includes(requested)) return {
+    reply: mediaOfferMessage(selection, requested, conversation.data.conversationPreferences),
+    mediaRequest: requested,
+    imagePrompt: '',
+    nextMemory: conversation.nextMemory,
+  }
   let lastError
   let textOnly = false
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -75,8 +82,8 @@ export async function generateChatReply(
                   imagePrompt: { type: 'string' },
                   mediaRequest: {
                     type: 'string',
-                    enum: !textOnly && allowMediaRequest(history, message)
-                      ? ['none', 'photo', 'video', 'image']
+                    enum: !textOnly && requested === 'image'
+                      ? ['image']
                       : ['none'],
                   },
                 },
@@ -156,6 +163,7 @@ export async function generateChatReply(
       )
         ? parsed.mediaRequest
         : null
+      if (requested === 'image' && !textOnly) mediaRequest = 'image'
       if (mediaRequest && (textOnly || !allowMediaRequest(history, message))) {
         if (attempt === 0) {
           textOnly = true
@@ -171,9 +179,9 @@ export async function generateChatReply(
               mediaRequest,
               conversation.data.conversationPreferences,
             )
-          : reply,
+          : mediaRequest === 'image' && /(?:n[aã]o (?:posso|consigo|envio|mando)|apenas (?:por )?texto|s[oó] (?:por )?texto)/i.test(reply) ? 'Aqui está a imagem gerada por IA que você pediu.' : reply,
         mediaRequest,
-        imagePrompt: mediaRequest === 'image' ? String(parsed.imagePrompt || '').slice(0, 1500) : '',
+        imagePrompt: mediaRequest === 'image' ? String(parsed.imagePrompt || `Gere uma imagem do assunto solicitado neste contexto: ${history.filter((m) => !m.deleted && !m.contextInvalidated).slice(-2).map((m) => m.text).join(' / ')}\nPedido atual: ${message}`).slice(0, 1500) : '',
         nextMemory: markTopicAsked(
           conversation.nextMemory,
           reply,

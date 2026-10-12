@@ -582,7 +582,7 @@ try {
   assert.deepEqual(errors, [])
   console.log('PASS no horizontal overflow or browser/handler errors')
   // Give this isolated fixture additional credits for recorder and detached-worker checks.
-  await db.exec('update public.piskou_chat_sessions set allowance=allowance+6,credit_base=credit_base+6')
+  await db.exec('update public.piskou_chat_sessions set allowance=allowance+12,credit_base=credit_base+12')
   await page.reload()
   transcriptionDelay = 4000
   await page.getByRole('button', { name: 'Gravar mensagem de áudio', exact: true }).click()
@@ -642,6 +642,17 @@ try {
   assert.equal(restored.conversationId, originalInbox.active)
   assert.ok(restored.messages.some((message) => message.role === 'user'))
   console.log('PASS Premium creation: server rejects free creation, paid creates isolated conversation, original history restores')
+  for (const [request, expected] of [
+    ['Me manda um vídeo', 'Vídeos no plano Luxo'],
+    ['quero uma imagem de você 🔥🔥', 'Fotos nos planos Premium e Luxo'],
+    ['Me manda um áudio falando oi', 'Áudios · Premium e Luxo'],
+  ]) {
+    await send(request)
+    await page.getByText(expected, { exact: true }).last().waitFor()
+    assert.equal(await page.locator('.chat-message.character').filter({ hasText: /s[oó] (?:por )?texto|n[aã]o posso mandar/i }).count(), 0)
+  }
+  assert.ok(await page.getByText(/envio de áudios pela personagem ainda está em preparação/).count())
+  console.log('PASS media requests: character video, photo and audio show correct plans; disabled AI voice remains disclosed')
   const detachedId = crypto.randomUUID()
   const detached = await page.evaluate(
     async ({ id, selection }) => {

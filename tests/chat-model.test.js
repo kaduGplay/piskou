@@ -197,3 +197,25 @@ test('unrequested photo flags are rejected and repaired into a contextual text r
   assert.equal(result.mediaRequest, null)
   assert.equal(result.reply, 'Gosto de café com leite. E você?')
 })
+
+test('explicit character media requests cannot become generic text-only refusals from the provider', async () => {
+  for (const [message, kind, plan] of [
+    ['Me manda um vídeo', 'video', /Luxo/],
+    ['quero uma imagem de você 🔥🔥', 'photo', /Premium e Luxo/],
+    ['quero uma imagem', 'photo', /Premium e Luxo/],
+    ['Me manda um áudio falando oi', 'audio', /Premium e Luxo/],
+  ]) {
+    const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Media plan routing must not depend on model output') })
+    assert.equal(result.mediaRequest, kind)
+    assert.match(result.reply, plan)
+    assert.doesNotMatch(result.reply, /s[oó] (?:por )?texto|n[aã]o posso mandar/)
+    if (kind === 'audio') assert.match(result.reply, /preparação/)
+  }
+})
+
+test('accepted food image offer generates the subject instead of an avatar or subscription notice', async () => {
+  const result = await generateChatReply(DEFAULT_SELECTION, [{ role: 'user', text: 'Podemos imaginar um prato?' }, { role: 'character', text: 'Um prato de comida. Quer ver?' }], 'sim', 1, async () => new Response(JSON.stringify({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ reply: 'Não posso mandar imagens, apenas texto.', mediaRequest: 'none', imagePrompt: '' }) }] }] })))
+  assert.equal(result.mediaRequest, 'image')
+  assert.match(result.imagePrompt, /prato de comida/)
+  assert.doesNotMatch(result.reply, /Não posso/)
+})

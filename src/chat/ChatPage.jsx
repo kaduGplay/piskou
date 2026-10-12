@@ -103,7 +103,7 @@ export default function ChatPage() {
       Array.isArray(saved.mediaRequests)
       ? saved.mediaRequests
           .slice(-30)
-          .filter((item) => ['photo', 'video'].includes(item.kind))
+          .filter((item) => ['photo', 'video', 'audio'].includes(item.kind))
           .map((item) => ({ ...item, phase: 'media' }))
       : []
   })
@@ -244,7 +244,7 @@ export default function ChatPage() {
         track('ChatRespostaRecebida')
         setRhythmVariant('grouped')
         const last = data.messages.filter((m) => m.role === 'character').at(-1)
-        if (['photo', 'video'].includes(last?.mediaRequest))
+        if (['photo', 'video', 'audio'].includes(last?.mediaRequest))
           requestMedia(last.mediaRequest, true, last.id)
       },
     })
@@ -350,7 +350,7 @@ export default function ChatPage() {
       )) return previous
       return [...previous, { id, kind, fromChat, afterMessageId, phase: 'media' }]
     })
-    track(kind === 'video' ? 'ChatVideoSolicitado' : 'ChatFotoSolicitada', {
+    if (kind !== 'audio') track(kind === 'video' ? 'ChatVideoSolicitado' : 'ChatFotoSolicitada', {
       visual_style: sel.style,
     })
   }
@@ -415,7 +415,7 @@ export default function ChatPage() {
                       <strong>
                         {item.kind === 'video'
                           ? 'Vídeos no plano Luxo'
-                          : 'Fotos nos planos Premium e Luxo'}
+                          : item.kind === 'audio' ? 'Áudios · Premium e Luxo' : 'Fotos nos planos Premium e Luxo'}
                       </strong>
                       <p>
                         Conheça os recursos e escolha o plano que combina com

@@ -16,7 +16,30 @@ export function allowMediaRequest(history, message) {
   if (priorMedia && /^(?:me )?(?:manda|mande|envia|envie|gera|gere|faz|faca)\b.{0,25}\b(?:outra|outro|mais uma|mais um|novamente|de novo)\b/.test(text)) return true
   // "sim" accepts only the immediately preceding, still unfulfilled media offer.
   return !priorMedia && /^(?:sim|quero|pode|pode mandar|manda|claro|ok)[!.\s]*$/.test(text) &&
-    /(?:quer|posso|gostaria).{0,60}(?:imagem|foto|desenho|pintura|ilustra|video)/.test(normalize(lastCharacter?.text))
+    (/(?:quer|posso|gostaria).{0,60}(?:imagem|foto|desenho|pintura|ilustra|video)/.test(normalize(lastCharacter?.text)) ||
+      /\b(?:prato|comida|receita|desenho|pintura|paisagem)\b/.test(normalize(lastCharacter?.text)) && /(?:quer|gostaria).{0,20}ver/.test(normalize(lastCharacter?.text)))
 }
 
 export const allowImageGeneration = allowMediaRequest
+
+// Generic requests in a character chat refer to the character. Explicit
+// subjects and accepted offers (food, landscapes, drawings) remain images.
+export function requestedMedia(history, message) {
+  const text = normalize(message)
+  const last = history.filter((m) => m.role === 'character' && !m.deleted && !m.contextInvalidated).at(-1)
+  if (/\b(?:nao|sem|pare de|para de)\b.{0,40}(?:foto|imagem|video|audio|voz|manda|envia)/.test(text)) return null
+  if (/\b(?:falar|conversar|comentar|saber|entender)\b.{0,25}\b(?:sobre|das|dos|de)\b/.test(text)) return null
+  const request = /\b(?:manda|mande|mandar|envia|envie|enviar|mostra|mostre|mostrar|gera|gere|gerar|cria|crie|criar|faz|faca|fazer|quero|gostaria|posso|desenha|desenhe)\b/.test(text)
+  const audio = request && /\b(?:audio|audios|voz)\b/.test(text)
+  if (!audio && !allowMediaRequest(history, message)) return null
+  if (audio) return 'audio'
+  if (/\bvideos?\b/.test(text)) return 'video'
+  const acceptance = /^(?:sim|quero|pode|pode mandar|manda|claro|ok)[!.\s]*$/.test(text)
+  const subject = acceptance ? normalize(last?.text) : text
+  if (/\b(?:de voce|de ti|foto sua|imagem sua|sua foto|sua imagem|te ver|selfie)\b/.test(subject)) return 'photo'
+  if (!acceptance && last && !last.media && !last.mediaRequest && /^(?:quero|manda|mande|envia|envie)\s+(?:uma\s+)?(?:imagem|foto)[!.\s🔥❤️💕]*$/u.test(text) && /\b(?:prato|comida|receita|paisagem|desenho|pintura)\b/.test(normalize(last.text)) && /(?:quer|gostaria).{0,20}ver/.test(normalize(last.text))) return 'image'
+  if (/\b(?:sua|suas|seu|seus|voce|te ver|selfie)\b/.test(subject) && !/\b(?:prato|comida|receita|desenho|pintura|paisagem|cachorro|gato)\b/.test(subject)) return 'photo'
+  if (/\b(?:desenha|desenhe|desenho|pintura|paisagem|prato|comida|receita|animal|cachorro|gato|montanha|flores)\b/.test(subject) || /\b(?:imagem|foto|retrato|ilustracao)\b.{0,20}\b(?:de|do|da|dos|das)\s+(?!voce\b|ti\b|si\b|sua\b|seu\b)\S+/.test(subject)) return 'image'
+  if (last && !last.media && !last.mediaRequest && !acceptance && /^(?:quero|manda|mande|envia|envie)\s+(?:uma\s+)?(?:imagem|foto)[!.\s🔥❤️💕]*$/u.test(text) && /(?:quer|posso|gostaria).{0,60}(?:imagem|foto|desenho|pintura)/.test(normalize(last.text))) return requestedMedia([], 'quero ' + last.text)
+  return 'photo'
+}
