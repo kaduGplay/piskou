@@ -175,7 +175,8 @@ export default async function handler(req, res) {
     }
     lease = null
     return res.status(200).json({ ready: true, text: transcript })
-  } catch {
+  } catch (error) {
+    console.error('chat: audio unavailable', error.message)
     return res
       .status(502)
       .json({ error: 'Não foi possível preparar o áudio. Tente novamente.' })

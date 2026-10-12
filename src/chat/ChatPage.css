@@ -1310,3 +1310,38 @@ body.chat-page {
     max-width: calc(100% - 35px);
   }
 }
+
+/* Voice notes use inline controls; native media panels never cover the chat. */
+.chat-audio-message { display: block; margin-top: 0; width: 270px; max-width: 100%; }
+.chat-audio-message .chat-audio-element { display: none; }
+.chat-audio-player { display: flex; align-items: center; gap: 12px; min-height: 56px; }
+.chat-audio-player .chat-audio-play { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff; background: #bc438c; }
+.chat-audio-play:disabled { opacity: .5; cursor: wait; }
+.chat-audio-track { flex: 1; min-width: 0; position: relative; }
+.chat-audio-wave { height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 2px; }
+.chat-audio-wave i { flex: 1; min-width: 2px; max-width: 4px; border-radius: 5px; background: #ad91af; }
+.chat-audio-wave i.played { background: #fa71bb; }
+.chat-audio-track > input[type='range'] { position: absolute; inset: 0 0 auto; width: 100%; height: 34px; margin: 0; padding: 0; opacity: 0; cursor: pointer; }
+.chat-audio-track:focus-within { outline: 2px solid #f6a9d3; outline-offset: 4px; border-radius: 4px; }
+.chat-audio-caption { display: flex; justify-content: space-between; gap: 6px; font-size: 10px; color: #c3afc6; font-variant-numeric: tabular-nums; }
+.chat-audio-player .chat-audio-speed { flex: 0 0 34px; white-space: nowrap; overflow-wrap: normal; border: 0; border-radius: 10px; padding: 5px 3px; background: #ffffff12; color: #eee1ef; font: inherit; font-size: 11px; }
+.chat-audio-message details { margin-top: 7px; }
+.chat-audio-message summary { cursor: pointer; color: #c8b3ce; font-size: 11px; }
+.chat-audio-message small { display: block; margin-top: 6px; font-size: 11px; color: #ffc4d7; }
+.chat-voice-message { margin-top: 5px; }
+.chat-audio-loading { animation: chat-audio-spin 1s linear infinite; }
+@keyframes chat-audio-spin { to { transform: rotate(360deg); } }
+.chat-recorder { position: relative; flex-shrink: 0; }
+.chat-composer form.is-recording { padding-left: 8px; }
+.chat-composer form.is-recording > input, .chat-composer form.is-recording > button { display: none; }
+.chat-recorder.is-recording { flex: 1; min-width: 0; }
+.chat-recording-bar { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 40px; }
+.chat-recording-bar time { font-size: 12px; color: #f1dce9; font-variant-numeric: tabular-nums; }
+.chat-recording-dot { height: 7px; width: 7px; flex-shrink: 0; border-radius: 50%; background: #ff5a7e; }
+.chat-composer form .chat-recording-cancel { background: transparent; color: #e4bbd3; }
+.chat-recording-wave { flex: 1; min-width: 30px; display: flex; align-items: center; justify-content: space-between; gap: 2px; height: 32px; overflow: hidden; }
+.chat-recording-wave i { flex: 1; min-width: 2px; max-width: 4px; border-radius: 4px; background: #f77fbe; transition: height 80ms linear; }
+.chat-recording-limit { font-size: 10px; color: #ac90a7; white-space: nowrap; }
+.chat-recording-error { position: absolute; bottom: calc(100% + 15px); right: 0; width: min(270px, 70vw); padding: 10px 12px; background: #35283a; color: #ffd2e2; border: 1px solid #865674; border-radius: 12px; font-size: 12px; }
+@media (max-width: 380px) { .chat-recording-limit { display: none; } .chat-recording-bar { gap: 6px; } }
+@media (prefers-reduced-motion: reduce) { .chat-audio-loading { animation: none; } .chat-recording-wave i { transition: none; } }

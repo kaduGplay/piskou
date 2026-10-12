@@ -1,3 +1,5 @@
+import AudioMessage from './AudioMessage.jsx'
+export { default as AudioMessage } from './AudioMessage.jsx'
 import { useEffect, useRef, useState } from 'react'
 import {
   Check,
@@ -28,100 +30,6 @@ const clock = (value) =>
     : ''
 const fullTime = (value) =>
   value ? new Date(value).toLocaleString('pt-BR') : 'Ainda não registrado'
-export function AudioMessage({ message, selection, onChanged }) {
-  const [url, setURL] = useState(''),
-    [error, setError] = useState(''),
-    [busy, setBusy] = useState(false),
-    [speed, setSpeed] = useState(1)
-  const audioRef = useRef(null)
-  const alive = useRef(true)
-  useEffect(() => {
-    alive.current = true
-    return () => {
-      alive.current = false
-      audioRef.current?.pause()
-    }
-  }, [])
-  const load = async () => {
-    setBusy(true)
-    setError('')
-    try {
-      if (!message.audio) {
-        const response = await fetch('/api/chat-audio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'speech',
-            messageId: message.id,
-            selection,
-          }),
-        })
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error)
-        onChanged?.()
-      }
-      const response = await fetch(
-        '/api/chat-audio?messageId=' + encodeURIComponent(message.id),
-        { cache: 'no-store' },
-      )
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error)
-      if (alive.current) setURL(data.url)
-    } catch (e) {
-      if (alive.current) setError(e.message || 'Áudio indisponível')
-    } finally {
-      if (alive.current) setBusy(false)
-    }
-  }
-  return (
-    <div className="chat-audio-message">
-      {!url ? (
-        <button
-          type="button"
-          disabled={busy || !!message.localState}
-          onClick={load}
-        >
-          {busy
-            ? 'Preparando áudio…'
-            : message.audio
-              ? 'Reproduzir áudio'
-              : 'Ouvir resposta · voz de IA'}
-        </button>
-      ) : (
-        <>
-          <audio
-            ref={audioRef}
-            src={url}
-            controls
-            preload="none"
-            onError={() => {
-              setURL('')
-              setError('Toque novamente para renovar o acesso ao áudio.')
-            }}
-          />
-          <button
-            type="button"
-            aria-label="Velocidade do áudio"
-            onClick={() => {
-              const next = speed === 1 ? 1.5 : speed === 1.5 ? 2 : 1
-              setSpeed(next)
-              if (audioRef.current) audioRef.current.playbackRate = next
-            }}
-          >
-            {String(speed).replace('.', ',')}x
-          </button>
-        </>
-      )}
-      {message.audio && message.role === 'user' && (
-        <details>
-          <summary>Ver transcrição</summary>
-          <p>{message.text}</p>
-        </details>
-      )}
-      {error && <small role="alert">{error}</small>}
-    </div>
-  )
-}
 export default function ChatMessage({
   message,
   messages,
@@ -172,6 +80,7 @@ export default function ChatMessage({
   const quoted = messages.find((m) => m.id === message.replyTo)
   const state = messageState(message)
   return (
+    <>
     <div
       className={'chat-message ' + message.role}
       data-message-id={message.id}
@@ -188,7 +97,7 @@ export default function ChatMessage({
         onPointerDown={(e) => {
           if (
             e.pointerType === 'mouse' ||
-            e.target.closest('button,audio,a,summary')
+            e.target.closest('button,input,audio,a,summary,details')
           )
             return
           origin.current = [e.clientX, e.clientY]
@@ -239,8 +148,7 @@ export default function ChatMessage({
                 <figcaption>Imagem gerada</figcaption>
               </figure>
             )}
-            {(message.audio ||
-              (message.role === 'character' && message.id)) && (
+            {message.audio && message.role === 'user' && (
               <AudioMessage
                 message={message}
                 selection={selection}
@@ -408,5 +316,15 @@ export default function ChatMessage({
         </div>
       )}
     </div>
+    {message.role === 'character' && message.id && !message.deleted && (
+      <div className="chat-message character chat-voice-message" data-audio-for={message.id}>
+        <img className="chat-message-avatar" src={image} alt="" />
+        <div className="chat-message-content">
+          <AudioMessage message={message} selection={selection} onChanged={onChanged} />
+          <span className="chat-message-meta">{name} · {clock(message.sentAt)}</span>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

@@ -78,6 +78,7 @@ export default function ChatPage() {
   useEffect(() => {
     saveProgress({ draft })
   }, [draft])
+  const [recordingAudio, setRecordingAudio] = useState(false)
   const [typing, setTyping] = useState(false)
   const [rhythmVariant, setRhythmVariant] = useState(null)
   const [replyTo, setReplyTo] = useState(null)
@@ -170,6 +171,9 @@ export default function ChatPage() {
     viewport?.addEventListener('resize', schedule)
     viewport?.addEventListener('scroll', schedule)
     window.addEventListener('resize', schedule)
+    window.addEventListener('focus', schedule)
+    window.addEventListener('pageshow', schedule)
+    document.addEventListener('visibilitychange', schedule)
     document.addEventListener('focusin', schedule)
     document.addEventListener('focusout', schedule)
     return () => {
@@ -177,6 +181,9 @@ export default function ChatPage() {
       viewport?.removeEventListener('resize', schedule)
       viewport?.removeEventListener('scroll', schedule)
       window.removeEventListener('resize', schedule)
+      window.removeEventListener('focus', schedule)
+      window.removeEventListener('pageshow', schedule)
+      document.removeEventListener('visibilitychange', schedule)
       document.removeEventListener('focusin', schedule)
       document.removeEventListener('focusout', schedule)
       document.body.classList.remove('chat-page')
@@ -791,6 +798,7 @@ export default function ChatPage() {
             </div>
           )}
           <form
+            className={recordingAudio ? 'is-recording' : ''}
             onSubmit={(event) => {
               event.preventDefault()
               send()
@@ -816,6 +824,7 @@ export default function ChatPage() {
             />
             <ChatRecorder
               disabled={loading || paywallReached}
+              onRecordingChange={setRecordingAudio}
               onRecorded={(recording) => send('Mensagem de áudio', recording)}
             />
             <button

@@ -94,7 +94,8 @@ try {
           const [operator, ...rest] = value.split('.')
           const operators = { eq: '=', gte: '>=', lte: '<=' }
           if (!operators[operator]) continue
-          values.push(rest.join('.'))
+          const filterValue = rest.join('.')
+          values.push(filterValue === 'true' ? true : filterValue === 'false' ? false : filterValue)
           filters.push(`${key} ${operators[operator]} $${values.length}`)
         }
         const columns = url.searchParams.get('select') || '*'
@@ -189,7 +190,7 @@ try {
     { default: memory } = await import('../api/chat-memory.js'),
     { default: audio } = await import('../api/chat-audio.js'),
     { default: worker } = await import('../api/chat-worker.js')
-  browser = await chromium.launch({ headless: true })
+  browser = await chromium.launch({ headless: true, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] })
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
   })
@@ -269,6 +270,19 @@ try {
       .getByRole('button', { name: 'Enviar mensagem', exact: true })
       .click()
   }
+  // Recording remains inside the composer and cancellation releases the microphone.
+  await page.getByRole('button', { name: 'Gravar mensagem de áudio', exact: true }).click()
+  await page.getByLabel('Gravação de áudio', { exact: true }).waitFor()
+  await page.waitForTimeout(500)
+  assert.equal(await page.locator('.chat-recording-wave i').count(), 36)
+  assert.equal(await page.locator('form.is-recording').count(), 1)
+  assert.equal(await page.locator('[aria-modal="true"]').count(), 0)
+  await page.screenshot({ path: '/private/tmp/piskou-recording-ui.png' })
+  await page.getByRole('button', { name: 'Cancelar gravação' }).click()
+  await input.waitFor({ state: 'visible' })
+  assert.equal(await page.locator('.chat-recording-bar').count(), 0)
+  assert.equal(await page.locator('.chat-message.user').count(), 0)
+  console.log('PASS recorder: inline waveform, cancel restores composer, no modal overlay or sent message')
   await send('Tenho uma entrevista')
   await send('amanhã')
   await send('preciso revisar o currículo')
@@ -283,7 +297,7 @@ try {
   )
   await page.waitForFunction(
     () =>
-      document.querySelectorAll('.chat-message.character .chat-message-content')
+      document.querySelectorAll('.chat-message.character:not(.chat-voice-message) .chat-message-content')
         .length === 1,
   )
   assert.equal(providerCalls, 1)
@@ -304,6 +318,10 @@ try {
     ).rows[0].used,
     3,
   )
+  const textReply = page.locator('.chat-message.character:not(.chat-voice-message)').first()
+  assert.equal(await textReply.locator('.chat-audio-player').count(), 0)
+  assert.equal(await page.locator('.chat-voice-message .chat-audio-player').count(), 1)
+  console.log('PASS character reply: text and voice controls appear in separate message bubbles')
   const first = page.locator('.chat-message.user').first()
   await first.getByRole('button', { name: 'Ações da mensagem' }).click()
   await first.getByRole('button', { name: 'Informações', exact: true }).click()
@@ -485,7 +503,7 @@ try {
   await audioBubble
     .getByRole('button', { name: 'Reproduzir áudio', exact: true })
     .click()
-  await audioBubble.locator('audio').waitFor()
+  await audioBubble.locator('audio').waitFor({ state: 'attached' })
   await audioBubble.locator('audio').evaluate((audio) => audio.play())
   await audioBubble.getByRole('button', { name: 'Velocidade do áudio' }).click()
   assert.equal(
@@ -535,6 +553,21 @@ try {
   )
   assert.deepEqual(errors, [])
   console.log('PASS no horizontal overflow or browser/handler errors')
+  // Give this isolated fixture additional credits for recorder and detached-worker checks.
+  await db.exec('update public.piskou_chat_sessions set allowance=allowance+6,credit_base=credit_base+6')
+  await page.reload()
+  await page.getByRole('button', { name: 'Gravar mensagem de áudio', exact: true }).click()
+  await page.getByLabel('Gravação de áudio', { exact: true }).waitFor()
+  await page.waitForTimeout(800)
+  await page.getByRole('button', { name: 'Parar gravação e enviar áudio', exact: true }).click()
+  await page.waitForFunction(() => !!document.querySelector('.chat-message.user .chat-audio-player'))
+  const recordedBubble = page.locator('.chat-message.user').filter({ has: page.locator('.chat-audio-player') }).last()
+  await recordedBubble.locator('time[datetime]').waitFor({ state: 'attached' })
+  assert.equal(await recordedBubble.locator('.chat-message-content > p').count(), 0)
+  assert.equal(await page.locator('.chat-recording-bar').count(), 0)
+  assert.equal(await page.locator('[aria-modal="true"]').count(), 0)
+  await page.screenshot({ path: '/private/tmp/piskou-audio-ui.png' })
+  console.log('PASS real MediaRecorder: recorded voice note is sent as an audio bubble, composer restored without overlay')
   const detachedId = crypto.randomUUID()
   const detached = await page.evaluate(
     async ({ id, selection }) => {
