@@ -489,7 +489,7 @@ export default function ChatPage() {
             </div>
           ))}
         </dl>
-        <button
+        {sent < 2 && <><button
           type="button"
           className="chat-primary"
           disabled={loading || typing || mediaPending}
@@ -504,11 +504,11 @@ export default function ChatPage() {
           onClick={requestPhoto}
         >
           <ImageIcon size={17} /> Pedir uma foto
-        </button>
+        </button></>}
         {!loading && <ChatMemoryPanel selection={sel} />}
-        <p className="chat-profile-note">
+        {sent < 2 && <p className="chat-profile-note">
           Fotos disponíveis a partir do Premium.
-        </p>
+        </p>}
       </div>
     </>
   )
@@ -552,8 +552,8 @@ export default function ChatPage() {
         <header className="chat-header">
           <a
             className="chat-icon-button"
-            href={`/?edit=1&${window.location.search.slice(1)}`}
-            aria-label="Voltar ao criador"
+            href="/messages"
+            aria-label="Voltar às mensagens"
           >
             <ArrowLeft size={21} />
           </a>
@@ -737,7 +737,7 @@ export default function ChatPage() {
             </p>
           )}
           {loading && <p role="status">Abrindo sua conversa…</p>}
-          <div className="chat-suggestions">
+          {sent < 2 && <div className="chat-suggestions">
             {(sent === 0
               ? ['Oi! 💕', 'Olá! Como foi seu dia?', 'Quero te conhecer melhor']
               : ['Me conta mais sobre você', 'O que você gosta de fazer?']
@@ -767,7 +767,7 @@ export default function ChatPage() {
             >
               <ImageIcon size={13} /> Pedir uma foto
             </button>
-          </div>
+          </div>}
           {hasNewMessages && (
             <button
               className="chat-new-messages"

@@ -92,7 +92,13 @@ try {
           if (['select', 'limit', 'order', 'or'].includes(key)) continue
           assert.match(key, /^[a-z_]+$/)
           const [operator, ...rest] = value.split('.')
-          const operators = { eq: '=', gte: '>=', lte: '<=' }
+          const operators = { eq: '=', gte: '>=', lte: '<=', gt: '>' }
+          if (operator === 'in') {
+            const entries = rest.join('.').slice(1, -1).split(',')
+            const placeholders = entries.map((entry) => { values.push(entry); return '$' + values.length })
+            filters.push(`${key} in (${placeholders.join(',')})`)
+            continue
+          }
           if (!operators[operator]) continue
           const filterValue = rest.join('.')
           values.push(filterValue === 'true' ? true : filterValue === 'false' ? false : filterValue)
@@ -189,7 +195,8 @@ try {
   const { default: chat } = await import('../api/chat.js'),
     { default: memory } = await import('../api/chat-memory.js'),
     { default: audio } = await import('../api/chat-audio.js'),
-    { default: worker } = await import('../api/chat-worker.js')
+    { default: worker } = await import('../api/chat-worker.js'),
+    { default: conversations } = await import('../api/conversations.js')
   browser = await chromium.launch({ headless: true, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] })
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -201,6 +208,7 @@ try {
         '/api/chat': chat,
         '/api/chat-memory': memory,
         '/api/chat-audio': audio,
+        '/api/conversations': conversations,
       }[url.pathname]
     if (!handler) return route.fulfill({ json: { ok: true } })
     const headers = {},
@@ -215,6 +223,7 @@ try {
       data
     const res = {
       setHeader: (k, v) => (headers[k] = v),
+      getHeader: (k) => headers[k],
       status(code) {
         status = code
         return this
@@ -233,7 +242,7 @@ try {
     }
     await route.fulfill({
       status,
-      headers: { ...headers, 'Content-Type': 'application/json' },
+      headers: { ...Object.fromEntries(Object.entries(headers).map(([key,value]) => [key, Array.isArray(value) ? value.join('\n') : value])), 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
   }
@@ -584,6 +593,40 @@ try {
   assert.equal(await page.locator('[aria-modal="true"]').count(), 0)
   await page.screenshot({ path: '/private/tmp/piskou-audio-ui.png' })
   console.log('PASS real MediaRecorder: recorded voice note is sent as an audio bubble, composer restored without overlay')
+  await page.getByRole('link', { name: 'Voltar às mensagens', exact: true }).click()
+  await page.getByRole('heading', { name: 'Mensagens', exact: true }).waitFor()
+  await page.locator('.messages-row').first().waitFor()
+  await page.getByRole('button', { name: 'Criar outra personagem', exact: true }).first().click()
+  await page.getByRole('dialog').waitFor()
+  assert.ok(await page.getByText('MAIS PERSONAGENS · PREMIUM').count())
+  await page.getByRole('button', { name: 'Fechar oferta' }).click()
+  await page.locator('.messages-row').first().click()
+  await page.getByRole('textbox', { name: 'Sua mensagem' }).waitFor()
+  assert.equal(await page.locator('.chat-suggestions').count(), 0)
+  console.log('PASS inbox: back lists saved conversation, Premium gates creation, reopening preserves history and hides suggestions')
+  const originalInbox = await page.evaluate(async () => (await fetch('/api/conversations')).json())
+  assert.equal(await page.evaluate(async () => (await fetch('/api/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create' }) })).status), 403)
+  // Isolated purchase fixture: no production accounts or payment providers.
+  await db.query("insert into public.piskou_chat_purchases(charge_id,chat_id,plan_id,active) values('browser-premium',$1,'premium-access',true)", [originalInbox.active])
+  await page.getByRole('link', { name: 'Voltar às mensagens', exact: true }).click()
+  await page.locator('.messages-row').first().waitFor()
+  await page.getByRole('button', { name: 'Criar outra personagem', exact: true }).first().click()
+  await page.waitForURL('**/?edit=1')
+  await page.goto(origin + '/chat')
+  await page.getByRole('textbox', { name: 'Sua mensagem' }).waitFor()
+  const created = await page.evaluate(async () => (await fetch('/api/conversations')).json())
+  assert.notEqual(created.active, originalInbox.active)
+  assert.equal(created.conversations.length, 2)
+  const isolated = await page.evaluate(async () => (await fetch('/api/chat')).json())
+  assert.equal(isolated.messages.filter((message) => message.role === 'user').length, 0)
+  await page.getByRole('link', { name: 'Voltar às mensagens', exact: true }).click()
+  await page.locator('.messages-row').waitFor({ state: 'attached' }).catch(() => {})
+  await page.locator('.messages-row').filter({ hasText: originalInbox.conversations[0].preview }).first().click()
+  await page.getByRole('textbox', { name: 'Sua mensagem' }).waitFor()
+  const restored = await page.evaluate(async () => (await fetch('/api/chat')).json())
+  assert.equal(restored.conversationId, originalInbox.active)
+  assert.ok(restored.messages.some((message) => message.role === 'user'))
+  console.log('PASS Premium creation: server rejects free creation, paid creates isolated conversation, original history restores')
   const detachedId = crypto.randomUUID()
   const detached = await page.evaluate(
     async ({ id, selection }) => {

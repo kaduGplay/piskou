@@ -76,6 +76,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
     })
   }, [])
   const callKind = source === 'voice-call' ? 'Ligações de voz' : source === 'video-call' ? 'Videochamadas' : null
+  const newCharacter = source === 'new-character'
   const trialEnded = source === 'trial'
   const fromChat = source === 'chat' || trialEnded
   const characterName = sel.name || 'sua personagem'
@@ -281,15 +282,15 @@ export default function PaywallSheet({ sel, onClose, source }) {
             <img src={result.src} alt="Personagem escolhida" />
             <div className="paywall-hero-copy">
               <span>
-                {callKind ? 'CHAMADAS · EM BREVE' : trialEnded ? 'SUAS MENSAGENS GRÁTIS ACABARAM' : fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}
+                {newCharacter ? 'MAIS PERSONAGENS · PREMIUM' : callKind ? 'CHAMADAS · EM BREVE' : trialEnded ? 'SUAS MENSAGENS GRÁTIS ACABARAM' : fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}
               </span>
               <h1 id="paywall-title">
-                {callKind ? `${callKind} com ${characterName}` : fromChat
+                {newCharacter ? 'Crie outra personagem' : callKind ? `${callKind} com ${characterName}` : fromChat
                   ? `Continue conversando com ${characterName}`
                   : `Dê vida à ${characterName}`}
               </h1>
               <p>
-                {callKind ? 'As chamadas estão em preparação. Conheça os recursos disponíveis em cada plano; a compra ainda não habilita chamadas.' : trialEnded
+                {newCharacter ? 'Adquira Premium ou Luxo para criar outras personagens e manter suas conversas separadas.' : callKind ? 'As chamadas estão em preparação. Conheça os recursos disponíveis em cada plano; a compra ainda não habilita chamadas.' : trialEnded
                   ? 'Sua conversa está salva. Escolha um plano e retome de onde vocês pararam, com a personalidade que você escolheu.'
                   : fromChat
                   ? `Gostou de conhecer ${characterName}? Escolha seu acesso para continuar a conversa do seu jeito, com a personalidade que você escolheu.`

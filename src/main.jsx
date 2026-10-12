@@ -9,11 +9,13 @@ startAnalytics()
 const AdminPage = lazy(() => import('./admin/AdminPage.jsx'))
 const Funnel = lazy(() => import('./funnel/Funnel.jsx'))
 const CheckoutPage = lazy(() => import('./checkout/CheckoutPage.jsx'))
+const MessagesPage = lazy(() => import('./chat/MessagesPage.jsx'))
 const ChatPage = lazy(() => import('./chat/ChatPage.jsx'))
 
 // /checkout abre o checkout; o resto é o funil.
 // ?dev=creating abre direto na revelação; ?dev=offer abre a revelação com a oferta aberta.
 function App() {
+  if (window.location.pathname.replace(/\/+$/, '') === '/messages') return <Suspense fallback={<div className="app-loading" />}><MessagesPage /></Suspense>
   if (window.location.pathname.replace(/\/+$/, '') === '/admin')
     return (
       <Suspense fallback={<div className="app-loading" />}>

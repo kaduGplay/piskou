@@ -17,9 +17,14 @@ export default function ChatRecorder({ disabled, onRecorded, onRecordingChange }
   const stop = (cancel = false) => {
     const current = session.current
     if (!current) return
+    if (!cancel && current.started && performance.now() - current.started < 600) {
+      cancel = true
+      if (alive.current) setError('Grave por pelo menos um segundo antes de enviar.')
+    }
     current.canceled = cancel
     if (current.media?.state === 'recording') current.media.stop()
-    release(current)
+    clearTimeout(current.limit)
+    cancelAnimationFrame(current.frame)
     if (alive.current) {
       setRecording(false)
       callbacks.current.onRecordingChange?.(false)
@@ -92,6 +97,7 @@ export default function ChatRecorder({ disabled, onRecorded, onRecordingChange }
         samples = new Float32Array(analyser.fftSize)
       }
       const started = performance.now()
+      current.started = started
       let lastSample = 0
       const meter = (now) => {
         if (current.canceled || media.state !== 'recording') return
@@ -108,7 +114,7 @@ export default function ChatRecorder({ disabled, onRecorded, onRecordingChange }
       }
       setElapsed(0)
       setLevels(Array(36).fill(0))
-      media.start()
+      media.start(250)
       setRecording(true)
       callbacks.current.onRecordingChange?.(true)
       current.frame = requestAnimationFrame(meter)

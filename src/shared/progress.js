@@ -50,7 +50,7 @@ export function resumeVisit() {
   if (
     pathname === '/' &&
     !params.has('edit') &&
-    ['/chat', '/checkout'].includes(previous.path)
+    ['/chat', '/checkout', '/messages'].includes(previous.path)
   ) {
     window.history.replaceState(
       null,
@@ -63,7 +63,7 @@ export function resumeVisit() {
             : '')),
     )
   }
-  if (['/', '/chat', '/checkout'].includes(window.location.pathname)) {
+  if (['/', '/chat', '/checkout', '/messages'].includes(window.location.pathname)) {
     const query = new URLSearchParams(window.location.search)
     query.delete('edit')
     saveProgress({

@@ -31,6 +31,14 @@
     {
       "source": "/admin/",
       "destination": "/index.html"
+    },
+    {
+      "source": "/messages",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/messages/",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -161,7 +169,7 @@
       "maxDuration": 120
     },
     "api/chat-audio.js": {
-      "maxDuration": 60
+      "maxDuration": 90
     }
   }
 }

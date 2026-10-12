@@ -1,0 +1,26 @@
+.messages-page { min-height: 100dvh; background: #100e14; color: #faf7fc; font-family: Outfit,sans-serif; padding: 0 16px; }
+.messages-inbox { max-width: 700px; min-height: 100dvh; margin: auto; }
+.messages-inbox header { display: flex; align-items: center; justify-content: space-between; padding: 30px 4px 22px; }
+.messages-brand { font-size: 11px; letter-spacing: 3px; color: #f17ebc; }
+.messages-inbox h1 { font-size: 28px; margin: 3px 0 0; }
+.messages-inbox button { font: inherit; cursor: pointer; color: inherit; }
+.messages-inbox button:disabled { opacity: .6; cursor: wait; }
+.messages-create-icon { display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-radius: 50%; background: #d84999; }
+.messages-create,.messages-row { display: flex; align-items: center; gap: 13px; width: 100%; text-align: left; padding: 17px 10px; background: transparent; border: 0; border-bottom: 1px solid #ffffff0b; }
+.messages-create { background: #291c2a; border-radius: 16px; margin-bottom: 14px; }
+.messages-new-avatar { display: grid; place-items: center; width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%; background: #f350ad25; color: #f589c7; }
+.messages-create>span:nth-child(2) { flex: 1; }
+.messages-inbox strong { display: block; font-size: 15px; font-weight: 600; }
+.messages-inbox small { display: block; margin-top: 4px; font-size: 12px; color: #b9a7bb; }
+.messages-row:hover { background: #ffffff05; }
+.messages-row img { width: 53px; height: 53px; flex-shrink: 0; border-radius: 50%; object-fit: cover; }
+.messages-row-copy { flex: 1; min-width: 0; }
+.messages-row-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.messages-row-end { display: grid; justify-items: end; gap: 6px; color: #ae98b0; }
+.messages-row time { font-size: 11px; }
+.messages-empty { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 45px 15px; color: #c6afc9; text-align: center; }
+.messages-empty a { color: #f68ecb; }
+.messages-error { padding: 20px; color: #ffd2e2; }
+.messages-error button { display: block; margin-top: 10px; background: #39243b; border: 1px solid #67436c; border-radius: 8px; padding: 8px 12px; }
+.messages-inbox footer { padding: 25px 8px; text-align: center; color: #8e7a96; font-size: 11px; }
+.messages-inbox button:focus-visible,.messages-inbox a:focus-visible { outline: 2px solid #fba2d4; outline-offset: 3px; }

@@ -1,3 +1,4 @@
+import { transcribeAudio } from './_lib/transcription.js'
 import { randomUUID } from 'node:crypto'
 import {
   chatDatabase,
@@ -126,32 +127,7 @@ export default async function handler(req, res) {
       bytes = Buffer.from(base64, 'base64')
       if (!bytes.length || bytes.length > 2097152)
         return res.status(400).json({ error: 'Áudio muito grande.' })
-      const form = new FormData()
-      form.append(
-        'file',
-        new Blob([bytes], { type: mime }),
-        `audio.${extensions[mime]}`,
-      )
-      form.append(
-        'model',
-        process.env.OPENAI_TRANSCRIPTION_MODEL || 'gpt-4o-mini-transcribe',
-      )
-      form.append('language', 'pt')
-      const response = await fetch(
-        'https://api.openai.com/v1/audio/transcriptions',
-        {
-          method: 'POST',
-          headers,
-          body: form,
-          signal: AbortSignal.timeout(30000),
-        },
-      )
-      if (!response.ok) throw new Error('Transcription unavailable')
-      transcript = String((await response.json()).text || '').trim()
-      if (!transcript || transcript.length > 500)
-        throw new Error(
-          'Use um áudio mais curto, com até 500 caracteres transcritos.',
-        )
+      transcript = await transcribeAudio(bytes, mime, extensions[mime])
     }
     if (bytes.length > 2097152) throw new Error('Áudio muito grande')
     // Revalidate immediately before writing; the completion RPC checks again under lock.
@@ -180,7 +156,7 @@ export default async function handler(req, res) {
     console.error('chat: audio unavailable', error.message)
     return res
       .status(502)
-      .json({ error: 'Não foi possível preparar o áudio. Tente novamente.' })
+      .json({ error: /^(Não foi possível ler|Não consegui ouvir|Use um áudio|A transcrição)/.test(error.message) ? error.message : 'Não foi possível preparar o áudio. Tente novamente.' })
   } finally {
     if (lease)
       await chatDatabase('rpc/piskou_audio_fail', {
