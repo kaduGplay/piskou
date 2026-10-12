@@ -1,6 +1,7 @@
 import { chatTimeline } from '../shared/chatTimeline.js'
 import { createChatClient } from '../shared/chatClient.js'
 import ChatMessage from './ChatMessage.jsx'
+import AudioMessage from './AudioMessage.jsx'
 import ChatRecorder from './ChatRecorder.jsx'
 import { sendAnalytics } from '../shared/analytics.js'
 import { CHARACTER_TASTES } from '../shared/characterTastes.js'
@@ -688,6 +689,10 @@ export default function ChatPage() {
                   }
                   onChanged={() => clientRef.current?.sync()}
                 />
+                {message.role === 'character' && !message.deleted && message.mediaRequest === 'audio-reply' && <div className="chat-message character chat-voice-message" data-voice-message-id={message.id}>
+                  <img className="chat-message-avatar" src={image} alt="" />
+                  <div className="chat-bubble"><AudioMessage message={message} selection={sel} onChanged={() => clientRef.current?.sync()} /><span className="chat-message-meta">{name} · Voz gerada por IA</span></div>
+                </div>}
               </Fragment>
             )
           })}

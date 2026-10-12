@@ -1,4 +1,5 @@
 import { transcribeAudio } from './_lib/transcription.js'
+import { canCreateCharacter } from './_lib/conversations.js'
 import { randomUUID } from 'node:crypto'
 import {
   chatDatabase,
@@ -35,6 +36,7 @@ export default async function handler(req, res) {
     if (!chat || message?.deleted)
       return res.status(404).json({ error: 'Áudio indisponível.' })
     if (req.method === 'GET') {
+      if (message?.role === 'character' && !(await canCreateCharacter(req))) return res.status(403).json({ error: 'Adquira Premium ou Luxo para receber áudios da personagem.', code: 'premium_required' })
       if (!message)
         return res.status(404).json({ error: 'Áudio indisponível.' })
       const audio = (
@@ -54,7 +56,7 @@ export default async function handler(req, res) {
     if (!selection || !sameChatSelection(selection, chat.selection))
       return res.status(409).json({ error: 'Conversa alterada.' })
     const speech = req.body.action === 'speech'
-    if (speech) return res.status(403).json({ error: 'Respostas por voz da IA estão desativadas por enquanto.' })
+    if (speech && !(await canCreateCharacter(req))) return res.status(403).json({ error: 'Adquira Premium ou Luxo para receber áudios da personagem.', code: 'premium_required' })
     if (!speech && req.body.action !== 'upload')
       return res.status(400).json({ error: 'Operação inválida.' })
     if (speech && (message?.role !== 'character' || !message.text))

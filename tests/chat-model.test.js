@@ -203,13 +203,13 @@ test('explicit character media requests cannot become generic text-only refusals
     ['Me manda um vídeo', 'video', /Luxo/],
     ['quero uma imagem de você 🔥🔥', 'photo', /Premium e Luxo/],
     ['quero uma imagem', 'photo', /Premium e Luxo/],
-    ['Me manda um áudio falando oi', 'audio', /Premium e Luxo/],
+    ['Me manda um áudio falando oi', 'audio', /Premium ou Luxo/],
   ]) {
     const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Media plan routing must not depend on model output') })
     assert.equal(result.mediaRequest, kind)
     assert.match(result.reply, plan)
     assert.doesNotMatch(result.reply, /s[oó] (?:por )?texto|n[aã]o posso mandar/)
-    if (kind === 'audio') assert.match(result.reply, /preparação/)
+    if (kind === 'audio') assert.doesNotMatch(result.reply, /preparação|desativad/)
   }
 })
 
@@ -218,4 +218,15 @@ test('accepted food image offer generates the subject instead of an avatar or su
   assert.equal(result.mediaRequest, 'image')
   assert.match(result.imagePrompt, /prato de comida/)
   assert.doesNotMatch(result.reply, /Não posso/)
+})
+
+test('authorized paid audio request produces a spoken reply instead of a plan offer', async () => {
+  let instructions
+  const result = await generateChatReply(DEFAULT_SELECTION, [], 'me manda um áudio falando oi', 0, async (_url, options) => {
+    instructions = JSON.parse(options.body).instructions
+    return new Response(JSON.stringify({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ reply: 'Oi! Como você está?', mediaRequest: 'none', imagePrompt: '' }) }] }] }))
+  }, undefined, { audioAccess: true })
+  assert.equal(result.mediaRequest, 'audio-reply')
+  assert.equal(result.reply, 'Oi! Como você está?')
+  assert.match(instructions, /ÁUDIO AUTORIZADO/)
 })

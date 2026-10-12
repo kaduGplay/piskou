@@ -71,7 +71,7 @@ export default function AudioMessage({ message, selection, onChanged }) {
     finally { loading.current = false; if (alive.current) setBusy(false) }
   }
   useEffect(() => {
-    if (message.audio && !message.localState && !initializedAudio.current) {
+    if ((message.audio || message.mediaRequest === 'audio-reply') && !message.localState && !initializedAudio.current) {
       initializedAudio.current = true
       load(false)
     }

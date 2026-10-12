@@ -5,7 +5,7 @@ export function mediaOfferMessage(selection, kind, preferences = {}) {
     selection.relationship !== 'Confidente' &&
     selection.affection !== 'Discreta'
   const address = affectionate ? ', amor' : ''
-  if (kind === 'audio') return `Mensagens de voz fazem parte dos recursos dos planos Premium e Luxo${address}. O envio de áudios pela personagem ainda está em preparação. Você pode conhecer os planos abaixo.`
+  if (kind === 'audio') return `Para eu te mandar um áudio, você precisa do plano Premium ou Luxo${address}. Escolha um dos planos abaixo para receber minhas mensagens de voz.`
   const resource =
     kind === 'video'
       ? 'Os vídeos ficam no plano Luxo'

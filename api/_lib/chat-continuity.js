@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { chatDatabase } from './chat.js'
 import { generateChatReply } from './model.js'
 import { generateChatImage } from './images.js'
+import { requestedMedia } from './image-intent.js'
 import { loadMemory } from './memory-store.js'
 import { emptyMemory, advanceMemory } from './memory.js'
 import {
@@ -68,6 +69,8 @@ export async function processChat(session, dependencies = {}) {
             (target) => target.id === m.replyTo && !target.deleted,
           ) || null,
       }))
+    const audioRequested = requestedMedia(job.history, users.map((m) => m.text).join('\n')) === 'audio'
+    const audioAccess = audioRequested && (await db(`piskou_chat_purchases?chat_id=eq.${session}&active=eq.true&plan_id=in.(premium-access,luxury-access)&select=chat_id&limit=1`)).length > 0
     const result = await (dependencies.generate || generateChatReply)(
       job.selection,
       job.history,
@@ -77,6 +80,7 @@ export async function processChat(session, dependencies = {}) {
       undefined,
       {
         memory,
+        audioAccess,
         characterPreferences,
         messages: users,
         memoryHistory,

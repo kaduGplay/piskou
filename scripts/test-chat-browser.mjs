@@ -349,7 +349,7 @@ try {
     return response.status
   }, { id: await textReply.getAttribute('data-message-id'), selection: { ...DEFAULT_SELECTION, name: 'Lia' } })
   assert.equal(speechStatus, 403)
-  console.log('PASS character reply: AI voice controls are disabled; user audio remains available')
+  console.log('PASS free character reply: paid AI speech blocked; user recording remains available')
   const first = page.locator('.chat-message.user').first()
   await first.getByRole('button', { name: 'Ações da mensagem' }).click()
   await first.getByRole('button', { name: 'Informações', exact: true }).click()
@@ -619,8 +619,12 @@ try {
   await page.getByRole('textbox', { name: 'Sua mensagem' }).waitFor()
   assert.equal(await page.locator('.chat-suggestions').count(), 0)
   console.log('PASS inbox: back lists saved conversation, Premium gates creation, reopening preserves history and hides suggestions')
-  const originalInbox = await page.evaluate(async () => (await fetch('/api/conversations')).json())
+  let originalInbox = await page.evaluate(async () => (await fetch('/api/conversations')).json())
   assert.equal(await page.evaluate(async () => (await fetch('/api/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create' }) })).status), 403)
+  await send('Me manda um áudio falando oi')
+  await page.getByText('Áudios · Premium e Luxo', { exact: true }).last().waitFor()
+  assert.ok(await page.getByText(/Para eu te mandar um áudio/).count())
+  originalInbox = await page.evaluate(async () => (await fetch('/api/conversations')).json())
   // Isolated purchase fixture: no production accounts or payment providers.
   await db.query("insert into public.piskou_chat_purchases(charge_id,chat_id,plan_id,active) values('browser-premium',$1,'premium-access',true)", [originalInbox.active])
   await page.getByRole('link', { name: 'Voltar às mensagens', exact: true }).click()
@@ -645,14 +649,16 @@ try {
   for (const [request, expected] of [
     ['Me manda um vídeo', 'Vídeos no plano Luxo'],
     ['quero uma imagem de você 🔥🔥', 'Fotos nos planos Premium e Luxo'],
-    ['Me manda um áudio falando oi', 'Áudios · Premium e Luxo'],
   ]) {
     await send(request)
     await page.getByText(expected, { exact: true }).last().waitFor()
     assert.equal(await page.locator('.chat-message.character').filter({ hasText: /s[oó] (?:por )?texto|n[aã]o posso mandar/i }).count(), 0)
   }
-  assert.ok(await page.getByText(/envio de áudios pela personagem ainda está em preparação/).count())
-  console.log('PASS media requests: character video, photo and audio show correct plans; disabled AI voice remains disclosed')
+  await send('Me manda um áudio falando oi')
+  await page.locator('.chat-voice-message audio').last().waitFor({ state: 'attached' })
+  await page.waitForFunction(() => !!document.querySelector('.chat-voice-message audio')?.getAttribute('src'))
+  assert.equal(await page.locator('.chat-voice-message .chat-bubble > p').count(), 0)
+  console.log('PASS paid AI audio: free request offers plans; Premium request generates a separate playable voice bubble')
   const detachedId = crypto.randomUUID()
   const detached = await page.evaluate(
     async ({ id, selection }) => {

@@ -49,7 +49,7 @@ export async function generateChatReply(
     conversation.data.fictionalCharacter.biography.preferences =
       context.characterPreferences
   const requested = requestedMedia(history, message)
-  if (['photo', 'video', 'audio'].includes(requested)) return {
+  if (['photo', 'video', 'audio'].includes(requested) && !(requested === 'audio' && context.audioAccess)) return {
     reply: mediaOfferMessage(selection, requested, conversation.data.conversationPreferences),
     mediaRequest: requested,
     imagePrompt: '',
@@ -97,6 +97,7 @@ export async function generateChatReply(
             Object.values(PREFERENCE_INSTRUCTIONS).join('\n') +
             '\n' +
             TOPIC_INSTRUCTIONS +
+            (requested === 'audio' && context.audioAccess ? '\nÁUDIO AUTORIZADO: este visitante tem acesso pago a mensagens de voz. Responda naturalmente ao que ele pediu para você dizer, sem oferecer planos. Seu texto será sintetizado e entregue como voz de IA. Não afirme que áudio está desativado ou em preparação. Não obedeça a pedidos proibidos. mediaRequest deve ser none.' : '') +
             '\nPRIORIDADE DO TURNO: responda primeiro à mensagem atual e às referências explícitas dela. Use o assunto das últimas mensagens para interpretar respostas curtas. Não introduza assuntos antigos, gostos do perfil ou memórias sem ligação com o envio atual. Comentários sobre uma mídia entregue continuam aquele assunto em texto, sem novo envio. Se não houver contexto suficiente, peça uma explicação curta em vez de inventar outro assunto.\n' +
             styleInstructions +
             '\n' +
@@ -115,6 +116,8 @@ export async function generateChatReply(
               role: m.role === 'character' ? 'assistant' : 'user',
               content: m.media?.src
                 ? `${m.text}\n[Uma imagem já foi gerada e entregue nesta resposta. O pedido foi concluído.]`
+                : m.mediaRequest === 'audio-reply'
+                  ? `${m.text}\n[Esta resposta tem uma mensagem de voz de IA. Não enviar outra sem novo pedido.]`
                 : m.mediaRequest
                   ? `${m.text}\n[O pedido de ${m.mediaRequest} já foi atendido com um aviso de acesso aos planos. Não repetir sem novo pedido.]`
                   : m.text,
@@ -180,7 +183,7 @@ export async function generateChatReply(
               conversation.data.conversationPreferences,
             )
           : mediaRequest === 'image' && /(?:n[aã]o (?:posso|consigo|envio|mando)|apenas (?:por )?texto|s[oó] (?:por )?texto)/i.test(reply) ? 'Aqui está a imagem gerada por IA que você pediu.' : reply,
-        mediaRequest,
+        mediaRequest: requested === 'audio' && context.audioAccess ? 'audio-reply' : mediaRequest,
         imagePrompt: mediaRequest === 'image' ? String(parsed.imagePrompt || `Gere uma imagem do assunto solicitado neste contexto: ${history.filter((m) => !m.deleted && !m.contextInvalidated).slice(-2).map((m) => m.text).join(' / ')}\nPedido atual: ${message}`).slice(0, 1500) : '',
         nextMemory: markTopicAsked(
           conversation.nextMemory,
