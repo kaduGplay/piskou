@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { dialogueState, recentConversation } from '../api/_lib/dialogue.js'
+import { dialogueState, recentConversation, turnInstructions } from '../api/_lib/dialogue.js'
 import {
   buildConversationContext,
   emptyMemory,
@@ -184,4 +184,22 @@ test('incomplete upstream output is never delivered as a completed response', as
   )
   assert.equal(calls, 2)
   assert.equal(result.reply, 'Uma história completa.')
+})
+
+test('affection and marriage invitations adapt the current turn without overriding boundaries or reported speech', () => {
+  const affection = dialogueState([], 'Oi, meu anjo! Como você está?')
+  assert.equal(affection.affectionateAddress, true)
+  assert.match(turnInstructions(affection), /Retribua com ternura/)
+  assert.doesNotMatch(turnInstructions(affection), /Não houve autorização/)
+  assert.match(turnInstructions(affection, { nicknames: false }), /Não houve autorização/)
+  assert.doesNotMatch(turnInstructions(affection, { flirt: false }), /Retribua com ternura/)
+  const marriage = dialogueState([], 'Meu amor, quer casar comigo?')
+  assert.equal(marriage.marriageInvitation, true)
+  assert.match(turnInstructions(marriage), /aceite carinhosamente.*história fictícia/)
+  assert.doesNotMatch(turnInstructions(marriage, { flirt: false }), /aceite carinhosamente/)
+  for (const text of ['Ela disse: "casa comigo".', 'Se eu disser casa comigo?', 'Não quero casar comigo', 'Ele falou meu anjo']) {
+    const state = dialogueState([], text)
+    assert.equal(state.marriageInvitation, false, text)
+    assert.equal(state.affectionateAddress, false, text)
+  }
 })
