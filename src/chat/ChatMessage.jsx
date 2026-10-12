@@ -316,15 +316,6 @@ export default function ChatMessage({
         </div>
       )}
     </div>
-    {message.role === 'character' && message.id && !message.deleted && (
-      <div className="chat-message character chat-voice-message" data-audio-for={message.id}>
-        <img className="chat-message-avatar" src={image} alt="" />
-        <div className="chat-message-content">
-          <AudioMessage message={message} selection={selection} onChanged={onChanged} />
-          <span className="chat-message-meta">{name} · {clock(message.sentAt)}</span>
-        </div>
-      </div>
-    )}
     </>
   )
 }

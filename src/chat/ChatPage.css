@@ -1345,3 +1345,13 @@ body.chat-page {
 .chat-recording-error { position: absolute; bottom: calc(100% + 15px); right: 0; width: min(270px, 70vw); padding: 10px 12px; background: #35283a; color: #ffd2e2; border: 1px solid #865674; border-radius: 12px; font-size: 12px; }
 @media (max-width: 380px) { .chat-recording-limit { display: none; } .chat-recording-bar { gap: 6px; } }
 @media (prefers-reduced-motion: reduce) { .chat-audio-loading { animation: none; } .chat-recording-wave i { transition: none; } }
+.chat-call-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.chat-call-actions .chat-icon-button { color: #e2c8dc; }
+.chat-call-actions .chat-icon-button:hover { color: #fa71bb; background: #ffffff09; border-radius: 10px; }
+@media (max-width: 420px) {
+  .chat-header { gap: 7px; }
+  .chat-call-actions { gap: 2px; }
+  .chat-header-person { gap: 8px; }
+  .chat-header-person small { max-width: 145px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .chat-header-person > svg { display: none; }
+}

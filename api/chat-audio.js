@@ -53,6 +53,7 @@ export default async function handler(req, res) {
     if (!selection || !sameChatSelection(selection, chat.selection))
       return res.status(409).json({ error: 'Conversa alterada.' })
     const speech = req.body.action === 'speech'
+    if (speech) return res.status(403).json({ error: 'Respostas por voz da IA estão desativadas por enquanto.' })
     if (!speech && req.body.action !== 'upload')
       return res.status(400).json({ error: 'Operação inválida.' })
     if (speech && (message?.role !== 'character' || !message.text))

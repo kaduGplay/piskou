@@ -270,6 +270,14 @@ try {
       .getByRole('button', { name: 'Enviar mensagem', exact: true })
       .click()
   }
+  for (const label of ['Ligação de voz', 'Videochamada']) {
+    await page.getByRole('button', { name: label, exact: true }).click()
+    await page.getByRole('dialog').waitFor()
+    assert.ok(await page.getByText('CHAMADAS · EM BREVE').count())
+    await page.getByRole('button', { name: 'Fechar oferta' }).click()
+    await page.getByRole('dialog').waitFor({ state: 'hidden' })
+  }
+  console.log('PASS call buttons: voice/video open plans and close without sending a chat message')
   // Recording remains inside the composer and cancellation releases the microphone.
   await page.getByRole('button', { name: 'Gravar mensagem de áudio', exact: true }).click()
   await page.getByLabel('Gravação de áudio', { exact: true }).waitFor()
@@ -320,8 +328,16 @@ try {
   )
   const textReply = page.locator('.chat-message.character:not(.chat-voice-message)').first()
   assert.equal(await textReply.locator('.chat-audio-player').count(), 0)
-  assert.equal(await page.locator('.chat-voice-message .chat-audio-player').count(), 1)
-  console.log('PASS character reply: text and voice controls appear in separate message bubbles')
+  assert.equal(await page.locator('.chat-voice-message .chat-audio-player').count(), 0)
+  const speechStatus = await page.evaluate(async ({ id, selection }) => {
+    const response = await fetch('/api/chat-audio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'speech', messageId: id, selection }),
+    })
+    return response.status
+  }, { id: await textReply.getAttribute('data-message-id'), selection: { ...DEFAULT_SELECTION, name: 'Lia' } })
+  assert.equal(speechStatus, 403)
+  console.log('PASS character reply: AI voice controls are disabled; user audio remains available')
   const first = page.locator('.chat-message.user').first()
   await first.getByRole('button', { name: 'Ações da mensagem' }).click()
   await first.getByRole('button', { name: 'Informações', exact: true }).click()

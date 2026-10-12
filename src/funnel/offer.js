@@ -41,8 +41,8 @@ export const PLAN_BONUSES = {
     },
     {
       id: 'audios',
-      title: 'Envio e recebimento de áudios',
-      description: 'Envie mensagens de voz e receba áudios da sua parceira.',
+      title: 'Mensagens de voz',
+      description: 'Envie mensagens de voz para conversar com sua personagem.',
       image: '/bonuses/audios.webp',
     },
     {
@@ -75,7 +75,7 @@ export const PLAN_BONUSES = {
 export const PLAN_BENEFITS = {
   premium: [
     { icon: 'character', text: 'Personagem configurada por você' },
-    { icon: 'personality', text: 'Personalidade e voz escolhidas' },
+    { icon: 'personality', text: 'Personalidade escolhida' },
     { icon: 'chat', text: 'Conversa individual por texto' },
     { icon: 'photos', text: 'Pedidos de fotos da sua personagem' },
   ],
@@ -156,7 +156,7 @@ export const FAQ = [
   {
     question: 'Qual é a diferença entre Premium e Luxo?',
     answer:
-      'O Premium libera sua personagem, a conversa por texto e os pedidos de fotos. O Luxo inclui todos os recursos do Premium e os oito bônus desta página, como lives, personagens extras, vídeos, áudios e modos de conversa.',
+      'O Premium libera sua personagem, a conversa por texto e os pedidos de fotos. O Luxo inclui todos os recursos do Premium e os oito bônus desta página, como lives, personagens extras, vídeos, envio de mensagens de voz e modos de conversa.',
   },
   {
     question: `Os bônus estão incluídos nos ${LUXURY_PRICE}?`,

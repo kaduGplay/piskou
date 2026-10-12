@@ -30,6 +30,7 @@ import {
   LockKeyhole,
   MessageCircle,
   Play,
+  Phone,
   Video,
   Send,
   ShieldCheck,
@@ -95,6 +96,7 @@ export default function ChatPage() {
   )
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
+  const [callOffer, setCallOffer] = useState(null)
   const [mediaRequests, setMediaRequests] = useState(() => {
     const saved = readProgress()
     return saved.chatSelection === JSON.stringify(sel) &&
@@ -310,7 +312,8 @@ export default function ChatPage() {
     }
   }, [profileOpen])
 
-  const openOffer = () => {
+  const openOffer = (callKind = null) => {
+    setCallOffer(typeof callKind === 'string' ? callKind : null)
     if (document.activeElement?.matches('input, textarea'))
       document.activeElement.blur()
     setProfileOpen(false)
@@ -575,6 +578,10 @@ export default function ChatPage() {
             </span>
             <ChevronRight size={17} />
           </button>
+          <div className="chat-call-actions" aria-label="Chamadas">
+            <button type="button" className="chat-icon-button" aria-label="Ligação de voz" title="Ligação de voz" onClick={() => openOffer('voice-call')}><Phone size={20} /></button>
+            <button type="button" className="chat-icon-button" aria-label="Videochamada" title="Videochamada" onClick={() => openOffer('video-call')}><Video size={21} /></button>
+          </div>
           <button
             type="button"
             className="chat-icon-button"
@@ -913,15 +920,15 @@ export default function ChatPage() {
           }
         >
           <PaywallSheet
-            source={
+            source={callOffer || (
               locked && !requiresPayment
                 ? hasPaidAccess
                   ? 'messages'
                   : 'trial'
                 : 'chat'
-            }
+            )}
             sel={sel}
-            onClose={() => setOfferOpen(false)}
+            onClose={() => { setOfferOpen(false); setCallOffer(null) }}
           />
         </Suspense>
       )}
