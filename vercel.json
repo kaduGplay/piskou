@@ -51,7 +51,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
+          "value": "camera=(), microphone=(self), geolocation=()"
         }
       ]
     },
@@ -156,6 +156,12 @@
     },
     "api/admin.js": {
       "maxDuration": 90
+    },
+    "api/chat-worker.js": {
+      "maxDuration": 120
+    },
+    "api/chat-audio.js": {
+      "maxDuration": 60
     }
   }
 }

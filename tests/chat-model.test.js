@@ -145,6 +145,55 @@ test('character hobbies stay consistent and vary with personality and identity',
   assert.deepEqual(characterInterests(calm), characterInterests({ ...calm }))
   assert.notDeepEqual(characterInterests(calm), characterInterests(adventure))
   assert.ok(characterInterests(adventure).some(value => /trilhas|viagem|paisagens/.test(value)))
-  assert.ok(chatInstructions(calm, 0).includes('Interesses já estabelecidos no histórico têm prioridade'))
+  assert.ok(chatInstructions(calm, 0).includes('Gostos atuais configurados têm prioridade'))
   assert.ok(chatInstructions(calm, 0).includes('Nunca finja ser humana'))
+})
+
+test('delivered image is marked in context and a reaction cannot generate another image', async () => {
+  const history = [
+    { role: 'user', text: 'Manda uma imagem de flores' },
+    { role: 'character', text: 'Aqui está!', media: { src: 'data:image/jpeg;base64,YWJj' } },
+  ]
+  let calls = 0
+  const result = await generateChatReply(DEFAULT_SELECTION, history, 'gostei', 1,
+    async (_url, options) => {
+      const body = JSON.parse(options.body)
+      assert.match(body.input.find((item) => item.role === 'assistant').content, /já foi gerada e entregue/)
+      calls++
+      if (calls === 2) assert.match(body.instructions, /apenas em texto/)
+      return new Response(JSON.stringify({ output: [{ content: [{ type: 'output_text',
+        text: JSON.stringify(calls === 1
+          ? { reply: 'Aqui vai outra!', mediaRequest: 'image', imagePrompt: 'flowers' }
+          : { reply: 'Qual detalhe você mais gostou?', mediaRequest: 'none', imagePrompt: '' }),
+      }] }] }))
+    }, async () => {})
+  assert.equal(calls, 2)
+  assert.equal(result.mediaRequest, null)
+  assert.equal(result.imagePrompt, '')
+  assert.equal(result.reply, 'Qual detalhe você mais gostou?')
+})
+
+test('unrequested photo flags are rejected and repaired into a contextual text reply', async () => {
+  const history = [
+    { role: 'user', text: 'Me manda uma foto sua?' },
+    { role: 'character', text: 'Fotos nos planos Premium e Luxo.', mediaRequest: 'photo' },
+  ]
+  let calls = 0
+  const result = await generateChatReply(DEFAULT_SELECTION, history, 'Você gosta de café?', 1,
+    async (_url, options) => {
+      const body = JSON.parse(options.body)
+      assert.deepEqual(body.text.format.schema.properties.mediaRequest.enum, ['none'])
+      assert.match(body.instructions, /PRIORIDADE DO TURNO/)
+      assert.match(body.input.find((item) => item.role === 'assistant').content, /Não repetir sem novo pedido/)
+      assert.equal(body.input.at(-1).content, 'Você gosta de café?')
+      calls++
+      return new Response(JSON.stringify({ output: [{ content: [{ type: 'output_text',
+        text: JSON.stringify(calls === 1
+          ? { reply: 'Aqui vai uma foto!', mediaRequest: 'photo', imagePrompt: '' }
+          : { reply: 'Gosto de café com leite. E você?', mediaRequest: 'none', imagePrompt: '' }),
+      }] }] }))
+    }, async () => {})
+  assert.equal(calls, 2)
+  assert.equal(result.mediaRequest, null)
+  assert.equal(result.reply, 'Gosto de café com leite. E você?')
 })

@@ -1,0 +1,27 @@
+begin;
+do $$ declare a uuid:=gen_random_uuid(); b uuid:=gen_random_uuid(); lease_a uuid:=gen_random_uuid(); lease_b uuid:=gen_random_uuid(); stale uuid:=gen_random_uuid(); sel jsonb:='{"name":"Lia","age":25}'; claim jsonb; transcript jsonb; rejected boolean; begin
+ update public.piskou_chat_budgets set requests=0 where key='global:'||current_date::text;
+ claim:=public.piskou_chat_claim(a,sel,'test-order-a-'||a,lease_a);
+ if claim ? 'error' then raise exception 'Initial claim failed';end if;
+ claim:=public.piskou_chat_claim(a,sel,'test-order-a-'||a,stale);
+ if claim->>'error'<>'busy' then raise exception 'Concurrent turn allowed';end if;
+ rejected:=false;
+ begin perform public.piskou_chat_finish_media(a,stale,'wrong user','wrong answer',null);
+ exception when others then if sqlerrm='Chat lease invalid' then rejected:=true;else raise;end if;end;
+ if not rejected then raise exception 'Stale lease wrote a turn';end if;
+ transcript:=public.piskou_chat_finish_media(a,lease_a,'first user','first answer',null);
+ if jsonb_array_length(transcript)<>2 or transcript->0->>'role'<>'user' or transcript->1->>'role'<>'character' then raise exception 'Turn not atomic/ordered';end if;
+ rejected:=false;
+ begin perform public.piskou_chat_finish_media(a,lease_a,'first user','duplicate answer',null);
+ exception when others then if sqlerrm='Chat lease invalid' then rejected:=true;else raise;end if;end;
+ if not rejected then raise exception 'Duplicate completion accepted';end if;
+ claim:=public.piskou_chat_claim(a,sel,'test-order-a-'||a,stale);
+ if (claim->>'turn')::integer<>1 or claim->'messages'->1->>'text'<>'first answer' then raise exception 'Next claim lost completed context';end if;
+ transcript:=public.piskou_chat_finish_media(a,stale,'second user','second answer',null);
+ if jsonb_array_length(transcript)<>4 or transcript->2->>'text'<>'second user' or transcript->3->>'text'<>'second answer' then raise exception 'Second turn reordered';end if;
+ claim:=public.piskou_chat_claim(b,sel,'test-order-b-'||b,lease_b);
+ if jsonb_array_length(claim->'messages')<>0 then raise exception 'Session mixed';end if;
+ perform public.piskou_chat_finish_media(b,lease_b,'other user','other answer',null);
+ if (select jsonb_array_length(messages) from public.piskou_chat_sessions where id=a)<>4 then raise exception 'Other session changed transcript';end if;
+end $$;
+rollback;

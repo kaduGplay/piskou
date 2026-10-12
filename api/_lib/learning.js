@@ -35,7 +35,7 @@ export function analyzeConversations(rows) {
     feedbackConversations = 0
   for (const row of rows) {
     const userTexts = (row.messages || [])
-      .filter((m) => m.role === 'user')
+      .filter((m) => m.role === 'user' && !m.deleted)
       .map((m) => normalize(m.text))
     messages += userTexts.length
     let feedback = false
@@ -65,27 +65,37 @@ export function analyzeConversations(rows) {
 }
 let cached,
   pending,
+  expires = 0,
+  cacheRevision = 0
+export function invalidateLearningProfile() {
+  cacheRevision++
+  cached = null
+  pending = null
   expires = 0
+}
 export async function learningProfile() {
   if (cached && Date.now() < expires) return cached
   if (pending) return pending
+  const revision = cacheRevision
   pending = chatDatabase(
     'piskou_chat_archive?select=messages&created_at=gte.' +
       encodeURIComponent(new Date(Date.now() - 30 * 86400000).toISOString()) +
       '&order=created_at.desc&limit=200',
   )
     .then((rows) => {
+      if (revision !== cacheRevision) return analyzeConversations([])
       cached = analyzeConversations(rows)
       expires = Date.now() + 300000
       return cached
     })
     .catch((error) => {
+      if (revision !== cacheRevision) return analyzeConversations([])
       expires = Date.now() + 60000
       cached ||= analyzeConversations([])
       return cached
     })
     .finally(() => {
-      pending = null
+      if (revision === cacheRevision) pending = null
     })
   return pending
 }

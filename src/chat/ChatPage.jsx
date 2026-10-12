@@ -1,3 +1,11 @@
+import { chatTimeline } from '../shared/chatTimeline.js'
+import { createChatClient } from '../shared/chatClient.js'
+import ChatMessage from './ChatMessage.jsx'
+import ChatRecorder from './ChatRecorder.jsx'
+import { sendAnalytics } from '../shared/analytics.js'
+import { CHARACTER_TASTES } from '../shared/characterTastes.js'
+import { currentPreferences } from '../shared/conversationPreferences.js'
+import ChatMemoryPanel from './ChatMemoryPanel.jsx'
 import { mediaOfferMessage } from '../shared/mediaOffer.js'
 import {
   readSavedSelection,
@@ -5,10 +13,17 @@ import {
   saveProgress,
 } from '../shared/progress.js'
 import { analyticsIdentity } from '../shared/analytics.js'
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import {
+  Fragment,
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import {
   ArrowLeft,
-  CheckCheck,
   ChevronRight,
   Heart,
   Image as ImageIcon,
@@ -34,7 +49,6 @@ import { PLANS, SELECTION_STORAGE_KEY, formatBRL } from '../shared/checkout.js'
 import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
-const UPGRADE_DELAY_MS = 2_000
 
 function readSelection() {
   try {
@@ -65,6 +79,14 @@ export default function ChatPage() {
     saveProgress({ draft })
   }, [draft])
   const [typing, setTyping] = useState(false)
+  const [rhythmVariant, setRhythmVariant] = useState(null)
+  const [replyTo, setReplyTo] = useState(null)
+  const [hasNewMessages, setHasNewMessages] = useState(false)
+  const nearBottom = useRef(true)
+  const scrollAnchor = useRef(null)
+  const previousLength = useRef(0)
+  const clientRef = useRef(null)
+  const accessRef = useRef(null)
   const [paywallReached, setPaywallReached] = useState(
     () =>
       readProgress().chatSelection === JSON.stringify(sel) &&
@@ -93,14 +115,17 @@ export default function ChatPage() {
   const mediaBusy = useRef(false)
   const appRef = useRef(null)
   const messagesRef = useRef(null)
-  const requestRef = useRef(null)
-  const sendGuard = useRef(false)
-  const upgradeTimer = useRef(null)
   const profileRef = useRef(null)
   const profileTrigger = useRef(null)
   const mediaPending = mediaRequests.some((item) => item.phase !== 'media')
   const sent = messages.filter((m) => m.role === 'user').length
   const locked = remaining !== null && remaining <= 0
+  const dateLabel = (message) =>
+    message?.sentAt
+      ? new Date(message.sentAt).toLocaleDateString('pt-BR')
+      : message?.localState
+        ? 'Envio aguardando confirmação'
+        : 'Histórico anterior · data não registrada'
 
   useEffect(() => {
     const timer = setTimeout(() => setBannerVisible(false), 4_000)
@@ -159,99 +184,98 @@ export default function ChatPage() {
   }, [])
 
   useEffect(() => {
-    const controller = new AbortController()
-    fetch(`/api/chat?selection=${encodeURIComponent(JSON.stringify(sel))}`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error)
-        setMessages(data.messages || [])
-        setRemaining(data.remaining)
-        setRequiresPayment(data.requiresPayment === true)
-        setHasPaidAccess(data.hasPaidAccess === true)
-        setPaywallReached(false)
-        if (data.requiresPayment) setOfferOpen(true)
-      })
-      .catch((error) => {
-        if (error.name !== 'AbortError')
-          setChatError(error.message || 'Não foi possível abrir a conversa.')
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false)
-      })
-    return () => {
-      controller.abort()
-      requestRef.current?.abort()
-      clearTimeout(upgradeTimer.current)
-      mediaTimers.current.forEach(clearTimeout)
-    }
-  }, [sel])
-  useEffect(() => {
-    if (loading || typing) return
-    let alive = true,
-      inFlight = false
-    const controller = new AbortController()
-    const check = async () => {
-      if (inFlight || document.visibilityState !== 'visible') return
-      inFlight = true
-      try {
-        const r = await fetch('/api/chat?access=1', {
-          signal: controller.signal,
-        })
-        if (!r.ok) return
-        const data = await r.json()
+    let alive = true
+    const client = createChatClient({
+      selection: sel,
+      onSnapshot: (data) => {
         if (!alive) return
-        if (
-          data.remaining !== remaining ||
-          data.requiresPayment !== requiresPayment ||
-          data.hasPaidAccess !== hasPaidAccess
-        ) {
+        const list = messagesRef.current
+        if (list && !nearBottom.current) {
+          const top = list.getBoundingClientRect().top
+          const anchor = [...list.querySelectorAll('[data-message-id]')].find(
+            (node) => node.getBoundingClientRect().bottom > top,
+          )
+          scrollAnchor.current = anchor
+            ? {
+                id: anchor.dataset.messageId,
+                offset: anchor.getBoundingClientRect().top - top,
+              }
+            : null
+        }
+        setMessages(data.messages || [])
+        setMediaRequests((items) => items.map((item) =>
+          item.afterMessageId === undefined
+            ? { ...item, afterMessageId: data.messages?.at(-1)?.id || null }
+            : item,
+        ))
+        if (data.remaining !== undefined) setRemaining(data.remaining)
+        setTyping(data.preparing === true)
+        if (data.requiresPayment !== undefined) {
+          if (data.requiresPayment && !accessRef.current?.requiresPayment)
+            setOfferOpen(true)
           if (
             !data.requiresPayment &&
             (data.remaining === null || data.remaining > 0) &&
-            (requiresPayment || paywallReached || remaining === 0)
+            accessRef.current?.remaining === 0
           ) {
-            const history = await fetch('/api/chat', {
-              signal: controller.signal,
-            })
-            if (history.ok && alive) {
-              const saved = await history.json()
-              if (alive) setMessages(saved.messages || [])
-            }
-            if (!alive) return
             setPaywallReached(false)
             setOfferOpen(false)
-          } else if (data.requiresPayment) {
-            setPaywallReached(false)
-            setOfferOpen(true)
           }
-          if (alive) {
-            setRemaining(data.remaining)
-            setRequiresPayment(data.requiresPayment === true)
-            setHasPaidAccess(data.hasPaidAccess === true)
-          }
+          setRequiresPayment(data.requiresPayment === true)
+          setHasPaidAccess(data.hasPaidAccess === true)
+          accessRef.current = data
         }
-      } catch {
-      } finally {
-        inFlight = false
-      }
-    }
-    const timer = setInterval(check, 5000)
-    document.addEventListener('visibilitychange', check)
+      },
+      onError: (message) => {
+        if (alive) setChatError(message)
+      },
+      onResponse: (data) => {
+        if (!alive) return
+        window.dispatchEvent(new Event('piskou:memory-updated'))
+        track('ChatRespostaRecebida')
+        setRhythmVariant('grouped')
+        const last = data.messages.filter((m) => m.role === 'character').at(-1)
+        if (['photo', 'video'].includes(last?.mediaRequest))
+          requestMedia(last.mediaRequest, true, last.id)
+      },
+    })
+    clientRef.current = client
+    client
+      .start()
+      .catch((error) => {
+        if (alive) setChatError(error.message)
+      })
+      .finally(() => {
+        if (alive) setLoading(false)
+      })
     return () => {
       alive = false
-      controller.abort()
-      clearInterval(timer)
-      document.removeEventListener('visibilitychange', check)
+      client.dispose()
+      clientRef.current = null
+      mediaTimers.current.forEach(clearTimeout)
     }
-  }, [loading, typing, remaining, requiresPayment, paywallReached, hasPaidAccess])
-  useEffect(() => {
+  }, [sel])
+  useLayoutEffect(() => {
     const list = messagesRef.current
-    list?.scrollTo({
-      top: list.scrollHeight,
-      behavior: typing ? 'auto' : 'smooth',
-    })
+    if (!list) return
+    if (nearBottom.current)
+      list.scrollTo({ top: list.scrollHeight, behavior: 'auto' })
+    else {
+      const anchor = scrollAnchor.current
+      const node =
+        anchor &&
+        [...list.querySelectorAll('[data-message-id]')].find(
+          (n) => n.dataset.messageId === anchor.id,
+        )
+      if (node)
+        list.scrollTop +=
+          node.getBoundingClientRect().top -
+          list.getBoundingClientRect().top -
+          anchor.offset
+      if (messages.length > previousLength.current) setHasNewMessages(true)
+    }
+    previousLength.current = messages.length
+    scrollAnchor.current = null
   }, [messages, typing, mediaRequests, paywallReached])
   useEffect(() => {
     if (!profileOpen) return
@@ -300,10 +324,9 @@ export default function ChatPage() {
       keepalive: true,
     }).catch(() => {})
   }
-  const requestMedia = (kind, fromChat = false) => {
+  const requestMedia = (kind, fromChat = false, afterMessageId = messages.at(-1)?.id || null) => {
     if ((!fromChat && (loading || typing)) || mediaBusy.current) return
     setProfileOpen(false)
-    mediaBusy.current = true
     const id = crypto.randomUUID()
     if (!fromChat)
       logChatAction(
@@ -311,141 +334,96 @@ export default function ChatPage() {
         kind === 'video' ? 'Me manda um vídeo?' : 'Me manda uma foto sua?',
         id,
       )
-    setMediaRequests((previous) => [
-      ...previous,
-      { id, kind, fromChat, phase: fromChat ? 'reply' : 'typing' },
-    ])
+    setMediaRequests((previous) => {
+      if (fromChat && previous.some((item) =>
+        item.fromChat && item.afterMessageId === afterMessageId && item.kind === kind,
+      )) return previous
+      return [...previous, { id, kind, fromChat, afterMessageId, phase: 'media' }]
+    })
     track(kind === 'video' ? 'ChatVideoSolicitado' : 'ChatFotoSolicitada', {
       visual_style: sel.style,
     })
-    const advance = (phase) =>
-      setMediaRequests((previous) =>
-        previous.map((item) => (item.id === id ? { ...item, phase } : item)),
-      )
-    if (!fromChat)
-      mediaTimers.current.push(setTimeout(() => advance('reply'), 3000))
-    mediaTimers.current.push(
-      setTimeout(
-        () => {
-          advance('media')
-          mediaBusy.current = false
-        },
-        fromChat ? 2000 : 5000,
-      ),
-    )
   }
-  const requestPhoto = () => requestMedia('photo')
-  const requestVideo = () => requestMedia('video')
-  const send = async (text = draft) => {
+  const requestPhoto = () => send('Me manda uma foto sua?')
+  const requestVideo = () => send('Me manda um vídeo?')
+  const send = (text = draft, recording) => {
     const content = text.trim().slice(0, 500)
-    if (loading || typing || sendGuard.current || mediaBusy.current) return
-    if (!content) return
+    if (loading || !content || !clientRef.current) return
     if (locked) {
-      if (paywallReached || requiresPayment) return openOffer()
-      logChatAction('limit', content)
-      sendGuard.current = true
-      setMessages((previous) => [...previous, { role: 'user', text: content }])
-      setDraft('')
-      setChatError('')
-      setTyping(true)
-      upgradeTimer.current = setTimeout(() => {
-        setTyping(false)
-        sendGuard.current = false
-        setPaywallReached(true)
-        setOfferOpen(true)
-        track('ChatLimiteExibido')
-      }, UPGRADE_DELAY_MS)
+      openOffer()
       return
     }
-    sendGuard.current = true
-    setMessages((prev) => [...prev, { role: 'user', text: content }])
+    setChatError('')
+    const id = clientRef.current.send(content, {
+      replyTo: replyTo?.id,
+      recording,
+    })
+    if (!id) return
     setDraft('')
-    setTyping(true)
+    setReplyTo(null)
+    nearBottom.current = true
     track('ChatMensagemEnviada', {
       message_number: sent + 1,
       visual_style: sel.style,
     })
-    setChatError('')
-    const previous = messages
-    const controller = new AbortController()
-    requestRef.current = controller
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: content,
-          selection: sel,
-          analyticsSession: analyticsIdentity().session,
-        }),
-        signal: controller.signal,
-      })
-      const data = await response.json()
-      if (!response.ok) {
-        if (data.locked && data.messages) {
-          setMessages(data.messages)
-          setRequiresPayment(data.requiresPayment === true)
-          setRemaining(0)
-          setPaywallReached(true)
-          openOffer()
-          return
-        }
-        const failure = new Error(
-          data.error || 'Não foi possível receber a resposta.',
-        )
-        failure.code = data.code
-        throw failure
-      }
-      setMessages(data.messages)
-      setRemaining(data.remaining)
-      track('ChatRespostaRecebida')
-      if (['photo', 'video'].includes(data.mediaRequest))
-        requestMedia(data.mediaRequest, true)
-    } catch (error) {
-      if (error.name !== 'AbortError') {
-        // The server may have finished even if the response was lost. Recover without sending twice.
-        for (
-          let attempt = 0;
-          attempt < (error.code === 'busy' ? 6 : 2);
-          attempt++
-        ) {
-          if (controller.signal.aborted) return
-          await new Promise((resolve) =>
-            setTimeout(resolve, attempt ? 1500 : 500),
-          )
-          try {
-            const recovered = await fetch('/api/chat', {
-              signal: controller.signal,
-            })
-            const latest = await recovered.json()
-            const recoveredUser = latest.messages
-              ?.filter((m) => m.role === 'user')
-              .at(-1)
-            if (
-              recovered.ok &&
-              latest.messages?.length >= previous.length + 2 &&
-              recoveredUser?.text === content
-            ) {
-              setMessages(latest.messages)
-              setRemaining(latest.remaining)
-              track('ChatRespostaRecebida')
-              return
-            }
-          } catch {
-            /* Keep the original message available when offline. */
-          }
-        }
-        if (controller.signal.aborted) return
-        setMessages(previous)
-        setDraft((current) => current || content)
-        setChatError(error.message || 'Tente novamente em instantes.')
-        track('ChatErro')
-      }
-    } finally {
-      setTyping(false)
-      sendGuard.current = false
-    }
   }
+
+  const renderMediaRequest = (item) => (
+            <div className="chat-media-request" key={item.id}>
+              {!item.fromChat && (
+                <div className="chat-message user">
+                  <div className="chat-bubble">
+                    <p>
+                      {item.kind === 'video'
+                        ? 'Me manda um vídeo? 💕'
+                        : 'Me manda uma foto sua? 💕'}
+                    </p>
+                    <span>Solicitação de mídia</span>
+                  </div>
+                </div>
+              )}
+              {!item.fromChat && (
+                <div className="chat-message character">
+                  <img className="chat-message-avatar" src={image} alt="" />
+                  <div className="chat-bubble">
+                    <p>
+                      {mediaOfferMessage(
+                        sel,
+                        item.kind,
+                        currentPreferences(messages, ''),
+                      )}
+                    </p>
+                    <span>{name}</span>
+                  </div>
+                </div>
+              )}
+              {item.phase !== 'typing' && (
+                <div className="chat-locked-wrap">
+                  <div className="chat-continue-notice">
+                    <LockKeyhole size={19} />
+                    <div>
+                      <strong>
+                        {item.kind === 'video'
+                          ? 'Vídeos no plano Luxo'
+                          : 'Fotos nos planos Premium e Luxo'}
+                      </strong>
+                      <p>
+                        Conheça os recursos e escolha o plano que combina com
+                        você.
+                      </p>
+                      <button
+                        type="button"
+                        className="chat-continue-button"
+                        onClick={openOffer}
+                      >
+                        Ver planos <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+  )
 
   const profile = (
     <>
@@ -461,6 +439,10 @@ export default function ChatPage() {
         </div>
       </div>
       <div className="chat-profile-details">
+        <p className="chat-processing-explanation">
+          Personagem de IA · Disponível para conversar. “Visualizada” significa
+          incluída no processamento pela IA.
+        </p>
         <h3>Do seu jeito</h3>
         <p>
           Você escolheu cada detalhe. Agora conheça {name} em uma nova conversa.
@@ -468,10 +450,23 @@ export default function ChatPage() {
         <dl>
           {[
             ['Estilo', sel.style === 'anime' ? 'Anime' : 'Realista'],
-            ['Personalidade', sel.personality],
+            [
+              'Personalidade',
+              [
+                sel.personality,
+                sel.secondaryPersonality !== 'Nenhum' &&
+                  sel.secondaryPersonality,
+              ]
+                .filter(Boolean)
+                .join(' · '),
+            ],
             ...Object.entries(CHAT_PREFERENCES).map(([key, setting]) => [
               setting.title,
               sel[key],
+            ]),
+            ...Object.entries(CHARACTER_TASTES).map(([key, setting]) => [
+              setting.title,
+              sel[key] || 'Pelo perfil',
             ]),
             ['Relacionamento', sel.relationship],
             ['Profissão', sel.occupation],
@@ -500,6 +495,7 @@ export default function ChatPage() {
         >
           <ImageIcon size={17} /> Pedir uma foto
         </button>
+        {!loading && <ChatMemoryPanel selection={sel} />}
         <p className="chat-profile-note">
           Fotos disponíveis a partir do Premium.
         </p>
@@ -564,7 +560,11 @@ export default function ChatPage() {
             </span>
             <span>
               <strong>{name}</strong>
-              <small>Personagem virtual · respostas por IA</small>
+              <small>
+                {loading
+                  ? 'Carregando conversa…'
+                  : 'Disponível para conversar · IA'}
+              </small>
             </span>
             <ChevronRight size={17} />
           </button>
@@ -597,6 +597,12 @@ export default function ChatPage() {
         <div
           className="chat-messages"
           ref={messagesRef}
+          onScroll={() => {
+            const list = messagesRef.current
+            nearBottom.current =
+              list.scrollHeight - list.scrollTop - list.clientHeight < 80
+            if (nearBottom.current) setHasNewMessages(false)
+          }}
           role="log"
           aria-label={`Conversa com ${name}`}
           aria-live="polite"
@@ -637,51 +643,52 @@ export default function ChatPage() {
               </button>
             )}
           </div>
-          {!!messages.length && (
-            <div className="chat-day">
-              <span>Hoje</span>
-            </div>
-          )}
-          {messages.map((message, i) => (
-            <div key={i} className={`chat-message ${message.role}`}>
-              {message.role === 'character' && (
-                <img className="chat-message-avatar" src={image} alt="" />
-              )}
-              <div className="chat-bubble">
-                <p>{message.text}</p>
-                {message.media?.src?.startsWith('data:image/jpeg;base64,') && (
-                  <figure className="chat-generated-image">
-                    <a
-                      href={message.media.src}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="Abrir imagem"
-                    >
-                      <img
-                        src={message.media.src}
-                        alt="Imagem solicitada na conversa"
-                      />
-                    </a>
-                    <figcaption>Imagem gerada</figcaption>
-                  </figure>
+          {chatTimeline(messages, mediaRequests).map((entry) => {
+            if (entry.type === 'media') return renderMediaRequest(entry.item)
+            const { message, index: i } = entry
+            const date = dateLabel(message)
+            const previousDate = dateLabel(messages[i - 1])
+            return (
+              <Fragment key={message.id || `legacy-${i}`}>
+                {(i === 0 || date !== previousDate) && (
+                  <div className="chat-day">
+                    <span>
+                      {date === new Date().toLocaleDateString('pt-BR')
+                        ? 'Hoje'
+                        : date}
+                    </span>
+                  </div>
                 )}
-                <span>
-                  {message.role === 'character' ? name : 'Você'}{' '}
-                  {message.role === 'user' && <CheckCheck size={13} />}
-                </span>
-              </div>
-            </div>
-          ))}
+                <ChatMessage
+                  message={message}
+                  messages={messages}
+                  name={name}
+                  image={image}
+                  selection={sel}
+                  onReply={setReplyTo}
+                  onDelete={(id) => clientRef.current.remove(id)}
+                  onRetry={(id) =>
+                    clientRef.current
+                      .retry(id)
+                      .catch((e) => setChatError(e.message))
+                  }
+                  onChanged={() => clientRef.current?.sync()}
+                />
+              </Fragment>
+            )
+          })}
           {typing && (
             <div className="chat-message character">
               <img className="chat-message-avatar" src={image} alt="" />
               <div
                 className="chat-typing"
-                aria-label={`${name} está digitando`}
+                role="status"
+                aria-label="Preparando resposta"
               >
-                <i />
-                <i />
-                <i />
+                <span className="chat-sent-status">Preparando resposta</span>
+                <i aria-hidden="true" />
+                <i aria-hidden="true" />
+                <i aria-hidden="true" />
               </div>
             </div>
           )}
@@ -707,69 +714,7 @@ export default function ChatPage() {
               )}
             </div>
           )}
-          {mediaRequests.map((item) => (
-            <div className="chat-media-request" key={item.id}>
-              {!item.fromChat && (
-                <div className="chat-message user">
-                  <div className="chat-bubble">
-                    <p>
-                      {item.kind === 'video'
-                        ? 'Me manda um vídeo? 💕'
-                        : 'Me manda uma foto sua? 💕'}
-                    </p>
-                    <span>
-                      Você <CheckCheck size={13} />
-                    </span>
-                  </div>
-                </div>
-              )}
-              {!item.fromChat && (
-                <div className="chat-message character">
-                  <img className="chat-message-avatar" src={image} alt="" />
-                  {item.phase === 'typing' ? (
-                    <div
-                      className="chat-typing"
-                      aria-label={`${name} está digitando`}
-                    >
-                      <i />
-                      <i />
-                      <i />
-                    </div>
-                  ) : (
-                    <div className="chat-bubble">
-                      <p>{mediaOfferMessage(sel, item.kind)}</p>
-                      <span>{name}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-              {item.phase !== 'typing' && (
-                <div className="chat-locked-wrap">
-                  <div className="chat-continue-notice">
-                    <LockKeyhole size={19} />
-                    <div>
-                      <strong>
-                        {item.kind === 'video'
-                          ? 'Vídeos no plano Luxo'
-                          : 'Fotos nos planos Premium e Luxo'}
-                      </strong>
-                      <p>
-                        Conheça os recursos e escolha o plano que combina com
-                        você.
-                      </p>
-                      <button
-                        type="button"
-                        className="chat-continue-button"
-                        onClick={openOffer}
-                      >
-                        Ver planos <ChevronRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+
         </div>
         <footer className="chat-composer">
           {chatError && (
@@ -780,22 +725,18 @@ export default function ChatPage() {
           {loading && <p role="status">Abrindo sua conversa…</p>}
           <div className="chat-suggestions">
             {(sent === 0
-                ? [
-                    'Oi! 💕',
-                    'Olá! Como foi seu dia?',
-                    'Quero te conhecer melhor',
-                  ]
-                : ['Me conta mais sobre você', 'O que você gosta de fazer?']
-              ).map((text) => (
-                <button
-                  type="button"
-                  key={text}
-                  onClick={() => send(text)}
-                  disabled={loading || typing || mediaPending}
-                >
-                  {text}
-                </button>
-              ))}
+              ? ['Oi! 💕', 'Olá! Como foi seu dia?', 'Quero te conhecer melhor']
+              : ['Me conta mais sobre você', 'O que você gosta de fazer?']
+            ).map((text) => (
+              <button
+                type="button"
+                key={text}
+                onClick={() => send(text)}
+                disabled={loading || typing || mediaPending}
+              >
+                {text}
+              </button>
+            ))}
             <button
               type="button"
               className="chat-photo-request"
@@ -813,6 +754,42 @@ export default function ChatPage() {
               <ImageIcon size={13} /> Pedir uma foto
             </button>
           </div>
+          {hasNewMessages && (
+            <button
+              className="chat-new-messages"
+              type="button"
+              onClick={() => {
+                nearBottom.current = true
+                setHasNewMessages(false)
+                messagesRef.current?.scrollTo({
+                  top: messagesRef.current.scrollHeight,
+                  behavior: 'smooth',
+                })
+              }}
+            >
+              Ver mensagens novas ↓
+            </button>
+          )}
+          {replyTo && (
+            <div className="chat-composer-reply">
+              <span>
+                Respondendo a:{' '}
+                {!messages.find((m) => m.id === replyTo.id) ||
+                messages.find((m) => m.id === replyTo.id)?.deleted
+                  ? 'Mensagem apagada'
+                  : replyTo.audio
+                    ? 'Mensagem de áudio'
+                    : messages.find((m) => m.id === replyTo.id)?.text}
+              </span>
+              <button
+                type="button"
+                aria-label="Cancelar resposta à mensagem"
+                onClick={() => setReplyTo(null)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
           <form
             onSubmit={(event) => {
               event.preventDefault()
@@ -837,6 +814,10 @@ export default function ChatPage() {
               disabled={loading || paywallReached}
               onChange={(event) => setDraft(event.target.value)}
             />
+            <ChatRecorder
+              disabled={loading || paywallReached}
+              onRecorded={(recording) => send('Mensagem de áudio', recording)}
+            />
             <button
               type={paywallReached ? 'button' : 'submit'}
               onPointerDown={(event) => {
@@ -845,8 +826,7 @@ export default function ChatPage() {
               }}
               onClick={paywallReached ? openOffer : undefined}
               disabled={
-                !paywallReached &&
-                (loading || typing || mediaPending || !draft.trim())
+                !paywallReached && (loading || mediaPending || !draft.trim())
               }
               aria-label={
                 paywallReached ? 'Desbloquear conversa' : 'Enviar mensagem'
@@ -855,8 +835,30 @@ export default function ChatPage() {
               {paywallReached ? <LockKeyhole size={19} /> : <Send size={19} />}
             </button>
           </form>
+          {rhythmVariant && !typing && (
+            <div
+              className="chat-rhythm-feedback"
+              aria-label="Avaliação do ritmo"
+            >
+              <span>Como está o ritmo?</span>
+              {['Rápido', 'Adequado', 'Lento'].map((label, index) => (
+                <button
+                  type="button"
+                  key={label}
+                  onClick={() => {
+                    sendAnalytics(`ChatRhythm_${rhythmVariant}_rating`, {
+                      rhythm_step: ['fast', 'okay', 'slow'][index],
+                    })
+                    setRhythmVariant(null)
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           <p>
-            <Sparkles size={11} /> Personagem virtual · 18+
+            <Sparkles size={11} /> Personagem virtual · Respostas por IA · 18+
           </p>
         </footer>
       </main>
@@ -902,7 +904,13 @@ export default function ChatPage() {
           }
         >
           <PaywallSheet
-            source={locked && !requiresPayment ? (hasPaidAccess ? 'messages' : 'trial') : 'chat'}
+            source={
+              locked && !requiresPayment
+                ? hasPaidAccess
+                  ? 'messages'
+                  : 'trial'
+                : 'chat'
+            }
             sel={sel}
             onClose={() => setOfferOpen(false)}
           />

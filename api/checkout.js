@@ -1,4 +1,9 @@
-import { chatSession, chatSelection, chatDatabase } from './_lib/chat.js'
+import {
+  chatSession,
+  chatSelection,
+  chatDatabase,
+  sameChatSelection,
+} from './_lib/chat.js'
 import { sameOrigin } from './_lib/analytics.js'
 import { UUID } from './_lib/analytics.js'
 import { randomUUID } from 'node:crypto'
@@ -85,10 +90,7 @@ export default async function handler(req, res) {
       `piskou_chat_sessions?id=eq.${session}&select=allowance,unlimited,selection&expires_at=gt.${encodeURIComponent(new Date().toISOString())}`,
     )
     const changed =
-      existing[0] &&
-      Object.keys(selection).some(
-        (key) => existing[0].selection[key] !== selection[key],
-      )
+      existing[0] && !sameChatSelection(existing[0].selection, selection)
     if (plan.purpose === 'messages' && (!existing[0]?.allowance || changed))
       return res.status(403).json({
         error: 'Compre mensagens para a personagem do seu acesso atual.',
@@ -102,9 +104,7 @@ export default async function handler(req, res) {
       const previous = await store.get(requestKey)
       if (
         previous &&
-        Object.keys(selection).every(
-          (key) => previous.selection?.[key] === selection[key],
-        ) &&
+        sameChatSelection(previous.selection, selection) &&
         (!previous.response.pix?.expiresAt ||
           new Date(previous.response.pix.expiresAt).getTime() > Date.now())
       )

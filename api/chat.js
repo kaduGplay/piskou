@@ -1,3 +1,11 @@
+import { invalidateLearningProfile } from './_lib/learning.js'
+import { processChat, restoreSupportedMemory } from './_lib/chat-continuity.js'
+import {
+  loadCharacterPreferences,
+  buildCharacterPreferences,
+} from './_lib/character-preferences.js'
+import { loadMemory, saveMemory } from './_lib/memory-store.js'
+import { emptyMemory } from './_lib/memory.js'
 import { UUID } from './_lib/analytics.js'
 import { generateChatImage } from './_lib/images.js'
 import { generateChatReply } from './_lib/model.js'
@@ -6,6 +14,7 @@ import { randomUUID } from 'node:crypto'
 import {
   chatDatabase,
   chatSelection,
+  sameChatSelection,
   chatSession,
   chatSignature,
 } from './_lib/chat.js'
@@ -36,14 +45,12 @@ export default async function handler(req, res) {
     session = chatSession(req, res, true)
     if (req.method === 'GET') {
       if (!session)
-        return res
-          .status(200)
-          .json({
-            messages: [],
-            remaining: CHAT_PREVIEW_LIMIT,
-            requiresPayment: false,
-            hasPaidAccess: false,
-          })
+        return res.status(200).json({
+          messages: [],
+          remaining: CHAT_PREVIEW_LIMIT,
+          requiresPayment: false,
+          hasPaidAccess: false,
+        })
       if (req.query?.access === '1')
         return res
           .status(200)
@@ -64,38 +71,26 @@ export default async function handler(req, res) {
         JSON.stringify(row.selection) !== JSON.stringify(requested)
       ) {
         // jsonb não preserva a ordem das chaves; compara os campos normalizados.
-        if (
-          Object.keys(requested).some(
-            (key) => row.selection[key] !== requested[key],
+        if (!sameChatSelection(row.selection, requested)) {
+          session = chatSession(req, res, true, true)
+          return res.status(200).json(
+            await chatDatabase('rpc/piskou_chat_initialize', {
+              p_id: session,
+              p_selection: requested,
+            }),
           )
-        ) {
-          chatSession(req, res, true, true)
-          return res
-            .status(200)
-            .json({
-              messages: [],
-              remaining: CHAT_PREVIEW_LIMIT,
-              requiresPayment: false,
-              hasPaidAccess: false,
-            })
         }
       }
-      const messages = row?.messages || []
-      return res.status(200).json({
-        messages,
-        selection: row?.selection,
-        remaining: row?.unlimited
-          ? null
-          : Math.max(
-              0,
-              (row?.allowance ?? CHAT_PREVIEW_LIMIT) - messages.length / 2,
-            ),
-        unlimited: row?.unlimited === true,
-        requiresPayment: !!row && !row.allowance && !row.unlimited,
-        hasPaidAccess:
-          !!row &&
-          (row.unlimited || row.allowance > (row.trial_allowance || 0)),
-      })
+      if (!row && requested)
+        return res.status(200).json(
+          await chatDatabase('rpc/piskou_chat_initialize', {
+            p_id: session,
+            p_selection: requested,
+          }),
+        )
+      return res
+        .status(200)
+        .json(await chatDatabase('rpc/piskou_chat_snapshot', { p_id: session }))
     }
     if (req.body?.action === 'log') {
       const selection = chatSelection(req.body.selection)
@@ -135,6 +130,87 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true })
     }
     const selection = chatSelection(req.body?.selection)
+    if (['enqueue', 'process', 'delete', 'retry'].includes(req.body?.action)) {
+      if (!selection)
+        return res.status(400).json({ error: 'Personagem inválida.' })
+      const rows = await chatDatabase(
+        `piskou_chat_sessions?id=eq.${session}&select=selection`,
+      )
+      if (rows[0] && !sameChatSelection(rows[0].selection, selection))
+        return res.status(409).json({
+          error: 'A conversa foi alterada.',
+          code: 'selection_changed',
+        })
+      if (req.body.action === 'process') {
+        await processChat(session)
+        return res
+          .status(200)
+          .json(
+            await chatDatabase('rpc/piskou_chat_snapshot', { p_id: session }),
+          )
+      }
+      const { messageId, replyTo } = req.body
+      if (!UUID.test(messageId || '') || (replyTo && !UUID.test(replyTo)))
+        return res.status(400).json({ error: 'Mensagem inválida.' })
+      if (req.body.action === 'delete') {
+        const snapshot = await chatDatabase('rpc/piskou_chat_delete_message', {
+          p_id: session,
+          p_message: messageId,
+        })
+        invalidateLearningProfile()
+        await restoreSupportedMemory({ ...snapshot, chatId: session }).catch(
+          () => {},
+        )
+        delete snapshot.affectedMemory
+        delete snapshot.memoryState
+        return res.status(200).json(snapshot)
+      }
+      if (req.body.action === 'retry')
+        return res.status(200).json(
+          await chatDatabase('rpc/piskou_chat_retry', {
+            p_id: session,
+            p_message: messageId,
+          }),
+        )
+      let timeZone = req.body.timeZone || 'America/Sao_Paulo'
+      try {
+        new Intl.DateTimeFormat('en', { timeZone }).format()
+      } catch {
+        timeZone = 'America/Sao_Paulo'
+      }
+      const ip = String(
+        req.headers['x-vercel-forwarded-for'] ||
+          req.headers['x-forwarded-for'] ||
+          req.socket?.remoteAddress ||
+          'unknown',
+      )
+        .split(',')[0]
+        .trim()
+      const snapshot = await chatDatabase('rpc/piskou_chat_enqueue', {
+        p_id: session,
+        p_selection: selection,
+        p_budget: `ip:${chatSignature(ip)}`,
+        p_message: messageId,
+        p_text: typeof req.body.message === 'string' ? req.body.message : '',
+        p_reply_to: replyTo || null,
+        p_timezone: timeZone,
+        p_window_ms: Number.isFinite(Number(process.env.CHAT_GROUP_WINDOW_MS))
+          ? Math.round(Number(process.env.CHAT_GROUP_WINDOW_MS))
+          : 1500,
+      })
+      if (snapshot.error)
+        return res
+          .status(snapshot.error === 'selection_changed' ? 409 : 429)
+          .json({
+            error:
+              snapshot.error === 'limit'
+                ? 'Escolha um plano para continuar.'
+                : 'Não foi possível enviar a mensagem.',
+            code: snapshot.error,
+            locked: snapshot.error === 'limit',
+          })
+      return res.status(200).json(snapshot)
+    }
     const message =
       typeof req.body?.message === 'string' ? req.body.message.trim() : ''
     if (!selection || !message || message.length > 500)
@@ -177,8 +253,38 @@ export default async function handler(req, res) {
         messages: claim.messages,
       })
     }
-    let [{ reply, mediaRequest, imagePrompt }] = await Promise.all([
-      generateChatReply(selection, claim.messages, message, claim.turn),
+    const [memory, characterPreferences] = await Promise.all([
+      loadMemory(session).catch(() => emptyMemory()),
+      loadCharacterPreferences(session, selection).catch((error) => {
+        console.error('chat: character preferences unavailable', error.message)
+        return buildCharacterPreferences(selection)
+      }),
+    ])
+    let [{ reply, mediaRequest, imagePrompt, nextMemory }] = await Promise.all([
+      generateChatReply(
+        selection,
+        claim.messages.filter(
+          (m) =>
+            !m.deleted &&
+            !m.contextInvalidated &&
+            (m.role === 'character' || m.charged !== false),
+        ),
+        message,
+        claim.turn,
+        fetch,
+        undefined,
+        {
+          memory,
+          characterPreferences,
+          memoryHistory: claim.messages.map((m) =>
+            m.deleted ? { ...m, text: '' } : m,
+          ),
+          timeZone:
+            req.body?.timeZone ||
+            process.env.CHAT_TIME_ZONE ||
+            'America/Sao_Paulo',
+        },
+      ),
       chatDatabase('rpc/piskou_chat_journal', {
         p_id: session,
         p_selection: selection,
@@ -193,7 +299,7 @@ export default async function handler(req, res) {
     let media = null
     if (mediaRequest === 'image') {
       try {
-        media = await generateChatImage(imagePrompt)
+        media = await generateChatImage(imagePrompt, fetch, selection)
       } catch (error) {
         console.error('chat: image unavailable', error.message)
         reply =
@@ -209,12 +315,20 @@ export default async function handler(req, res) {
       p_media: media,
     })
     lease = null
+    await saveMemory(session, memory, nextMemory).catch((error) =>
+      console.error('chat: memory unavailable', error.message),
+    )
     return res.status(200).json({
       messages,
       mediaRequest,
       remaining: claim.unlimited
         ? null
-        : Math.max(0, claim.allowance - messages.length / 2),
+        : Math.max(
+            0,
+            claim.allowance -
+              messages.filter((m) => m.role === 'user' && m.charged !== false)
+                .length,
+          ),
       unlimited: claim.unlimited === true,
     })
   } catch (error) {
@@ -227,8 +341,11 @@ export default async function handler(req, res) {
       }).catch(() => {})
     console.error('chat: request failed', error.message)
     return res.status(502).json({
-      error:
-        'Não foi possível receber a resposta. Sua mensagem não foi consumida. Tente novamente.',
+      error: ['enqueue', 'delete', 'retry', 'process'].includes(
+        req.body?.action,
+      )
+        ? 'Não foi possível confirmar esta operação. Atualize a conversa antes de tentar novamente.'
+        : 'Não foi possível receber a resposta. Sua mensagem não foi consumida. Tente novamente.',
     })
   }
 }

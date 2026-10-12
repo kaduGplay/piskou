@@ -1,3 +1,4 @@
+import { CHARACTER_TASTES } from '../shared/characterTastes.js'
 import { readProgress, saveProgress, readSavedSelection, saveSelection } from '../shared/progress.js'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
@@ -49,8 +50,10 @@ const STEP_ICONS = [CircleUserRound, MapPin, Smile, PersonStanding, FileText, Im
 const AGES = Array.from({ length: 53 }, (_, i) => i + 18)
 
 const CHOICE_SHEETS = {
+  ...Object.fromEntries(Object.entries(CHARACTER_TASTES).map(([key, setting]) => [key, { title: setting.title, icon: Smile, options: setting.options.map(value => ({ value, label: value })) }])),
   ...Object.fromEntries(Object.entries(CHAT_PREFERENCES).map(([key, setting]) => [key, { title: setting.title, icon: Smile, options: setting.options.map(value => ({ value, label: value })) }])),
   voice: { title: 'Voz', icon: AudioLines, options: VOICES.map((v, i) => ({ value: i, label: v.label })) },
+  secondaryPersonality: { title: 'Traço complementar', icon: Smile, options: ['Nenhum', ...PERSONALITIES].map(value => ({ value, label: value })) },
   personality: { title: 'Personalidade', icon: Smile, options: PERSONALITIES.map((v) => ({ value: v, label: v })) },
   occupation: { title: 'Profissão', icon: BriefcaseBusiness, options: OCCUPATIONS.map((v) => ({ value: v, label: v })) },
   relationship: { title: 'Relacionamento', icon: Heart, options: RELATIONSHIPS.map((v) => ({ value: v, label: v })) },
@@ -733,12 +736,12 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                   onPlay={() => toggleVoice()}
                   onOpen={() => setOpenSheet('voice')}
                 />
-                {['personality', ...Object.keys(CHAT_PREFERENCES), 'occupation', 'relationship'].map((key) => (
+                {['personality', 'secondaryPersonality', ...Object.keys(CHAT_PREFERENCES), ...Object.keys(CHARACTER_TASTES), 'occupation', 'relationship'].map((key) => (
                   <DetailTile
                     key={key}
                     title={CHOICE_SHEETS[key].title}
                     icon={CHOICE_SHEETS[key].icon}
-                    value={sel[key]}
+                    value={sel[key] || CHARACTER_TASTES[key]?.options[0]}
                     onOpen={() => setOpenSheet(key)}
                   />
                 ))}
@@ -816,7 +819,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                     <SummaryRow title="Voz" value={VOICES[sel.voice].label} />
                     <SummaryRow title="Personalidade" value={sel.personality} />
                     {Object.entries(CHAT_PREFERENCES).map(([key, setting]) => (
-                      <SummaryRow key={key} title={setting.title} value={sel[key]} />
+                      <SummaryRow key={key} title={setting.title} value={sel[key] || CHARACTER_TASTES[key]?.options[0]} />
                     ))}
                     <SummaryRow title="Profissão" value={sel.occupation} />
                     <SummaryRow title="Relacionamento" value={sel.relationship} />
@@ -885,7 +888,7 @@ export default function Funnel({ initialPhase = 'quiz' }) {
   return (
     <Creator
       sel={sel}
-      update={(key, value) => setSel((prev) => ({ ...prev, [key]: value }))}
+      update={(key, value) => setSel((prev) => ({ ...prev, [key]: value, ...(Object.hasOwn(CHAT_PREFERENCES, key) ? { preferenceOverrides: [...new Set([...(prev.preferenceOverrides || []), key])] } : {}) }))}
       initialStep={initialPhase === 'creating' || initialPhase === 'offer' ? 5 : Math.max(0, Math.min(5, Number(readProgress().step) || 0))}
       initialPaywallOpen={initialPhase === 'offer'}
       onComplete={() => track(EVENTS.QUIZ_COMPLETE, { visual_style: sel.style })}

@@ -112,7 +112,7 @@ export function getOptionMedia(style, field, value) {
   }
 }
 
-export const PERSONALITIES = ['Carinhosa', 'Confiante', 'Misteriosa', 'Divertida', 'Sedutora', 'Reservada', 'Romântica', 'Empática', 'Intelectual', 'Aventureira', 'Tranquila', 'Espontânea']
+export const PERSONALITIES = ['Carinhosa', 'Confiante', 'Misteriosa', 'Divertida', 'Sedutora', 'Reservada', 'Romântica', 'Empática', 'Intelectual', 'Aventureira', 'Tranquila', 'Espontânea', 'Amigável', 'Brava', 'Tímida', 'Brincalhona']
 export const RELATIONSHIPS = ['Namorada', 'Confidente', 'Amante', 'Parceira']
 export const OCCUPATIONS = ['Artista', 'Empreendedora', 'Executiva', 'Atleta', 'Criadora', 'Professora', 'Médica', 'Enfermeira', 'Psicóloga', 'Advogada', 'Engenheira', 'Programadora', 'Designer', 'Arquiteta', 'Jornalista', 'Fotógrafa', 'Chef de cozinha', 'Veterinária', 'Música', 'Escritora', 'Cientista', 'Piloto', 'Bióloga', 'Personal trainer']
 
@@ -235,6 +235,7 @@ export const DEFAULT_SELECTION = {
   age: 25,
   voice: 6,
   personality: 'Carinhosa',
+  secondaryPersonality: 'Nenhum',
   speechStyle: 'Casual',
   socialEnergy: 'Equilibrada',
   initiative: 'Compartilhada',
@@ -304,4 +305,4 @@ export const CHAT_PREFERENCES = {
   },
 }
 
-export const CHAT_PREVIEW_LIMIT = 12
+export const CHAT_PREVIEW_LIMIT = 7

@@ -73,8 +73,9 @@ test('unlimited conversation keeps recent context within bounded model input', a
     },
     async () => {},
   )
-  assert.equal(request.input.length, 25)
-  assert.equal(request.input[0].content, 'turn 76')
+  assert.equal(request.input.length, 26)
+  assert.equal(request.input[1].content, 'turn 76')
+  assert.match(request.input[0].content, /CONTEXTO ESTRUTURADO/)
   assert.equal(request.input.at(-1).content, 'atual')
   assert.ok(!request.instructions.includes('de 6 da prévia'))
 })

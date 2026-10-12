@@ -1,4 +1,14 @@
-const uuid = () => globalThis.crypto?.randomUUID?.() || '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (Number(c) ^ (globalThis.crypto?.getRandomValues ? crypto.getRandomValues(new Uint8Array(1))[0] : Math.floor(Math.random()*256)) & 15 >> Number(c)/4).toString(16))
+const uuid = () =>
+  globalThis.crypto?.randomUUID?.() ||
+  '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) =>
+    (
+      Number(c) ^
+      ((globalThis.crypto?.getRandomValues
+        ? crypto.getRandomValues(new Uint8Array(1))[0]
+        : Math.floor(Math.random() * 256)) &
+        (15 >> (Number(c) / 4)))
+    ).toString(16),
+  )
 let fallback
 export function analyticsIdentity() {
   try {
@@ -18,7 +28,11 @@ export function analyticsIdentity() {
 }
 let currentStep = ''
 export function sendAnalytics(event, params = {}) {
-  try { emitAnalytics(event, params) } catch { /* Metrics never interrupt the visitor journey. */ }
+  try {
+    emitAnalytics(event, params)
+  } catch {
+    /* Metrics never interrupt the visitor journey. */
+  }
 }
 function emitAnalytics(event, params = {}) {
   if (['Pagamento aprovado', 'Gerou o PIX'].includes(event)) return
@@ -40,8 +54,9 @@ function emitAnalytics(event, params = {}) {
     ...analyticsIdentity(),
     page,
     event,
-    step:
-      event === 'ChatMensagemEnviada'
+    step: event.startsWith('ChatRhythm_')
+      ? params.rhythm_step || ''
+      : event === 'ChatMensagemEnviada'
         ? String(params.message_number || '')
         : event === 'Etapa do criador' || event === 'heartbeat'
           ? currentStep

@@ -1,0 +1,166 @@
+{
+  "phase": "before",
+  "model": "gpt-4.1-mini",
+  "evaluatedAt": "2026-10-11T18:45:18.329Z",
+  "syntheticData": true,
+  "productionDatabaseTouched": false,
+  "results": [
+    {
+      "scenario": "casual-and-topic-shift",
+      "turn": 1,
+      "personality": "Brincalhona",
+      "message": "Fiquei duas horas fazendo almoço e queimei o arroz. O resto deu pra salvar.",
+      "reply": "Puts, que frustrante! Queimar arroz às vezes parece um ritual de iniciação na cozinha, né? O lado bom é que o resto ficou bom, pelo menos. Quer tentar um truque pra salvar arroz queimado ou prefere contar como foi o resto do almoço?",
+      "ms": 1783
+    },
+    {
+      "scenario": "casual-and-topic-shift",
+      "turn": 2,
+      "personality": "Brincalhona",
+      "message": "Pois é kkk.",
+      "reply": "Essa risada já melhorou o clima! Às vezes a cozinha é só diversão e aprendizado mesmo. O que rolou depois?",
+      "ms": 1584
+    },
+    {
+      "scenario": "casual-and-topic-shift",
+      "turn": 3,
+      "personality": "Brincalhona",
+      "message": "Mudando de assunto: estou montando um site de receitas. Já fiz a página inicial, mas falta organizar as categorias.",
+      "reply": "Organizar categorias é essencial pra ajudar quem visita o site a encontrar o que quer rapidinho. Você já pensou em categorias básicas como entradas, pratos principais, sobremesas, e também umas mais específicas, tipo receitinhas rápidas ou veganas?",
+      "ms": 1097
+    },
+    {
+      "scenario": "casual-and-topic-shift",
+      "turn": 4,
+      "personality": "Brincalhona",
+      "message": "Pensei em doces e salgados. Você acha que é uma boa divisão?",
+      "reply": "Dois grandes grupos, doces e salgados, são simples e funcionam bem pra começar. Só que às vezes pode ser meio genérico demais, sabe? Talvez dar uma subdividida dentro de cada um pode ajudar, tipo doces gelados, bolos, ou salgados rápidos, pratos quentes... Depende do foco do seu site e do público que quer alcançar.",
+      "ms": 1357
+    },
+    {
+      "scenario": "casual-and-topic-shift",
+      "turn": 5,
+      "personality": "Brincalhona",
+      "message": "ok",
+      "reply": "Se quiser, posso ajudar a pensar nessas subdivisões ou até exemplos de categorias que façam sentido pra seu estilo de receitas.",
+      "ms": 1068
+    },
+    {
+      "scenario": "casual-and-topic-shift",
+      "turn": 6,
+      "personality": "Brincalhona",
+      "message": "Você está repetitiva. Não precisa terminar sempre com pergunta.",
+      "reply": "Entendi, vou prestar atenção para variar mais as respostas e evitar perguntar demais no final.",
+      "ms": 1123
+    },
+    {
+      "scenario": "casual-and-topic-shift",
+      "turn": 7,
+      "personality": "Brincalhona",
+      "message": "A categoria doces ficou com 30 receitas, salgados só com 4.",
+      "reply": "Parece que o seu site tá puxando mais pro lado doce mesmo, né? Talvez dar uma atenção maior pros salgados, tipo criar umas receitas novas ou buscar opções diferentes, ajude a equilibrar. Ou pode ser que o público que você quer atingir prefira doces mesmo, aí faz sentido manter assim.",
+      "ms": 1507
+    },
+    {
+      "scenario": "joke-serious-repair-close-return",
+      "turn": 1,
+      "personality": "Brincalhona",
+      "message": "Minha tentativa de fazer pão virou um tijolo kkk.",
+      "reply": "Pão-tijolo? Isso é novo! Pelo menos dá pra usar como peso de papel se não der pra comer 😂 Tenta ajustar o tempo ou a temperatura da próxima vez, talvez isso ajude a evitar o “tijolo”.",
+      "ms": 1359
+    },
+    {
+      "scenario": "joke-serious-repair-close-return",
+      "turn": 2,
+      "personality": "Brincalhona",
+      "message": "Agora falando sério, meu irmão e eu discutimos. Fiquei bem triste.",
+      "reply": "Sinto muito que a discussão com seu irmão tenha deixado você triste. Quer conversar sobre o que aconteceu? Às vezes, falar ajuda a aliviar o peso.",
+      "ms": 1409
+    },
+    {
+      "scenario": "joke-serious-repair-close-return",
+      "turn": 3,
+      "personality": "Brincalhona",
+      "message": "Ele disse que eu nunca ajudo. Mas essa semana cuidei da casa sozinho.",
+      "reply": "Entendo que isso deve ter doído, especialmente porque você já se esforçou para ajudar cuidando da casa. Às vezes, na hora da briga, as coisas saem do tom e a gente esquece de reconhecer os esforços um do outro.",
+      "ms": 1370
+    },
+    {
+      "scenario": "joke-serious-repair-close-return",
+      "turn": 4,
+      "personality": "Brincalhona",
+      "message": "Não estava falando do meu namorado, é meu irmão. Você entendeu errado.",
+      "reply": "Desculpa, errei na interpretação. Falar de família às vezes embaralha as coisas mesmo. Nessa de cuidar da casa sozinho, é justo que você se sinta incompreendido por seu irmão. Quer continuar desabafando?",
+      "ms": 1387
+    },
+    {
+      "scenario": "joke-serious-repair-close-return",
+      "turn": 5,
+      "personality": "Brincalhona",
+      "message": "Não me chame de amor. Sem apelidos.",
+      "reply": "Entendido, vou respeitar isso. Se quiser conversar mais, estou aqui.",
+      "ms": 1222
+    },
+    {
+      "scenario": "joke-serious-repair-close-return",
+      "turn": 6,
+      "personality": "Brincalhona",
+      "message": "Obrigado. Vou dormir, até depois.",
+      "reply": "Boa noite. Que seu descanso seja tranquilo.",
+      "ms": 1152
+    },
+    {
+      "scenario": "joke-serious-repair-close-return",
+      "turn": 7,
+      "personality": "Brincalhona",
+      "message": "Voltei. Quero falar do site de receitas agora.",
+      "reply": "Claro, vamos falar sobre o site de receitas. O que você quer saber ou discutir sobre ele?",
+      "ms": 947
+    },
+    {
+      "scenario": "opinions-short-replies",
+      "turn": 1,
+      "personality": "Tímida",
+      "message": "Qual gênero musical você prefere?",
+      "reply": "Eu prefiro rock. Gosto bastante das guitarras marcantes e das letras que têm personalidade, como as músicas da Pitty. Mas confesso que, quando uma música repete muito sem variar, acabo me desconectando um pouco.",
+      "ms": 1243
+    },
+    {
+      "scenario": "opinions-short-replies",
+      "turn": 2,
+      "personality": "Tímida",
+      "message": "Eu prefiro sertanejo. Então você também prefere sertanejo agora?",
+      "reply": "Na verdade, continuo preferindo rock. O sertanejo tem seu valor, claro, mas não é meu estilo favorito. E o que você gosta no sertanejo?",
+      "ms": 1033
+    },
+    {
+      "scenario": "opinions-short-replies",
+      "turn": 3,
+      "personality": "Tímida",
+      "message": "Mas eu gosto de letras que contam histórias. Isso é algo que você também valoriza?",
+      "reply": "Sim, eu valorizo letras que contam histórias com personalidade, especialmente aquelas que me fazem pensar sobre escolhas e sentimentos. Essa profundidade é o que me prende, mais que o ritmo em si.",
+      "ms": 1408
+    },
+    {
+      "scenario": "opinions-short-replies",
+      "turn": 4,
+      "personality": "Tímida",
+      "message": "sim",
+      "reply": "É bom saber que gostamos desse tipo de letra, então. Você costuma prestar atenção nas histórias das músicas que escuta?",
+      "ms": 1226
+    },
+    {
+      "scenario": "opinions-short-replies",
+      "turn": 5,
+      "personality": "Tímida",
+      "message": "Não quero conversar agora.",
+      "reply": "Tudo bem, respeito seu momento. Se quiser falar depois, estarei por aqui.",
+      "ms": 891
+    },
+    {
+      "scenario": "verified-summary-return",
+      "message": "Qual hobby eu contei que gosto? Quero ligar isso ao meu site.",
+      "reply": "Você contou que gosta de cozinhar, né? Isso combina super bem com o site de receitas que você está organizando."
+    }
+  ]
+}

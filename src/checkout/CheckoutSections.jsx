@@ -282,7 +282,7 @@ export function OrderSummary({ plan, selection }) {
           <PlanIcon size={14} aria-hidden="true" /> Piskou {plan.name}
         </span>
         <strong>{selection?.name ? `${selection.name}, ${selection.age} anos` : 'Sua personagem'}</strong>
-        <small>{plan.purpose === 'messages' ? plan.name : '6 mensagens incluídas · continuação vendida separadamente'}</small>
+        <small>{plan.purpose === 'messages' ? plan.name : ''}</small>
       </div>
       <div className="checkout-summary-price">
         <strong>{formatBRL(plan.price)}</strong>

@@ -1,6 +1,18 @@
 import { createHmac } from 'node:crypto'
 import { chatDatabase } from './_lib/chat.js'
 import { sameOrigin, UUID } from './_lib/analytics.js'
+const rhythmEvent =
+  /^ChatRhythm_(paced|immediate|grouped)_(started|content|abandoned|rating)$/
+const rhythmSteps = [
+  '',
+  'under800',
+  '800to1499',
+  '1500to2999',
+  '3000plus',
+  'fast',
+  'okay',
+  'slow',
+]
 const events = new Set([
   'ChatRespostaRecebida',
   'ChatLimiteExibido',
@@ -29,23 +41,25 @@ export default async function handler(req, res) {
   if (
     !UUID.test(b.session || '') ||
     !UUID.test(b.visitor || '') ||
-    !events.has(b.event) ||
+    !(events.has(b.event) || rhythmEvent.test(b.event)) ||
     !['/', '/chat', '/checkout'].includes(b.page) ||
-    ![
-      '',
-      'style',
-      'general',
-      'face',
-      'body',
-      'details',
-      'generating',
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-      '6',
-    ].includes(b.step || '') ||
+    !(rhythmEvent.test(b.event)
+      ? rhythmSteps.includes(b.step || '')
+      : [
+          '',
+          'style',
+          'general',
+          'face',
+          'body',
+          'details',
+          'generating',
+          '1',
+          '2',
+          '3',
+          '4',
+          '5',
+          '6',
+        ].includes(b.step || '')) ||
     JSON.stringify(b).length > 1800
   )
     return res.status(400).json({ error: 'Evento inválido' })
