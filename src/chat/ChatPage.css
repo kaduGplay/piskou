@@ -1355,3 +1355,9 @@ body.chat-page {
   .chat-header-person small { max-width: 145px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .chat-header-person > svg { display: none; }
 }
+
+.chat-inline-image > button { display: block; padding: 0; border: 0; background: transparent; color: inherit; cursor: zoom-in; }
+.chat-image-viewer { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: #08080bf5; padding: max(64px, env(safe-area-inset-top)) 12px max(20px, env(safe-area-inset-bottom)); box-sizing: border-box; }
+.chat-image-viewer > img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+.chat-image-viewer > button { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid #ffffff40; border-radius: 50%; background: #25252c; color: white; cursor: pointer; }
+.chat-image-viewer > button:focus-visible { outline: 2px solid #f68ecb; outline-offset: 3px; }

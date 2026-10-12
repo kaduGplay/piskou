@@ -1,6 +1,7 @@
 import AudioMessage from './AudioMessage.jsx'
+import ImageViewer from './ImageViewer.jsx'
 export { default as AudioMessage } from './AudioMessage.jsx'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Check,
   CheckCheck,
@@ -43,12 +44,14 @@ export default function ChatMessage({
 }) {
   const [menu, setMenu] = useState(false),
     [info, setInfo] = useState(false),
+    [imageOpen, setImageOpen] = useState(false),
     [notice, setNotice] = useState('')
   const press = useRef(null),
     origin = useRef(null),
     infoRef = useRef(null),
     menuRef = useRef(null),
     triggerRef = useRef(null)
+  const closeImage = useCallback(() => setImageOpen(false), [])
   useEffect(() => () => clearTimeout(press.current), [])
   useEffect(() => {
     if (!menu && !info) return
@@ -134,17 +137,16 @@ export default function ChatMessage({
             )}
             {message.media?.src && (
               <figure className="chat-inline-image">
-                <a
-                  href={message.media.src}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setImageOpen(true)}
                   aria-label="Abrir imagem"
                 >
                   <img
                     src={message.media.src}
                     alt="Imagem solicitada na conversa"
                   />
-                </a>
+                </button>
                 <figcaption>Imagem gerada</figcaption>
               </figure>
             )}
@@ -316,6 +318,7 @@ export default function ChatMessage({
         </div>
       )}
     </div>
+    {imageOpen && !message.deleted && message.media?.src && <ImageViewer src={message.media.src} onClose={closeImage} />}
     </>
   )
 }
