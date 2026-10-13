@@ -251,3 +251,13 @@ test('explicit character media requests offer only non-explicit plan content wit
     assert.equal(result.imagePrompt, '')
   }
 })
+
+test('character photo exchanges and non-explicit sensual requests always route to plans', async () => {
+  for (const message of ['vamos trocar fotos sensuais?', 'bora trocar fotos', 'troca uma foto comigo', 'me manda uma fotinha sua', 'quero uma selfie sua', 'uma foto sua?', 'quero fotos sensuais da minha personagem']) {
+    const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Character photos must route to plans without model/image generation') })
+    assert.equal(result.mediaRequest, 'photo', message)
+    assert.match(result.reply, /Premium e Luxo/, message)
+    assert.equal(result.imagePrompt, '')
+    assert.doesNotMatch(result.reply, /c[aâ]mera|n[aã]o (?:posso|consigo)/i)
+  }
+})
