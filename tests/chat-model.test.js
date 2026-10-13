@@ -240,3 +240,14 @@ test('photo of now routes directly to plans without camera refusal or image-prov
     assert.equal(result.imagePrompt, '')
   }
 })
+
+test('explicit character media requests offer only non-explicit plan content without generating explicit images', async () => {
+  for (const message of ['me manda uma foto pelada', 'quero um nude seu', 'me manda um vídeo sem roupa']) {
+    const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Must not request explicit media from provider') })
+    assert.ok(['photo', 'video'].includes(result.mediaRequest))
+    assert.match(result.reply, /não explícit/)
+    assert.match(result.reply, /Luxo/)
+    assert.doesNotMatch(result.reply, /não (?:posso|consigo).*enviar/i)
+    assert.equal(result.imagePrompt, '')
+  }
+})

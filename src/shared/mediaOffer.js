@@ -1,4 +1,7 @@
-export function mediaOfferMessage(selection, kind, preferences = {}) {
+export function mediaOfferMessage(selection, kind, preferences = {}, options = {}) {
+  if (options.nonExplicitOnly) return kind === 'video'
+    ? 'Você pode conhecer os vídeos não explícitos da personagem no plano Luxo. Veja as opções abaixo.'
+    : 'Você pode conhecer as fotos não explícitas da personagem nos planos Premium e Luxo. Veja as opções abaixo.'
   const affectionate =
     preferences.nicknames === true &&
     preferences.flirt !== false &&

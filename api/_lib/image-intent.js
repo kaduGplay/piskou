@@ -22,15 +22,18 @@ export function allowMediaRequest(history, message) {
 
 export const allowImageGeneration = allowMediaRequest
 
+export const requestsExplicitMedia = (message) => /\b(?:nudes?|pelad[ao]s?|nua?s?|sem roupa|sem calcinha|sem sutia)\b/.test(normalize(message))
+
 // Generic requests in a character chat refer to the character. Explicit
 // subjects and accepted offers (food, landscapes, drawings) remain images.
 export function requestedMedia(history, message) {
   const text = normalize(message)
   const last = history.filter((m) => m.role === 'character' && !m.deleted && !m.contextInvalidated).at(-1)
-  if (/\b(?:nao|sem|pare de|para de)\b.{0,40}(?:foto|imagem|video|audio|voz|manda|envia)/.test(text)) return null
+  if (/\b(?:nao|sem|pare de|para de)\b.{0,40}(?:foto|imagem|video|audio|voz|nude|pelad|mand[ae]|envi[ae])/.test(text)) return null
   if (/\b(?:falar|conversar|comentar|saber|entender)\b.{0,25}\b(?:sobre|das|dos|de)\b/.test(text)) return null
   const request = /\b(?:manda|mande|mandar|envia|envie|enviar|mostra|mostre|mostrar|gera|gere|gerar|cria|crie|criar|faz|faca|fazer|quero|gostaria|posso|desenha|desenhe)\b/.test(text)
   const audio = request && /\b(?:audio|audios|voz)\b/.test(text)
+  if (request && requestsExplicitMedia(message) && !audio) return /\bvideos?\b/.test(text) ? 'video' : 'photo'
   if (!audio && !allowMediaRequest(history, message)) return null
   if (audio) return 'audio'
   if (/\bvideos?\b/.test(text)) return 'video'

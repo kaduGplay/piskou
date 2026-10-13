@@ -1,4 +1,4 @@
-import { allowMediaRequest, requestedMedia } from './image-intent.js'
+import { allowMediaRequest, requestedMedia, requestsExplicitMedia } from './image-intent.js'
 import { markTopicAsked, TOPIC_INSTRUCTIONS } from './open-topics.js'
 import {
   dialogueState,
@@ -50,7 +50,7 @@ export async function generateChatReply(
       context.characterPreferences
   const requested = requestedMedia(history, message)
   if (['photo', 'video', 'audio'].includes(requested) && !(requested === 'audio' && context.audioAccess)) return {
-    reply: mediaOfferMessage(selection, requested, conversation.data.conversationPreferences),
+    reply: mediaOfferMessage(selection, requested, conversation.data.conversationPreferences, { nonExplicitOnly: requestsExplicitMedia(message) }),
     mediaRequest: requested,
     imagePrompt: '',
     nextMemory: conversation.nextMemory,
