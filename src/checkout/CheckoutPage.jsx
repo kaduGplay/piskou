@@ -21,16 +21,19 @@ import {
   onlyDigits,
   pickCampaignParams,
   validateCustomer,
+  quoteCheckout,
 } from '../shared/checkout.js'
 import { tokenizeCard } from './gatewayClient.js'
 import {
   CharacterHero,
+  CheckoutBanner,
   Faq,
   HowItWorks,
   OrderSummary,
   PlanIncludes,
   PlanPicker,
   Reviews,
+  OrderBumps,
   StickyCta,
   TrustBadges,
 } from './CheckoutSections.jsx'
@@ -105,6 +108,11 @@ export default function CheckoutPage() {
   const params = new URLSearchParams(window.location.search)
   const [planId, setPlanId] = useState(() => (PLANS[params.get('plano')] ? params.get('plano') : 'premium-access'))
   const plan = PLANS[planId]
+  const [selectedBumps, setSelectedBumps] = useState([])
+  // Uma seleção salva que não vale mais para o plano não pode derrubar a página.
+  let quote
+  try { quote = quoteCheckout(planId, selectedBumps) } catch { quote = quoteCheckout(planId, []) }
+  const totalPlan = { ...plan, price: quote.amount }
   const [selection] = useState(readSelection)
   const [customer, setCustomer] = useState({ name: '', email: '' })
   const [method, setMethod] = useState('pix')
@@ -127,11 +135,13 @@ export default function CheckoutPage() {
   useEffect(() => {
     try {
       const saved=JSON.parse(localStorage.getItem('piskou:pendingCharge') || 'null')
-      if(saved && saved.planId===planId && saved.amount===plan.price && Date.now()-saved.createdAt<90*86400000 && (!saved.selectionKey || saved.selectionKey === JSON.stringify(selection))) {
+      const savedQuote = saved ? quoteCheckout(planId, saved.addons || []) : null
+      if(saved && saved.planId===planId && saved.amount===savedQuote.amount && Date.now()-saved.createdAt<90*86400000 && (!saved.selectionKey || saved.selectionKey === JSON.stringify(selection))) {
         if (saved.pix?.expiresAt && new Date(saved.pix.expiresAt).getTime() <= Date.now()) {
           localStorage.removeItem('piskou:pendingCharge')
-          sessionStorage.removeItem(`piskou:pix-request:${planId}:${plan.price}:${JSON.stringify(selection)}`)
+          sessionStorage.removeItem(`piskou:pix-request:${planId}:${savedQuote?.totalCents}:${savedQuote?.addonIds.join(",")}:${JSON.stringify(selection)}`)
         } else {
+          setSelectedBumps(savedQuote.addonIds)
           setCharge(saved)
           setPhase(saved.pix?.copyPaste ? 'pix' : 'processing')
         }
@@ -178,6 +188,8 @@ export default function CheckoutPage() {
 
   const choosePlan = (id) => {
     if (id === planId || !PLANS[id]) return
+    setSelectedBumps([])
+    setCharge(null)
     setPlanId(id)
     setServerError('')
     const url = new URL(window.location.href)
@@ -203,7 +215,7 @@ export default function CheckoutPage() {
     approvedRef.current = true
     track(EVENTS.PAYMENT_APPROVED, {
       plan: plan.id,
-      value: plan.price,
+      value: paidCharge?.amount ?? quote.amount,
       currency: 'BRL',
       method: paidCharge?.method ?? method,
       transaction_id: paidCharge?.id,
@@ -228,7 +240,7 @@ export default function CheckoutPage() {
         if (status === 'paid') approve(charge)
         else if (status === 'expired') { approvedRef.current=false; setPhase('expired') }
         else if (status === 'failed') {
-          try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${plan.price}:${JSON.stringify(selection)}`) } catch {}
+          try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`) } catch {}
           approvedRef.current=false;
           setPhase('form')
           setServerError('Pagamento não aprovado. Tente novamente ou use outra forma de pagamento.')
@@ -315,7 +327,7 @@ export default function CheckoutPage() {
       }
       let requestId
       if (method === 'pix') {
-        const key = `piskou:pix-request:${plan.id}:${plan.price}:${JSON.stringify(selection)}`
+        const key = `piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`
         try {
           requestId = sessionStorage.getItem(key) || crypto.randomUUID()
           sessionStorage.setItem(key, requestId)
@@ -326,6 +338,7 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: plan.id,
+          addons: quote.addonIds,
           requestId,
           selection,
           analyticsSession: analyticsIdentity().session,
@@ -343,10 +356,10 @@ export default function CheckoutPage() {
         return
       }
       setCharge(data)
-      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,amount:data.amount,method,createdAt:Date.now(),pix:data.pix,selectionKey:JSON.stringify(selection)})) } catch {} }
+      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,amount:data.amount,addons:data.addons || quote.addonIds,method,createdAt:Date.now(),pix:data.pix,selectionKey:JSON.stringify(selection)})) } catch {} }
       if (data.status === 'paid') approve(data)
       else if (data.status === 'failed') {
-        try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${plan.price}:${JSON.stringify(selection)}`) } catch {}
+        try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`) } catch {}
         setServerError(
           method === 'pix'
             ? 'Não foi possível gerar o PIX agora. Tente novamente em instantes.'
@@ -357,7 +370,7 @@ export default function CheckoutPage() {
       } else if (method === 'pix') {
         setNow(Date.now())
         setPhase('pix')
-        track(EVENTS.PIX_GENERATED, { plan: plan.id, value: plan.price, currency: 'BRL' })
+        track(EVENTS.PIX_GENERATED, { plan: plan.id, value: data.amount, currency: 'BRL' })
       } else {
         setPhase('processing')
       }
@@ -404,13 +417,14 @@ export default function CheckoutPage() {
       </header>
 
       <main className={`checkout-main${phase === 'form' ? ' with-sticky' : ''}`}>
+        <CheckoutBanner />
         {phase === 'form' ? (
           <>
             <CharacterHero selection={selection} />
             {!submitting && <PlanPicker planId={planId} onChange={choosePlan} />}
           </>
         ) : (
-          <OrderSummary plan={plan} selection={selection} />
+          <OrderSummary plan={totalPlan} selection={selection} addons={quote.addons} />
         )}
 
         {phase === 'form' && (
@@ -534,6 +548,9 @@ export default function CheckoutPage() {
               </p>
             )}
 
+            <OrderBumps plan={plan} selected={selectedBumps} onChange={setSelectedBumps} disabled={submitting} />
+            <div className="checkout-cart-total" aria-live="polite"><span>Plano {plan.name}<b>{formatBRL(plan.price)}</b></span>{quote.addons.map((item) => <span key={item.id}>{item.name}<b>+ {formatBRL(item.price)}</b></span>)}<strong>Total do pedido<b>{formatBRL(quote.amount)}</b></strong></div>
+
             <button
               ref={submitRef}
               type="submit"
@@ -545,9 +562,9 @@ export default function CheckoutPage() {
                   <LoaderCircle className="checkout-spin" size={18} /> PROCESSANDO...
                 </>
               ) : method === 'pix' ? (
-                `${serverError ? 'TENTAR NOVAMENTE ·' : 'GERAR PIX DE'} ${formatBRL(plan.price)}`
+                `${serverError ? 'TENTAR NOVAMENTE ·' : 'GERAR PIX DE'} ${formatBRL(quote.amount)}`
               ) : (
-                `PAGAR ${formatBRL(plan.price)}`
+                `PAGAR ${formatBRL(quote.amount)}`
               )}
             </button>
             <TrustBadges />
@@ -560,7 +577,7 @@ export default function CheckoutPage() {
               <p className="checkout-test-banner">Modo de teste: nada é cobrado. Este PIX é aprovado sozinho em alguns segundos.</p>
             )}
             <h1>Pague com PIX</h1>
-            <p className="checkout-pix-amount">{formatBRL(plan.price)}</p>
+            <p className="checkout-pix-amount">{formatBRL(charge.amount)}</p>
             <div className="checkout-qr">
               {qrImage ? <img src={qrImage} alt="QR Code do PIX" /> : <LoaderCircle className="checkout-spin" size={28} />}
             </div>
@@ -613,7 +630,7 @@ export default function CheckoutPage() {
               type="button"
               className={`checkout-submit${luxury ? ' luxury' : ''}`}
               onClick={() => {
-                try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${plan.price}:${JSON.stringify(selection)}`); localStorage.removeItem('piskou:pendingCharge') } catch {}
+                try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`); localStorage.removeItem('piskou:pendingCharge') } catch {}
                 setCharge(null)
                 setQrImage('')
                 setPhase('form')
@@ -650,7 +667,7 @@ export default function CheckoutPage() {
       {phase === 'form' && (
         <StickyCta
           visible={stickyVisible}
-          plan={plan}
+          plan={totalPlan}
           label={method === 'pix' ? 'GERAR PIX' : 'PAGAR'}
           disabled={submitting || unavailable || !configReady || !selection}
           onClick={() => formRef.current?.requestSubmit()}

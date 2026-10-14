@@ -185,6 +185,23 @@ test('checkout binds purchase to signed owner and status cannot grant another br
     assert.equal(noCustomer.code, 400)
     assert.ok(noCustomer.data.fields.email)
 
+    const addonRequest = { ...pixRequest, body: { ...pixRequest.body, planId: 'premium-access', addons: ['second-partner'], amount: 0.01, requestId: '30000000-3000-4000-8000-300000000000' } }
+    const addon = response(); await checkout(addonRequest, addon)
+    assert.equal(addon.code, 200)
+    assert.equal(addon.data.amount, 18.90)
+    assert.deepEqual(charges.get('charge:' + addon.data.id).addons, ['second-partner'])
+    const addonRepeated = response(); await checkout(addonRequest, addonRepeated)
+    assert.equal(addonRepeated.data.id, addon.data.id)
+    const voice = response(); await checkout({ ...addonRequest, body: { ...addonRequest.body, addons: ['voice-call', 'second-partner'], requestId: '40000000-4000-4000-8000-400000000000' } }, voice)
+    assert.equal(voice.code, 200)
+    assert.equal(voice.data.amount, 27.80)
+    assert.deepEqual(charges.get('charge:' + voice.data.id).addons, ['second-partner', 'voice-call'])
+    const before = charges.size
+    const unknown = response(); await checkout({ ...addonRequest, body: { ...addonRequest.body, addons: ['video-call'] } }, unknown)
+    assert.equal(unknown.code, 400); assert.equal(charges.size, before)
+    const included = response(); await checkout({ ...addonRequest, body: { ...addonRequest.body, planId: 'luxury-access' } }, included)
+    assert.equal(included.code, 400); assert.equal(charges.size, before)
+
     failGrant = true
     const deferred = response()
     await checkout({method:'POST',headers:{host:'test.local',origin:'http://test.local'},body:{planId:'premium-access',selection:DEFAULT_SELECTION,method:'card',cardToken:'test-token',customer:{name:'Teste',email:'teste@example.test'}}},deferred)

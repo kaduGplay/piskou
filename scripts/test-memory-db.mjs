@@ -18,6 +18,7 @@ try {
     await db.exec(await readFile('supabase/migrations/' + name, 'utf8'))
   console.log('PASS all migrations on isolated local PostgreSQL')
   for (const name of [
+    'checkout-addons',
     'operational-status',
     'message-package-120',
     'free-chat-funnel',

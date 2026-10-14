@@ -6,12 +6,12 @@ import {
 } from './_lib/chat.js'
 import { sameOrigin } from './_lib/analytics.js'
 import { UUID } from './_lib/analytics.js'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, createHash } from 'node:crypto'
 import {
   PLANS,
   pickCampaignParams,
-  toCents,
   validateCustomer,
+  quoteCheckout,
 } from '../src/shared/checkout.js'
 import { getGateway } from './_lib/gateway.js'
 import { chargeKey, store } from './_lib/store.js'
@@ -58,6 +58,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Pedido inválido.' })
   const plan = PLANS[planId]
   if (!plan) return res.status(400).json({ error: 'Plano inválido.' })
+  let quote
+  try { quote = quoteCheckout(planId, req.body?.addons) } catch (error) { return res.status(400).json({ error: error.message }) }
   if (!gateway.methods.includes(method))
     return res.status(400).json({ error: 'Forma de pagamento indisponível.' })
 
@@ -71,14 +73,14 @@ export default async function handler(req, res) {
   }
 
   const order = {
-    id: `piskou_${requestId || randomUUID()}`,
-    amountCents: toCents(plan.price),
+    id: `piskou_${requestId || randomUUID()}_${createHash('sha256').update(`${plan.id}:${quote.totalCents}:${quote.addonIds.join(',')}`).digest('hex').slice(0, 10)}`,
+    amountCents: quote.totalCents,
     plan,
     customer: {
       name: customer.name.trim(),
       email: customer.email.trim().toLowerCase(),
     },
-    metadata: { tracking: pickCampaignParams(tracking) },
+    metadata: { tracking: pickCampaignParams(tracking), addons: quote.addonIds },
     siteUrl: publicSiteUrl(req),
   }
 
@@ -95,7 +97,7 @@ export default async function handler(req, res) {
     if (changed) session = chatSession(req, res, true, true)
     const requestKey =
       method === 'pix' && requestId
-        ? `checkout:${session}:${plan.id}:${toCents(plan.price)}:${requestId}`
+        ? `checkout:${session}:${plan.id}:${quote.totalCents}:${quote.addonIds.join(',')}:${requestId}`
         : null
     if (requestKey) {
       const previous = await store.get(requestKey)
@@ -125,7 +127,8 @@ export default async function handler(req, res) {
           : null,
         orderId: order.id,
         planId: plan.id,
-        amount: plan.price,
+        amount: quote.amount,
+        addons: quote.addonIds,
         method,
         status: charge.status,
         createdAt: new Date().toISOString(),
@@ -150,7 +153,8 @@ export default async function handler(req, res) {
       status: accessReady ? charge.status : 'processing',
       method,
       planId: plan.id,
-      amount: plan.price,
+      amount: quote.amount,
+      addons: quote.addonIds,
       pix: charge.pix ?? null,
       testMode: gateway.testMode === true,
     }

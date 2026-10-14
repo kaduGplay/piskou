@@ -7,6 +7,7 @@ import { sendAnalytics } from '../shared/analytics.js'
 import { CHARACTER_TASTES } from '../shared/characterTastes.js'
 import { currentPreferences } from '../shared/conversationPreferences.js'
 import ChatMemoryPanel from './ChatMemoryPanel.jsx'
+import VoiceCall from './VoiceCall.jsx'
 import { mediaOfferMessage } from '../shared/mediaOffer.js'
 import {
   readSavedSelection,
@@ -18,6 +19,7 @@ import {
   Fragment,
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -98,6 +100,8 @@ export default function ChatPage() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const [callOffer, setCallOffer] = useState(null)
+  const [addons, setAddons] = useState([])
+  const [voiceCallOpen, setVoiceCallOpen] = useState(false)
   const [mediaRequests, setMediaRequests] = useState(() => {
     const saved = readProgress()
     return saved.chatSelection === JSON.stringify(sel) &&
@@ -219,6 +223,7 @@ export default function ChatPage() {
             : item,
         ))
         if (data.remaining !== undefined) setRemaining(data.remaining)
+        if (Array.isArray(data.addons)) setAddons(data.addons)
         setTyping(data.preparing === true)
         if (data.requiresPayment !== undefined) {
           if (data.requiresPayment && !accessRef.current?.requiresPayment)
@@ -313,6 +318,7 @@ export default function ChatPage() {
     }
   }, [profileOpen])
 
+  const closeVoiceCall = useCallback(() => setVoiceCallOpen(false), [])
   const openOffer = (callKind = null) => {
     setCallOffer(typeof callKind === 'string' ? callKind : null)
     if (document.activeElement?.matches('input, textarea'))
@@ -519,7 +525,7 @@ export default function ChatPage() {
       <aside
         className="chat-sidebar"
         aria-label="Conversas"
-        inert={profileOpen || offerOpen ? true : undefined}
+        inert={profileOpen || offerOpen || voiceCallOpen ? true : undefined}
       >
         <a className="chat-wordmark" href="/">
           PISKOU<span>YOUR OWN CONNECTION</span>
@@ -548,7 +554,7 @@ export default function ChatPage() {
       </aside>
       <main
         className="chat-main"
-        inert={profileOpen || offerOpen ? true : undefined}
+        inert={profileOpen || offerOpen || voiceCallOpen ? true : undefined}
       >
         <header className="chat-header">
           <a
@@ -580,7 +586,7 @@ export default function ChatPage() {
             <ChevronRight size={17} />
           </button>
           <div className="chat-call-actions" aria-label="Chamadas">
-            <button type="button" className="chat-icon-button" aria-label="Ligação de voz" title="Ligação de voz" onClick={() => openOffer('voice-call')}><Phone size={20} /></button>
+            <button type="button" className="chat-icon-button" aria-label="Ligação de voz" title="Ligação de voz" onClick={() => addons.includes('voice-call') ? setVoiceCallOpen(true) : openOffer('voice-call')}><Phone size={20} /></button>
             <button type="button" className="chat-icon-button" aria-label="Videochamada" title="Videochamada" onClick={() => openOffer('video-call')}><Video size={21} /></button>
           </div>
           <button
@@ -886,7 +892,7 @@ export default function ChatPage() {
       <aside
         className="chat-desktop-profile"
         aria-label="Perfil da personagem"
-        inert={profileOpen || offerOpen ? true : undefined}
+        inert={profileOpen || offerOpen || voiceCallOpen ? true : undefined}
       >
         {profile}
       </aside>
@@ -915,6 +921,9 @@ export default function ChatPage() {
             {profile}
           </section>
         </div>
+      )}
+      {voiceCallOpen && (
+        <VoiceCall name={name} image={image} onClose={closeVoiceCall} />
       )}
       {offerOpen && (
         <Suspense

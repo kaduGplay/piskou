@@ -170,6 +170,9 @@
     },
     "api/chat-audio.js": {
       "maxDuration": 90
+    },
+    "api/checkout.js": {
+      "maxDuration": 30
     }
   }
 }

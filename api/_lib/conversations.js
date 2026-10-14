@@ -23,9 +23,23 @@ export function activateConversation(req, res, id) {
   res.setHeader('Set-Cookie', `piskou_access=${id}.${chatSignature(id)}; Path=/api; HttpOnly; SameSite=Lax; Max-Age=7776000${process.env.VERCEL ? '; Secure' : ''}`)
   rememberConversations(req, res, [...ownedConversations(req), id])
 }
-export async function canCreateCharacter(req, db = chatDatabase) {
+export async function hasCharacterPlan(req, db = chatDatabase) {
   const ids = ownedConversations(req)
   if (!ids.length) return false
   const purchases = await db(`piskou_chat_purchases?chat_id=in.(${ids.join(',')})&active=eq.true&plan_id=in.(premium-access,luxury-access)&select=chat_id&limit=1`)
   return purchases.length > 0
+}
+// Order bumps pagos (ex.: 'voice-call') valem para todas as conversas deste navegador.
+export async function ownedAddons(req, db = chatDatabase) {
+  const ids = ownedConversations(req)
+  if (!ids.length) return []
+  const purchases = await db(`piskou_chat_purchases?chat_id=in.(${ids.join(',')})&active=eq.true&select=addons`)
+  return [...new Set(purchases.flatMap((item) => item.addons ?? []))].sort()
+}
+export async function canCreateCharacter(req, db = chatDatabase) {
+  const ids = ownedConversations(req)
+  if (!ids.length) return false
+  const purchases = await db(`piskou_chat_purchases?chat_id=in.(${ids.join(',')})&active=eq.true&plan_id=in.(premium-access,luxury-access)&select=chat_id,character_slots`)
+  const slots = Math.min(40, purchases.reduce((sum, item) => sum + (item.character_slots ?? 40), 0))
+  return ids.length < slots
 }

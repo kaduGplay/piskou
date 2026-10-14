@@ -1,13 +1,20 @@
 import { useState } from 'react'
-import { BadgeCheck, ChevronDown, Crown, Gem, Mail, MessageCircle, QrCode, ShieldCheck, X } from 'lucide-react'
-import { getResultImage } from '../funnel/data.js'
-import { BENEFIT_ICONS, BONUS_ICONS, FAQ, PLAN_BENEFITS, PLAN_BONUSES, TESTIMONIALS, TRUST } from '../funnel/offer.js'
-import { PLANS, formatBRL } from '../shared/checkout.js'
+import { BadgeCheck, Check, ChevronDown, Crown, Gem, Mail, MessageCircle, Plus, QrCode, ShieldCheck, X } from 'lucide-react'
+import { DEFAULT_SELECTION, getResultImage } from '../funnel/data.js'
+import { BENEFIT_ICONS, BONUS_ICONS, FAQ, PLAN_BENEFITS, PLAN_BONUSES, TRUST } from '../funnel/offer.js'
+import { PLANS, ORDER_BUMPS, formatBRL } from '../shared/checkout.js'
 
 const PREMIUM = PLANS['premium-access']
 const LUXURY = PLANS['luxury-access']
 const LUXURY_EXTRA = formatBRL(LUXURY.price - PREMIUM.price)
 const LUXURY_BONUSES = PLAN_BONUSES[LUXURY.id]
+
+export function CheckoutBanner() {
+  return <section className="checkout-banner-recreated" aria-label="Finalize seu acesso Piskou">
+    <div className="checkout-banner-copy"><div className="checkout-banner-logo">Pisk<span>ou</span></div><h1>Falta pouco para dar<br /><em>vida à sua personagem ideal</em></h1><p><strong>Realista ou anime</strong> · personalize aparência, voz e personalidade do seu jeito</p><div className="checkout-banner-message"><Crown size={22} /><span>Finalize seu acesso e desbloqueie<br />a experiência Piskou</span></div></div>
+    <div className="checkout-banner-portraits" aria-hidden="true"><img src={getResultImage({ ...DEFAULT_SELECTION, style: 'realista' }).src} alt="" /><img src={getResultImage({ ...DEFAULT_SELECTION, style: 'anime' }).src} alt="" /></div>
+  </section>
+}
 
 // Personagem que a pessoa montou no funil (lida do sessionStorage). Sem ela, só o título.
 export function CharacterHero({ selection }) {
@@ -198,26 +205,43 @@ export function HowItWorks({ name }) {
 }
 
 export function Reviews() {
-  if (TESTIMONIALS.length === 0) return null
+  const reviews = [
+    { id: 'rafael', name: 'Rafael Gomes', city: 'Salvador', text: 'Top dmss, achei muito legal, as conversas são sempre bem divertidas e safadinhas, eu fiquei horas e horas conversando com a minha' },
+    { id: 'pedro', name: 'Pedro Santos', city: 'Belo Horizonte', text: 'Comprei pra treinar conversar com mulheres na vida real pq eu era muito timido, acabei perdendo a timidez por causa desse aplicativo muito obrigadoo' },
+    { id: 'lucas', name: 'Lucas Ferreira', city: 'Fortaleza', text: 'Comprei pq achei interessante o produto, e olha que eu gostei mesmo kkkkkkk e bem intuitivo a plataforma, as mulheres são muito realista parece q to falando com uma real mesmooo' },
+  ]
   return (
     <section className="checkout-reviews" aria-labelledby="reviews-title">
-      <h2 id="reviews-title">Avaliações de quem já criou</h2>
-      <p className="checkout-reviews-trust">
-        <ShieldCheck size={18} aria-hidden="true" />
-        <span>
-          <strong>{TRUST.title}</strong>
-          <small>{TRUST.subtitle}</small>
-        </span>
-      </p>
-      <div className="checkout-reviews-rail">
-        {TESTIMONIALS.map((item) => (
+      <h2 id="reviews-title">Avaliações</h2>
+      <div className="checkout-customer-reviews">
+        {reviews.map((item) => (
           <article key={item.id}>
-            <img src={item.image} alt={`Depoimento ${item.id} anonimizado: ${item.quote}`} loading="lazy" />
+            <header><img src={`/checkout-media/review-${item.id}.webp`} alt="" loading="lazy" /><span><strong>{item.name}</strong><small>{item.city}</small></span></header>
+            <p>{item.text}</p>
           </article>
         ))}
       </div>
     </section>
   )
+}
+
+export function OrderBumps({ plan, selected, onChange, disabled }) {
+  if (plan.purpose === 'messages') return null
+  const items = Object.values(ORDER_BUMPS).filter((item) => item.available)
+  if (items.length === 0) return null
+  return <fieldset className="checkout-order-bumps"><legend>Complete sua experiência</legend>
+    {items.map((item) => {
+      const included = item.includedIn?.includes(plan.id)
+      const checked = !!included || selected.includes(item.id)
+      const Mark = checked ? Check : Plus
+      return <label key={item.id} className={`checkout-order-bump${checked ? ' selected' : ''}${included ? ' included' : ''}`}>
+        <input type="checkbox" name={item.id} checked={checked} disabled={disabled || included} onChange={(event) => onChange(event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} />
+        <span className="checkout-bump-mark" aria-hidden="true"><Mark size={16} strokeWidth={3} /></span>
+        <img src={item.image} alt={item.name} width="62" height="62" loading="lazy" />
+        <span className="checkout-bump-copy"><strong>{item.name}</strong><small>{item.description}</small><span className="checkout-bump-price">{included ? <b>Incluído no {plan.name}</b> : <><del>{formatBRL(item.originalPrice)}</del><b>+{formatBRL(item.price)}</b></>}</span></span>
+      </label>
+    })}
+  </fieldset>
 }
 
 export function Faq() {
@@ -259,7 +283,7 @@ export function StickyCta({ visible, plan, label, disabled, onClick }) {
   )
 }
 
-export function OrderSummary({ plan, selection }) {
+export function OrderSummary({ plan, selection, addons = [] }) {
   const luxury = plan.tier === 'luxury'
   const PlanIcon = luxury ? Crown : Gem
   const [imageFailed, setImageFailed] = useState(false)
@@ -282,7 +306,7 @@ export function OrderSummary({ plan, selection }) {
           <PlanIcon size={14} aria-hidden="true" /> Piskou {plan.name}
         </span>
         <strong>{selection?.name ? `${selection.name}, ${selection.age} anos` : 'Sua personagem'}</strong>
-        <small>{plan.purpose === 'messages' ? plan.name : ''}</small>
+        <small>{addons.length ? addons.map((item) => item.name).join(' · ') : plan.purpose === 'messages' ? plan.name : ''}</small>
       </div>
       <div className="checkout-summary-price">
         <strong>{formatBRL(plan.price)}</strong>

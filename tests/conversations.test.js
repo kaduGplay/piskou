@@ -30,3 +30,23 @@ test('creation requires an active initial Baby or Pro purchase from owned conver
   }), false)
   assert.equal(await canCreateCharacter(req, async () => [{ chat_id:a }]), true)
 })
+
+test('a paid second-partner slot is usable once, while voice access remains paid at full capacity', async () => {
+  const { hasCharacterPlan } = await import('../api/_lib/conversations.js')
+  const first = request(`piskou_access=${a}.${chatSignature(a)}`)
+  assert.equal(await canCreateCharacter(first, async()=>[{ chat_id:a,character_slots:1 }]), false)
+  assert.equal(await canCreateCharacter(first, async()=>[{ chat_id:a,character_slots:2 }]), true)
+  const res=response();activateConversation(first,res,b)
+  const second=request(res.headers['Set-Cookie'].map(value=>value.split(';')[0]).join('; '))
+  assert.equal(await canCreateCharacter(second,async()=>[{ chat_id:a,character_slots:2 }]),false)
+  assert.equal(await hasCharacterPlan(second,async()=>[{chat_id:a}]),true)
+})
+
+test('paid add-ons from any owned conversation unlock the voice call', async () => {
+  const { ownedAddons } = await import('../api/_lib/conversations.js')
+  assert.deepEqual(await ownedAddons(request(''), async () => { throw new Error('no query without conversations') }), [])
+  const req = request(`piskou_access=${a}.${chatSignature(a)}`)
+  let query = ''
+  assert.deepEqual(await ownedAddons(req, async (path) => { query = path; return [{ addons: ['voice-call'] }, { addons: [] }, { addons: ['second-partner', 'voice-call'] }] }), ['second-partner', 'voice-call'])
+  assert.match(query, /active=eq\.true/)
+})

@@ -1,4 +1,4 @@
-import { ownedConversations, rememberConversations, canCreateCharacter } from './_lib/conversations.js'
+import { ownedConversations, rememberConversations, canCreateCharacter, hasCharacterPlan, ownedAddons } from './_lib/conversations.js'
 import { invalidateLearningProfile } from './_lib/learning.js'
 import { processChat, restoreSupportedMemory } from './_lib/chat-continuity.js'
 import {
@@ -45,6 +45,11 @@ export default async function handler(req, res) {
   try {
     session = chatSession(req, res, true)
     if (req.method === 'GET') {
+      // Adicionais comprados no checkout; uma falha aqui não pode impedir a conversa.
+      const withAddons = async (snapshot) => {
+        const [data, addons] = await Promise.all([snapshot, ownedAddons(req).catch(() => [])])
+        return { ...data, addons }
+      }
       if (!session)
         return res.status(200).json({
           messages: [],
@@ -79,24 +84,28 @@ export default async function handler(req, res) {
           session = chatSession(req, res, true, true)
           rememberConversations(req, res, [...previous, session])
           return res.status(200).json(
-            await chatDatabase('rpc/piskou_chat_initialize', {
-              p_id: session,
-              p_selection: requested,
-            }),
+            await withAddons(
+              chatDatabase('rpc/piskou_chat_initialize', {
+                p_id: session,
+                p_selection: requested,
+              }),
+            ),
           )
         }
       }
-      if (!row && requested && ownedConversations(req).length > 1 && !(await canCreateCharacter(req))) return res.status(403).json({ error: 'Para criar outra personagem, adquira Baby ou Pro.', code: 'premium_required' })
+      if (!row && requested && ownedConversations(req).length > 1 && !(await hasCharacterPlan(req))) return res.status(403).json({ error: 'Para criar outra personagem, adquira Baby ou Pro.', code: 'premium_required' })
       if (!row && requested)
         return res.status(200).json(
-          await chatDatabase('rpc/piskou_chat_initialize', {
-            p_id: session,
-            p_selection: requested,
-          }),
+          await withAddons(
+            chatDatabase('rpc/piskou_chat_initialize', {
+              p_id: session,
+              p_selection: requested,
+            }),
+          ),
         )
       return res
         .status(200)
-        .json(await chatDatabase('rpc/piskou_chat_snapshot', { p_id: session }))
+        .json(await withAddons(chatDatabase('rpc/piskou_chat_snapshot', { p_id: session })))
     }
     if (req.body?.action === 'log') {
       const selection = chatSelection(req.body.selection)

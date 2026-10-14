@@ -626,7 +626,7 @@ try {
   assert.ok(await page.getByText(/Para eu te mandar um áudio/).count())
   originalInbox = await page.evaluate(async () => (await fetch('/api/conversations')).json())
   // Isolated purchase fixture: no production accounts or payment providers.
-  await db.query("insert into public.piskou_chat_purchases(charge_id,chat_id,plan_id,active) values('browser-premium',$1,'premium-access',true)", [originalInbox.active])
+  await db.query("insert into public.piskou_chat_purchases(charge_id,chat_id,plan_id,active,character_slots) values('browser-premium',$1,'premium-access',true,2)", [originalInbox.active])
   await page.getByRole('link', { name: 'Voltar às mensagens', exact: true }).click()
   await page.locator('.messages-row').first().waitFor()
   await page.getByRole('button', { name: 'Criar outra personagem', exact: true }).first().click()
@@ -636,6 +636,8 @@ try {
   const created = await page.evaluate(async () => (await fetch('/api/conversations')).json())
   assert.notEqual(created.active, originalInbox.active)
   assert.equal(created.conversations.length, 2)
+  assert.equal(created.canCreate, false)
+  assert.equal(await page.evaluate(async () => (await fetch('/api/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create' }) })).status), 403)
   const isolated = await page.evaluate(async () => (await fetch('/api/chat')).json())
   assert.equal(isolated.messages.filter((message) => message.role === 'user').length, 0)
   await page.getByRole('link', { name: 'Voltar às mensagens', exact: true }).click()
