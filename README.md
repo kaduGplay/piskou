@@ -27,7 +27,7 @@ O projeto já está configurado (`vercel.json`): preset Vite, `npm ci`, saída `
    | `VOIDPAY_SECRET_KEY` | chave secreta da Void |
    | `VOIDPAY_FIXED_PHONE` | telefone enviado em todas as cobranças (a Void exige) |
    | `VOIDPAY_FIXED_DOCUMENT` | CPF enviado em todas as cobranças |
-   | `SITE_URL` | `https://create.piskou.com` |
+   | `SITE_URL` | `https://criesuaiapiskou.vercel.app` |
    | `SUPABASE_URL` | URL do projeto Supabase |
    | `SUPABASE_SECRET_KEY` | chave secreta `sb_secret_...` (ou use `SUPABASE_SERVICE_ROLE_KEY` legada) |
 
