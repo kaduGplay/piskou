@@ -8,6 +8,10 @@ import { chargeKey, missingStoreConfig, store } from './store.js'
 
 const BASE_URL = 'https://dash.voidpayments.com/api/v1/gateway'
 const REQUEST_TIMEOUT_MS = 15000
+// A Void às vezes trava a criação do PIX e só devolve 504 depois de ~60 s; uma resposta normal leva 1–3 s.
+// Desiste da tentativa travada e cria de novo: o cliente só vê o QR da tentativa que respondeu.
+const CREATE_ATTEMPT_TIMEOUT_MS = 8000
+const CREATE_ATTEMPTS = 4
 
 // Status da transação na Void (`transactionStatus` na criação, `status` na consulta) -> status do checkout.
 const STATUS_MAP = {
@@ -65,13 +69,13 @@ function fieldErrors(details) {
   return Object.keys(fields).length > 0 ? fields : undefined
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, timeoutMs = REQUEST_TIMEOUT_MS) {
   const { publicKey, secretKey } = credentials()
   const response = await fetch(`${BASE_URL}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json', 'x-public-key': publicKey, 'x-secret-key': secretKey },
     body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   })
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
@@ -83,6 +87,11 @@ async function request(method, path, body) {
     })
   }
   return data
+}
+
+// Tempo esgotado, falha de rede ou 5xx da Void: vale tentar de novo. Recusa de dados (4xx) não.
+function retryable(error) {
+  return error?.name === 'TimeoutError' || error?.name === 'AbortError' || error instanceof TypeError || error?.status >= 500
 }
 
 // GET /transactions?id=<transactionId>: não está no trecho da documentação recebido; confirmado na API.
@@ -134,7 +143,7 @@ export const voidpayGateway = {
 
   async createPixCharge(order) {
     const amount = order.amountCents / 100
-    const data = await request('POST', '/pix/receive', {
+    const body = {
       identifier: order.id,
       amount,
       client: {
@@ -146,7 +155,17 @@ export const voidpayGateway = {
       products: [{ id: order.plan.id, name: `Piskou ${order.plan.name}`, quantity: 1, price: amount }],
       metadata: { provider: 'Piskou Checkout', orderId: order.id, plan: order.plan.id, ...order.metadata.tracking },
       callbackUrl: callbackUrl(order.siteUrl),
-    })
+    }
+    let data
+    for (let attempt = 1; ; attempt++) {
+      try {
+        data = await request('POST', '/pix/receive', body, CREATE_ATTEMPT_TIMEOUT_MS)
+        break
+      } catch (error) {
+        if (attempt >= CREATE_ATTEMPTS || !retryable(error)) throw error
+        console.warn('voidpay: nova tentativa de criar o PIX', { attempt, message: error.message, status: error.status })
+      }
+    }
 
     if (FAILED_CREATE_STATUSES.includes(data.status)) {
       console.error('voidpay: cobrança recusada', { status: data.status, errorDescription: data.errorDescription })

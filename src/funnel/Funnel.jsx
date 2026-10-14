@@ -460,7 +460,6 @@ function SummaryRow({ title, value, image, color }) {
 function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onComplete }) {
   const [step, setStep] = useState(initialStep)
   useEffect(() => { if (!new URLSearchParams(window.location.search).has('dev')) saveProgress({ step }) }, [step])
-  const [openingChat, setOpeningChat] = useState(false)
   const [revealDone, setRevealDone] = useState(false)
   const [paywallOpen, setPaywallOpen] = useState(initialPaywallOpen)
   const [summaryTab, setSummaryTab] = useState('appearance')
@@ -522,41 +521,17 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
       .catch(() => setPlayingVoice(null))
   }
 
-  useEffect(() => {
-    if (!openingChat) return
-    const timer = setTimeout(() => {
-      setOpeningChat(false)
-      setPaywallOpen(true)
-    }, 2500)
-    return () => clearTimeout(timer)
-  }, [openingChat])
-
   const canContinue = step !== 4 || (sel.name.trim().length >= 2 && Number(sel.age) >= 18)
 
   const openOffer = () => {
-    if (openingChat) return
     audioRef.current?.pause()
     onComplete()
     try { sessionStorage.setItem(SELECTION_STORAGE_KEY, JSON.stringify(sel)) } catch { /* armazenamento opcional */ }
-    setOpeningChat(true)
+    setPaywallOpen(true)
   }
 
   const mediaImage = (field, value) => getOptionMedia(sel.style, field, value)?.image
   const hairColor = HAIR_COLORS.find((c) => c.label === sel.hairColor)?.color
-
-  if (openingChat) return (
-    <main className="creator-chat-transition" role="status" aria-live="polite" aria-busy="true">
-      <div className="creator-transition-portrait">
-        <img src={getResultImage(sel).src} alt={sel.name || 'Sua garota'} />
-        <span><Heart size={20} fill="currentColor" /></span>
-      </div>
-      <p className="creator-transition-eyebrow">UMA NOVA CONEXÃO</p>
-      <h1>Seu encontro com {sel.name || 'sua garota'} está quase pronto</h1>
-      <p>Preparando um espaço só de vocês.</p>
-      <div className="creator-transition-progress" aria-hidden="true"><i /></div>
-      <small>Personagem virtual · 18+</small>
-    </main>
-  )
 
   return (
     <div className="creator-root">
@@ -726,7 +701,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
               <AgeCarousel age={sel.age} onChange={(v) => update('age', v)} />
               <div className="creator-detail-label">
                 <strong>Detalhes da personalidade</strong>
-                <span>Defina como ela conversa com você</span>
+                <span>Toque para alterar</span>
               </div>
               <div className="creator-details-grid">
                 <VoiceTile
@@ -735,7 +710,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                   onPlay={() => toggleVoice()}
                   onOpen={() => setOpenSheet('voice')}
                 />
-                {['personality', 'secondaryPersonality', ...Object.keys(CHAT_PREFERENCES), ...Object.keys(CHARACTER_TASTES), 'occupation', 'relationship'].map((key) => (
+                {['personality', 'occupation', 'relationship'].map((key) => (
                   <DetailTile
                     key={key}
                     title={CHOICE_SHEETS[key].title}
@@ -817,9 +792,6 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                     <SummaryRow title="Idade" value={`${sel.age} anos`} />
                     <SummaryRow title="Voz" value={VOICES[sel.voice].label} />
                     <SummaryRow title="Personalidade" value={sel.personality} />
-                    {Object.entries(CHAT_PREFERENCES).map(([key, setting]) => (
-                      <SummaryRow key={key} title={setting.title} value={sel[key] || CHARACTER_TASTES[key]?.options[0]} />
-                    ))}
                     <SummaryRow title="Profissão" value={sel.occupation} />
                     <SummaryRow title="Relacionamento" value={sel.relationship} />
                   </>
