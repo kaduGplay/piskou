@@ -62,7 +62,7 @@ try {
   assert.equal(await voice.isChecked(), false)
   await bump('second-partner').click()
   await page.screenshot({ path: '/private/tmp/piskou-checkout-addons-mobile.png', fullPage: true })
-  await page.locator('.checkout-banner-recreated').screenshot({ path: '/private/tmp/piskou-checkout-banner.png' })
+  await page.locator('img.checkout-banner').screenshot({ path: '/private/tmp/piskou-checkout-banner.png' })
   await page.locator('.checkout-order-bumps').screenshot({ path: '/private/tmp/piskou-checkout-bumps.png' })
   assert.ok(await page.getByText('Rafael Gomes', { exact: true }).count())
   assert.ok(await page.getByText('Pedro Santos', { exact: true }).count())

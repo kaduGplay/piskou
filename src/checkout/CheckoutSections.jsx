@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BadgeCheck, Check, ChevronDown, Crown, Gem, Mail, MessageCircle, Plus, QrCode, ShieldCheck, X } from 'lucide-react'
-import { DEFAULT_SELECTION, getResultImage } from '../funnel/data.js'
+import { getResultImage } from '../funnel/data.js'
 import { BENEFIT_ICONS, BONUS_ICONS, FAQ, PLAN_BENEFITS, PLAN_BONUSES, TRUST } from '../funnel/offer.js'
 import { PLANS, ORDER_BUMPS, formatBRL } from '../shared/checkout.js'
 
@@ -10,10 +10,7 @@ const LUXURY_EXTRA = formatBRL(LUXURY.price - PREMIUM.price)
 const LUXURY_BONUSES = PLAN_BONUSES[LUXURY.id]
 
 export function CheckoutBanner() {
-  return <section className="checkout-banner-recreated" aria-label="Finalize seu acesso Piskou">
-    <div className="checkout-banner-copy"><div className="checkout-banner-logo">Pisk<span>ou</span></div><h1>Falta pouco para dar<br /><em>vida à sua personagem ideal</em></h1><p><strong>Realista ou anime</strong> · personalize aparência, voz e personalidade do seu jeito</p><div className="checkout-banner-message"><Crown size={22} /><span>Finalize seu acesso e desbloqueie<br />a experiência Piskou</span></div></div>
-    <div className="checkout-banner-portraits" aria-hidden="true"><img src={getResultImage({ ...DEFAULT_SELECTION, style: 'realista' }).src} alt="" /><img src={getResultImage({ ...DEFAULT_SELECTION, style: 'anime' }).src} alt="" /></div>
-  </section>
+  return <img className="checkout-banner" src="/checkout-media/banner.webp" width="800" height="325" alt="Piskou: falta pouco para dar vida à sua personagem ideal. Realista ou anime, personalize aparência, voz e personalidade do seu jeito. Finalize seu acesso e desbloqueie a experiência Piskou." fetchPriority="high" />
 }
 
 // Personagem que a pessoa montou no funil (lida do sessionStorage). Sem ela, só o título.

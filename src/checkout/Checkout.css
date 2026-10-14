@@ -1123,11 +1123,3 @@
 .checkout-customer-reviews strong,.checkout-customer-reviews small { display: block; }.checkout-customer-reviews small { margin-top: 3px; color: #b5a4b7; font-size: 12px; }
 .checkout-customer-reviews p { line-height: 1.65; font-size: 14px; margin: 14px 0 0; color: #d4c5d6; }
 .checkout-banner { width: 100%; height: auto; display: block; border-radius: 14px; margin-bottom: 20px; }
-.checkout-banner-recreated { position: relative; min-height: 260px; overflow: hidden; border-radius: 14px; margin-bottom: 20px; background: radial-gradient(ellipse at 90% 75%,#e8267777,transparent 60%),#070405; border: 1px solid #df36765e; }
-.checkout-banner-copy { position: relative; z-index: 2; width: 63%; padding: 20px; box-sizing: border-box; }
-.checkout-banner-logo { font-size: clamp(30px,6vw,58px); font-weight: 900; font-style: italic; line-height: 1; letter-spacing: -3px; color: #fff; }.checkout-banner-logo span { color: #ff1b69; }
-.checkout-banner-copy h1 { font-size: clamp(18px,3.4vw,29px); line-height: 1.12; margin: 15px 0 10px; font-weight: 800; letter-spacing: -.6px; color: #fff; }.checkout-banner-copy h1 em { color: #ff4e94; font-style: normal; }
-.checkout-banner-copy p { font-size: 12px; line-height: 1.45; color: #dfc6d4; margin: 12px 0; }
-.checkout-banner-message { display: flex; align-items: center; gap: 9px; padding: 10px 13px; border-radius: 30px; border: 1px solid #ff8fb6; background: linear-gradient(135deg,#ff347c,#ca084d); color: #fff; font-size: 11px; font-weight: 600; box-shadow: 0 0 18px #ed175b66; }.checkout-banner-message svg { flex-shrink: 0; }
-.checkout-banner-portraits { position: absolute; top: 0; right: 0; bottom: 0; width: 47%; display: flex; align-items: flex-end; opacity: .95; mask-image: linear-gradient(90deg,transparent,black 20%); }.checkout-banner-portraits img { height: 100%; width: 62%; object-fit: cover; object-position: top center; }.checkout-banner-portraits img+img { margin-left: -22%; }
-@media(max-width:480px) { .checkout-banner-copy { width: 72%; padding: 16px; }.checkout-banner-copy p { font-size: 11px; }.checkout-banner-message { font-size: 10px; padding: 8px 9px; }.checkout-banner-recreated { min-height: 245px; } }
