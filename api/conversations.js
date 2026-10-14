@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const ids = ownedConversations(req)
     if (!active || !ids.length) return res.status(200).json({ conversations: [], canCreate: false })
     if (req.method === 'POST' && req.body?.action === 'create') {
-      if (!(await canCreateCharacter(req))) return res.status(403).json({ error: 'Adquira Premium ou Luxo para criar outra personagem.', code: 'premium_required' })
+      if (!(await canCreateCharacter(req))) return res.status(403).json({ error: 'Adquira Baby ou Pro para criar outra personagem.', code: 'premium_required' })
       if (ids.length >= 40) return res.status(409).json({ error: 'Você atingiu o limite de personagens deste navegador.' })
       activateConversation(req, res, randomUUID())
       return res.status(200).json({ ok: true })

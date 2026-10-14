@@ -80,7 +80,7 @@ export const PLAN_BENEFITS = {
     { icon: 'photos', text: 'Pedidos de fotos da sua personagem' },
   ],
   luxury: [
-    { icon: 'premium', text: 'Todos os recursos do Premium' },
+    { icon: 'premium', text: 'Todos os recursos do Baby' },
     { icon: 'characters', text: 'Mais personagens no mesmo acesso' },
     { icon: 'bonuses', text: '8 bônus exclusivos incluídos' },
   ],
@@ -151,21 +151,21 @@ const LUXURY_PRICE = formatBRL(CATALOG['luxury-access'].price)
 export const FAQ = [
   {
     question: 'Existe assinatura ou mensalidade?',
-    answer: `Não. Premium e Luxo são de pagamento único: ${PREMIUM_PRICE} ou ${LUXURY_PRICE}. Não há assinatura, mensalidade ou renovação automática.`,
+    answer: `Não. Baby e Pro são de pagamento único: ${PREMIUM_PRICE} ou ${LUXURY_PRICE}. Não há assinatura, mensalidade ou renovação automática.`,
   },
   {
-    question: 'Qual é a diferença entre Premium e Luxo?',
+    question: 'Qual é a diferença entre Baby e Pro?',
     answer:
-      'O Premium libera sua personagem, a conversa por texto e os pedidos de fotos. O Luxo inclui todos os recursos do Premium e os oito bônus desta página, como lives, personagens extras, vídeos, envio de mensagens de voz e modos de conversa.',
+      'O Baby libera sua personagem, a conversa por texto e os pedidos de fotos. O Pro inclui todos os recursos do Baby e os oito bônus desta página, como lives, personagens extras, vídeos, envio de mensagens de voz e modos de conversa.',
   },
   {
     question: `Os bônus estão incluídos nos ${LUXURY_PRICE}?`,
-    answer: `Sim. Os oito bônus apresentados estão incluídos no Luxo de ${LUXURY_PRICE}. O Premium de ${PREMIUM_PRICE} não inclui esses bônus.`,
+    answer: `Sim. Os oito bônus apresentados estão incluídos no Pro de ${LUXURY_PRICE}. O Baby de ${PREMIUM_PRICE} não inclui esses bônus.`,
   },
   {
     question: 'Quando recebo acesso?',
     answer:
-      'Você pode experimentar o chat com 7 mensagens gratuitas. Após a confirmação do pagamento, recebe mais 6 mensagens. Depois, pode comprar mais 120 por R$ 23,85 ou mensagens ilimitadas nesta conversa por R$ 48,85.',
+      'Escolha Baby ou Pro antes de entrar na conversa. O acesso é liberado após a confirmação do pagamento. Pacotes adicionais: mais 120 mensagens por R$ 10,00 ou mensagens ilimitadas nesta conversa por R$ 19,90.',
   },
   {
     question: 'Onde faço o pagamento?',

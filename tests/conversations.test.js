@@ -19,7 +19,7 @@ test('switching preserves signed ownership of both conversations and active cook
   assert.deepEqual(ownedConversations(request(cookies)), [a,b])
   assert.match(cookies, new RegExp(`piskou_access=${b}`))
 })
-test('creation requires an active initial Premium or Luxo purchase from owned conversations', async () => {
+test('creation requires an active initial Baby or Pro purchase from owned conversations', async () => {
   const req = request(`piskou_access=${a}.${chatSignature(a)}`)
   assert.equal(await canCreateCharacter(request(), () => { throw new Error('No query expected') }), false)
   assert.equal(await canCreateCharacter(req, async (path) => {

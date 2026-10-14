@@ -524,10 +524,9 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
 
   useEffect(() => {
     if (!openingChat) return
-    // Preload the chat while the transition is visible.
-    import('../chat/ChatPage.jsx').catch(() => {})
     const timer = setTimeout(() => {
-      window.location.assign(`/chat${window.location.search}`)
+      setOpeningChat(false)
+      setPaywallOpen(true)
     }, 2500)
     return () => clearTimeout(timer)
   }, [openingChat])

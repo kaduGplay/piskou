@@ -23,7 +23,7 @@ test('ordinary conversation never authorizes media, even before the first image'
 })
 
 test('plan notice completes the photo request and does not turn agreement into a new request', () => {
-  const photoHistory = [{ role: 'character', text: 'Fotos nos planos Premium e Luxo.', mediaRequest: 'photo' }]
+  const photoHistory = [{ role: 'character', text: 'Fotos nos planos Baby e Pro.', mediaRequest: 'photo' }]
   for (const text of ['sim', 'ok', 'entendi', 'me conta sobre você', 'gostei da foto'])
     assert.equal(allowImageGeneration(photoHistory, text), false, text)
   assert.equal(allowImageGeneration(photoHistory, 'me manda outra foto'), true)

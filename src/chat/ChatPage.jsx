@@ -415,8 +415,8 @@ export default function ChatPage() {
                     <div>
                       <strong>
                         {item.kind === 'video'
-                          ? 'Vídeos no plano Luxo'
-                          : item.kind === 'audio' ? 'Áudios · Premium e Luxo' : 'Fotos nos planos Premium e Luxo'}
+                          ? 'Vídeos no plano Pro'
+                          : item.kind === 'audio' ? 'Áudios · Baby e Pro' : 'Fotos nos planos Baby e Pro'}
                       </strong>
                       <p>
                         Conheça os recursos e escolha o plano que combina com
@@ -508,7 +508,7 @@ export default function ChatPage() {
         </button></>}
         {!loading && <ChatMemoryPanel selection={sel} />}
         {sent < 2 && <p className="chat-profile-note">
-          Fotos disponíveis a partir do Premium.
+          Fotos disponíveis a partir do Baby.
         </p>}
       </div>
     </>

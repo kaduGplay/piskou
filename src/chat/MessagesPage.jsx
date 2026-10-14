@@ -50,7 +50,7 @@ export default function MessagesPage() {
         <button type="button" className="messages-create-icon" aria-label="Criar outra personagem" onClick={create} disabled={!data}><Plus size={24} /></button>
       </header>
       <button type="button" className="messages-create" onClick={create} disabled={!data}>
-        <span className="messages-new-avatar"><Plus size={22} /></span><span><strong>Criar outra personagem</strong><small>{data?.canCreate ? 'Uma nova conexão, uma nova conversa' : 'Disponível com Premium ou Luxo'}</small></span>{!data?.canCreate && <LockKeyhole size={17} />}
+        <span className="messages-new-avatar"><Plus size={22} /></span><span><strong>Criar outra personagem</strong><small>{data?.canCreate ? 'Uma nova conexão, uma nova conversa' : 'Disponível com Baby ou Pro'}</small></span>{!data?.canCreate && <LockKeyhole size={17} />}
       </button>
       {error && <div className="messages-error" role="alert">{error}<button type="button" onClick={load}>Tentar novamente</button></div>}
       {!data && !error && <p className="messages-empty" role="status"><LoaderCircle size={20} /> Carregando conversas…</p>}

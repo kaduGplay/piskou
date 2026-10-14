@@ -67,7 +67,7 @@ export function PlanPicker({ planId, onChange }) {
                   <Icon size={16} aria-hidden="true" /> {plan.name}
                 </strong>
                 <small>{plan.purpose === 'messages' ? (plan.id !== 'messages-unlimited' ? `${plan.messageCount || 6} mensagens adicionais nesta conversa` : 'Texto ilimitado nesta conversa, sem renovação automática') : 'Personagem e conversa por texto'}</small>
-                {luxury && <em>Só {LUXURY_EXTRA} a mais que o Premium</em>}
+                {luxury && <em>Só {LUXURY_EXTRA} a mais que o Baby</em>}
               </span>
               <span className="checkout-plan-price">
                 <strong>{formatBRL(plan.price)}</strong>
@@ -97,7 +97,7 @@ export function TrustBadges() {
   )
 }
 
-// O que o plano escolhido entrega. No Luxo mostra os bônus; no Premium, o que fica de fora e o convite para o Luxo.
+// O que o plano escolhido entrega. No Pro mostra os bônus; no Baby, o que fica de fora e o convite para o Pro.
 export function PlanIncludes({ plan, onUpgrade }) {
   if (plan.purpose === 'messages') return <section className="checkout-includes"><h2>{plan.name}</h2><p>{plan.id !== 'messages-unlimited' ? `Adiciona ${plan.messageCount || 6} mensagens à sua conversa atual. Não reinicia o histórico.` : 'Mensagens por texto ilimitadas nesta conversa durante a disponibilidade do serviço. Sem renovação automática.'}</p></section>
   const luxury = plan.tier === 'luxury'
@@ -118,7 +118,7 @@ export function PlanIncludes({ plan, onUpgrade }) {
 
       {luxury ? (
         <>
-          <div className="checkout-bonus-rail" aria-label="Bônus incluídos no Luxo">
+          <div className="checkout-bonus-rail" aria-label="Bônus incluídos no Pro">
             {LUXURY_BONUSES.map((bonus) => (
               <img
                 key={bonus.id}
@@ -149,7 +149,7 @@ export function PlanIncludes({ plan, onUpgrade }) {
         </>
       ) : (
         <div className="checkout-missing">
-          <h3>Não incluído no Premium</h3>
+          <h3>Não incluído no Baby</h3>
           <ul>
             {LUXURY_BONUSES.map((bonus) => (
               <li key={bonus.id}>
@@ -159,7 +159,7 @@ export function PlanIncludes({ plan, onUpgrade }) {
             ))}
           </ul>
           <button type="button" className="checkout-upgrade" onClick={onUpgrade}>
-            <Crown size={17} aria-hidden="true" /> Quero o Luxo com os {LUXURY.bonusCount} bônus (+ {LUXURY_EXTRA})
+            <Crown size={17} aria-hidden="true" /> Quero o Pro com os {LUXURY.bonusCount} bônus (+ {LUXURY_EXTRA})
           </button>
         </div>
       )}

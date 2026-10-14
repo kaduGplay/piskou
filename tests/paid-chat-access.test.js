@@ -30,8 +30,8 @@ test('signed chat identity is available to checkout and rejects tampering', () =
   )
 })
 test('message products have the authorized fixed prices', () => {
-  assert.equal(PLANS['premium-access'].price, 23.85)
-  assert.equal(PLANS['luxury-access'].price, 48.85)
+  assert.equal(PLANS['premium-access'].price, 10)
+  assert.equal(PLANS['luxury-access'].price, 19.90)
   assert.equal(PLANS['messages-six'].price, PLANS['premium-access'].price)
   assert.equal(PLANS['messages-unlimited'].price, PLANS['luxury-access'].price)
   assert.equal(PLANS['messages-six'].purpose, 'messages')
@@ -176,14 +176,14 @@ test('checkout binds purchase to signed owner and status cannot grant another br
     assert.equal(pix.code, 200)
     assert.equal(pix.data.amount, PLANS['luxury-access'].price)
     assert.deepEqual(charges.get('charge:' + pix.data.id).customer,
-      { name: 'Usuario Piskou', email: 'vasconcelosescala@gmail.com' })
+      { name: 'Ignored', email: 'ignored@example.test' })
     const repeated = response()
     await checkout(pixRequest, repeated)
     assert.equal(repeated.data.id, pix.data.id)
     const noCustomer = response()
     await checkout({ ...pixRequest, body: { ...pixRequest.body, customer: undefined } }, noCustomer)
-    assert.equal(noCustomer.code, 200)
-    assert.equal(noCustomer.data.id, pix.data.id)
+    assert.equal(noCustomer.code, 400)
+    assert.ok(noCustomer.data.fields.email)
 
     failGrant = true
     const deferred = response()

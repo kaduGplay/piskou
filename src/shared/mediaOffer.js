@@ -1,18 +1,18 @@
 export function mediaOfferMessage(selection, kind, preferences = {}, options = {}) {
   if (options.nonExplicitOnly) return kind === 'video'
-    ? 'Você pode conhecer os vídeos não explícitos da personagem no plano Luxo. Veja as opções abaixo.'
-    : 'Você pode conhecer as fotos não explícitas da personagem nos planos Premium e Luxo. Veja as opções abaixo.'
+    ? 'Você pode conhecer os vídeos não explícitos da personagem no plano Pro. Veja as opções abaixo.'
+    : 'Você pode conhecer as fotos não explícitas da personagem nos planos Baby e Pro. Veja as opções abaixo.'
   const affectionate =
     preferences.nicknames === true &&
     preferences.flirt !== false &&
     selection.relationship !== 'Confidente' &&
     selection.affection !== 'Discreta'
   const address = affectionate ? ', amor' : ''
-  if (kind === 'audio') return `Para eu te mandar um áudio, você precisa do plano Premium ou Luxo${address}. Escolha um dos planos abaixo para receber minhas mensagens de voz.`
+  if (kind === 'audio') return `Para eu te mandar um áudio, você precisa do plano Baby ou Pro${address}. Escolha um dos planos abaixo para receber minhas mensagens de voz.`
   const resource =
     kind === 'video'
-      ? 'Os vídeos ficam no plano Luxo'
-      : 'As fotos ficam nos planos Premium e Luxo'
+      ? 'Os vídeos ficam no plano Pro'
+      : 'As fotos ficam nos planos Baby e Pro'
   if (selection.speechStyle === 'Direta' || selection.humor === 'Mais séria')
     return `Esse recurso é exclusivo para quem tem o plano${address}. ${resource}. Você pode conferir as opções abaixo.`
   if (

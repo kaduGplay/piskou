@@ -134,7 +134,7 @@ test('character photo requests explain subscription instead of claiming delivery
     async () => {},
   )
   assert.equal(result.mediaRequest, 'photo')
-  assert.match(result.reply, /Premium/)
+  assert.match(result.reply, /Baby/)
   assert.ok(!result.reply.includes('Aqui está'))
 })
 
@@ -176,7 +176,7 @@ test('delivered image is marked in context and a reaction cannot generate anothe
 test('unrequested photo flags are rejected and repaired into a contextual text reply', async () => {
   const history = [
     { role: 'user', text: 'Me manda uma foto sua?' },
-    { role: 'character', text: 'Fotos nos planos Premium e Luxo.', mediaRequest: 'photo' },
+    { role: 'character', text: 'Fotos nos planos Baby e Pro.', mediaRequest: 'photo' },
   ]
   let calls = 0
   const result = await generateChatReply(DEFAULT_SELECTION, history, 'Você gosta de café?', 1,
@@ -200,10 +200,10 @@ test('unrequested photo flags are rejected and repaired into a contextual text r
 
 test('explicit character media requests cannot become generic text-only refusals from the provider', async () => {
   for (const [message, kind, plan] of [
-    ['Me manda um vídeo', 'video', /Luxo/],
-    ['quero uma imagem de você 🔥🔥', 'photo', /Premium e Luxo/],
-    ['quero uma imagem', 'photo', /Premium e Luxo/],
-    ['Me manda um áudio falando oi', 'audio', /Premium ou Luxo/],
+    ['Me manda um vídeo', 'video', /Pro/],
+    ['quero uma imagem de você 🔥🔥', 'photo', /Baby e Pro/],
+    ['quero uma imagem', 'photo', /Baby e Pro/],
+    ['Me manda um áudio falando oi', 'audio', /Baby ou Pro/],
   ]) {
     const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Media plan routing must not depend on model output') })
     assert.equal(result.mediaRequest, kind)
@@ -235,7 +235,7 @@ test('photo of now routes directly to plans without camera refusal or image-prov
   for (const message of ['tudo bem me manda uma foto de agora', 'me manda uma foto de hoje', 'quero uma foto do momento']) {
     const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Character photo must not invoke the model or image generator') })
     assert.equal(result.mediaRequest, 'photo')
-    assert.match(result.reply, /Premium e Luxo/)
+    assert.match(result.reply, /Baby e Pro/)
     assert.doesNotMatch(result.reply, /c[aâ]mera|n[aã]o (?:posso|tenho|consigo)/i)
     assert.equal(result.imagePrompt, '')
   }
@@ -246,7 +246,7 @@ test('explicit character media requests offer only non-explicit plan content wit
     const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Must not request explicit media from provider') })
     assert.ok(['photo', 'video'].includes(result.mediaRequest))
     assert.match(result.reply, /não explícit/)
-    assert.match(result.reply, /Luxo/)
+    assert.match(result.reply, /Pro/)
     assert.doesNotMatch(result.reply, /não (?:posso|consigo).*enviar/i)
     assert.equal(result.imagePrompt, '')
   }
@@ -256,7 +256,7 @@ test('character photo exchanges and non-explicit sensual requests always route t
   for (const message of ['vamos trocar fotos sensuais?', 'bora trocar fotos', 'troca uma foto comigo', 'me manda uma fotinha sua', 'quero uma selfie sua', 'uma foto sua?', 'quero fotos sensuais da minha personagem']) {
     const result = await generateChatReply(DEFAULT_SELECTION, [], message, 0, async () => { throw new Error('Character photos must route to plans without model/image generation') })
     assert.equal(result.mediaRequest, 'photo', message)
-    assert.match(result.reply, /Premium e Luxo/, message)
+    assert.match(result.reply, /Baby e Pro/, message)
     assert.equal(result.imagePrompt, '')
     assert.doesNotMatch(result.reply, /c[aâ]mera|n[aã]o (?:posso|consigo)/i)
   }

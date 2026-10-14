@@ -282,7 +282,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
             <img src={result.src} alt="Personagem escolhida" />
             <div className="paywall-hero-copy">
               <span>
-                {newCharacter ? 'MAIS PERSONAGENS · PREMIUM' : callKind ? 'CHAMADAS · EM BREVE' : trialEnded ? 'SUAS MENSAGENS GRÁTIS ACABARAM' : fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}
+                {newCharacter ? 'MAIS PERSONAGENS · BABY' : callKind ? 'CHAMADAS · EM BREVE' : trialEnded ? 'SUAS MENSAGENS GRÁTIS ACABARAM' : fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}
               </span>
               <h1 id="paywall-title">
                 {newCharacter ? 'Crie outra personagem' : callKind ? `${callKind} com ${characterName}` : fromChat
@@ -290,7 +290,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
                   : `Dê vida à ${characterName}`}
               </h1>
               <p>
-                {newCharacter ? 'Adquira Premium ou Luxo para criar outras personagens e manter suas conversas separadas.' : callKind ? 'As chamadas estão em preparação. Conheça os recursos disponíveis em cada plano; a compra ainda não habilita chamadas.' : trialEnded
+                {newCharacter ? 'Adquira Baby ou Pro para criar outras personagens e manter suas conversas separadas.' : callKind ? 'As chamadas estão em preparação. Conheça os recursos disponíveis em cada plano; a compra ainda não habilita chamadas.' : trialEnded
                   ? 'Sua conversa está salva. Escolha um plano e retome de onde vocês pararam, com a personalidade que você escolheu.'
                   : fromChat
                   ? `Gostou de conhecer ${characterName}? Escolha seu acesso para continuar a conversa do seu jeito, com a personalidade que você escolheu.`
@@ -312,7 +312,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 className={tier === 'premium' ? 'active' : ''}
                 onClick={() => setTier('premium')}
               >
-                <Gem size={17} /> Premium
+                <Gem size={17} /> Baby
               </button>
               <button
                 type="button"
@@ -321,7 +321,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 className={tier === 'luxury' ? 'active luxury' : ''}
                 onClick={() => setTier('luxury')}
               >
-                <Crown size={17} /> Luxo
+                <Crown size={17} /> Pro
               </button>
             </div>
 
@@ -374,7 +374,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
             </div>
 
             <div className={`paywall-benefits${isLuxury ? ' luxury' : ''}`}>
-              <h2>Incluído no {tier === 'premium' ? 'Premium' : 'Luxo'}</h2>
+              <h2>Incluído no {tier === 'premium' ? 'Baby' : 'Pro'}</h2>
               {PLAN_BENEFITS[tier].map((benefit) => {
                 const Icon = BENEFIT_ICONS[benefit.icon]
                 return (
@@ -388,8 +388,8 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 className={`paywall-bonus-summary${isLuxury ? '' : ' excluded'}`}
                 aria-label={
                   isLuxury
-                    ? 'Bônus incluídos no Luxo'
-                    : 'Bônus não incluídos no Premium'
+                    ? 'Bônus incluídos no Pro'
+                    : 'Bônus não incluídos no Baby'
                 }
               >
                 {bonuses.map((bonus) => {
@@ -434,18 +434,18 @@ export default function PaywallSheet({ sel, onClose, source }) {
 
             <section className="paywall-bonus" aria-labelledby="bonus-title">
               <div className="paywall-bonus-heading">
-                <span>INCLUÍDOS NO LUXO</span>
+                <span>INCLUÍDOS NO PRO</span>
                 <h2 id="bonus-title">8 Bonus incluso</h2>
                 <p>
                   {isLuxury
-                    ? 'Todos incluídos no pagamento único do Luxo.'
-                    : 'Exclusivos do Luxo. Não incluídos no Premium.'}
+                    ? 'Todos incluídos no pagamento único do Pro.'
+                    : 'Exclusivos do Pro. Não incluídos no Baby.'}
                 </p>
               </div>
               {/* Dois grupos iguais para o letreiro rolar sem emenda; o segundo é só visual. */}
               <div
                 className="paywall-bonus-window"
-                aria-label="Bônus exclusivos do Luxo"
+                aria-label="Bônus exclusivos do Pro"
               >
                 <div className="paywall-bonus-rail">
                   {[0, 1].map((group) => (
@@ -475,7 +475,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 className="paywall-bonus-cta"
                 onClickCapture={(event) => goToCheckout(event, luxuryPlan)}
               >
-                QUERO O LUXO COM OS 8 BÔNUS <ArrowRight size={16} />
+                QUERO O PRO COM OS 8 BÔNUS <ArrowRight size={16} />
               </a>
             </section>
 

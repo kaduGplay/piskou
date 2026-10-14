@@ -613,16 +613,16 @@ try {
   await page.locator('.messages-row').first().waitFor()
   await page.getByRole('button', { name: 'Criar outra personagem', exact: true }).first().click()
   await page.getByRole('dialog').waitFor()
-  assert.ok(await page.getByText('MAIS PERSONAGENS · PREMIUM').count())
+  assert.ok(await page.getByText('MAIS PERSONAGENS · BABY').count())
   await page.getByRole('button', { name: 'Fechar oferta' }).click()
   await page.locator('.messages-row').first().click()
   await page.getByRole('textbox', { name: 'Sua mensagem' }).waitFor()
   assert.equal(await page.locator('.chat-suggestions').count(), 0)
-  console.log('PASS inbox: back lists saved conversation, Premium gates creation, reopening preserves history and hides suggestions')
+  console.log('PASS inbox: back lists saved conversation, Baby gates creation, reopening preserves history and hides suggestions')
   let originalInbox = await page.evaluate(async () => (await fetch('/api/conversations')).json())
   assert.equal(await page.evaluate(async () => (await fetch('/api/conversations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create' }) })).status), 403)
   await send('Me manda um áudio falando oi')
-  await page.getByText('Áudios · Premium e Luxo', { exact: true }).last().waitFor()
+  await page.getByText('Áudios · Baby e Pro', { exact: true }).last().waitFor()
   assert.ok(await page.getByText(/Para eu te mandar um áudio/).count())
   originalInbox = await page.evaluate(async () => (await fetch('/api/conversations')).json())
   // Isolated purchase fixture: no production accounts or payment providers.
@@ -645,10 +645,10 @@ try {
   const restored = await page.evaluate(async () => (await fetch('/api/chat')).json())
   assert.equal(restored.conversationId, originalInbox.active)
   assert.ok(restored.messages.some((message) => message.role === 'user'))
-  console.log('PASS Premium creation: server rejects free creation, paid creates isolated conversation, original history restores')
+  console.log('PASS Baby creation: server rejects free creation, paid creates isolated conversation, original history restores')
   for (const [request, expected] of [
-    ['Me manda um vídeo', 'Vídeos no plano Luxo'],
-    ['quero uma imagem de você 🔥🔥', 'Fotos nos planos Premium e Luxo'],
+    ['Me manda um vídeo', 'Vídeos no plano Pro'],
+    ['quero uma imagem de você 🔥🔥', 'Fotos nos planos Baby e Pro'],
   ]) {
     await send(request)
     await page.getByText(expected, { exact: true }).last().waitFor()
@@ -658,7 +658,7 @@ try {
   await page.locator('.chat-voice-message audio').last().waitFor({ state: 'attached' })
   await page.waitForFunction(() => !!document.querySelector('.chat-voice-message audio')?.getAttribute('src'))
   assert.equal(await page.locator('.chat-voice-message .chat-bubble > p').count(), 0)
-  console.log('PASS paid AI audio: free request offers plans; Premium request generates a separate playable voice bubble')
+  console.log('PASS paid AI audio: free request offers plans; Baby request generates a separate playable voice bubble')
   const imageSession = await page.evaluate(async () => (await (await fetch('/api/chat')).json()).conversationId)
   const imageData = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="pink"/></svg>').toString('base64')
   await db.query("update public.piskou_chat_sessions set messages=jsonb_set(messages,array[(jsonb_array_length(messages)-1)::text,'media'],jsonb_build_object('src',$2::text)),queue_revision=queue_revision+1 where id=$1", [imageSession, imageData])

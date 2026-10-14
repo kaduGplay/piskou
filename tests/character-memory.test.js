@@ -254,7 +254,7 @@ test('relationship stays in context and media respects explicit conversational b
   )
   const offer = mediaOfferMessage(selection, 'photo', preferences)
   assert.doesNotMatch(offer, /amor|💕|assinatura|Bateu a curiosidade/)
-  assert.match(offer, /Premium e Luxo/)
+  assert.match(offer, /Baby e Pro/)
 })
 
 test('enabling memory during an existing scene does not persist its fictional identity', () => {

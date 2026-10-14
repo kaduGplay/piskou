@@ -53,10 +53,7 @@ export default async function handler(req, res) {
     analyticsSession,
     requestId,
   } = req.body ?? {}
-  const customer =
-    method === 'pix'
-      ? { name: 'Usuario Piskou', email: 'vasconcelosescala@gmail.com' }
-      : suppliedCustomer
+  const customer = suppliedCustomer
   if (requestId && !UUID.test(requestId))
     return res.status(400).json({ error: 'Pedido inválido.' })
   const plan = PLANS[planId]
@@ -98,7 +95,7 @@ export default async function handler(req, res) {
     if (changed) session = chatSession(req, res, true, true)
     const requestKey =
       method === 'pix' && requestId
-        ? `checkout:${session}:${plan.id}:${requestId}`
+        ? `checkout:${session}:${plan.id}:${toCents(plan.price)}:${requestId}`
         : null
     if (requestKey) {
       const previous = await store.get(requestKey)

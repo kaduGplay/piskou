@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       ) {
         // jsonb não preserva a ordem das chaves; compara os campos normalizados.
         if (!sameChatSelection(row.selection, requested)) {
-          if (!(await canCreateCharacter(req))) return res.status(403).json({ error: 'Para criar outra personagem, adquira Premium ou Luxo.', code: 'premium_required' })
+          if (!(await canCreateCharacter(req))) return res.status(403).json({ error: 'Para criar outra personagem, adquira Baby ou Pro.', code: 'premium_required' })
           const previous = ownedConversations(req)
           if (previous.length >= 40) return res.status(409).json({ error: 'Você atingiu o limite de personagens deste navegador.' })
           session = chatSession(req, res, true, true)
@@ -86,7 +86,7 @@ export default async function handler(req, res) {
           )
         }
       }
-      if (!row && requested && ownedConversations(req).length > 1 && !(await canCreateCharacter(req))) return res.status(403).json({ error: 'Para criar outra personagem, adquira Premium ou Luxo.', code: 'premium_required' })
+      if (!row && requested && ownedConversations(req).length > 1 && !(await canCreateCharacter(req))) return res.status(403).json({ error: 'Para criar outra personagem, adquira Baby ou Pro.', code: 'premium_required' })
       if (!row && requested)
         return res.status(200).json(
           await chatDatabase('rpc/piskou_chat_initialize', {

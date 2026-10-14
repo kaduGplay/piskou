@@ -106,13 +106,12 @@ export default function CheckoutPage() {
   const [planId, setPlanId] = useState(() => (PLANS[params.get('plano')] ? params.get('plano') : 'premium-access'))
   const plan = PLANS[planId]
   const [selection] = useState(readSelection)
-  const [customer, setCustomer] = useState({ name: 'Usuario Piskou', email: 'vasconcelosescala@gmail.com' })
+  const [customer, setCustomer] = useState({ name: '', email: '' })
   const [method, setMethod] = useState('pix')
   const [methods, setMethods] = useState(['pix'])
   const [unavailable, setUnavailable] = useState(false)
   const [configReady, setConfigReady] = useState(false)
   const submissionGuard = useRef(false)
-  const autoStarted = useRef(new Set())
   const [card, setCard] = useState({ number: '', holder: '', expiry: '', cvv: '' })
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
@@ -128,10 +127,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     try {
       const saved=JSON.parse(localStorage.getItem('piskou:pendingCharge') || 'null')
-      if(saved && saved.planId===planId && Date.now()-saved.createdAt<90*86400000 && (!saved.selectionKey || saved.selectionKey === JSON.stringify(selection))) {
+      if(saved && saved.planId===planId && saved.amount===plan.price && Date.now()-saved.createdAt<90*86400000 && (!saved.selectionKey || saved.selectionKey === JSON.stringify(selection))) {
         if (saved.pix?.expiresAt && new Date(saved.pix.expiresAt).getTime() <= Date.now()) {
           localStorage.removeItem('piskou:pendingCharge')
-          sessionStorage.removeItem(`piskou:pix-request:${planId}:${JSON.stringify(selection)}`)
+          sessionStorage.removeItem(`piskou:pix-request:${planId}:${plan.price}:${JSON.stringify(selection)}`)
         } else {
           setCharge(saved)
           setPhase(saved.pix?.copyPaste ? 'pix' : 'processing')
@@ -229,7 +228,7 @@ export default function CheckoutPage() {
         if (status === 'paid') approve(charge)
         else if (status === 'expired') { approvedRef.current=false; setPhase('expired') }
         else if (status === 'failed') {
-          try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${JSON.stringify(selection)}`) } catch {}
+          try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${plan.price}:${JSON.stringify(selection)}`) } catch {}
           approvedRef.current=false;
           setPhase('form')
           setServerError('Pagamento não aprovado. Tente novamente ou use outra forma de pagamento.')
@@ -316,7 +315,7 @@ export default function CheckoutPage() {
       }
       let requestId
       if (method === 'pix') {
-        const key = `piskou:pix-request:${plan.id}:${JSON.stringify(selection)}`
+        const key = `piskou:pix-request:${plan.id}:${plan.price}:${JSON.stringify(selection)}`
         try {
           requestId = sessionStorage.getItem(key) || crypto.randomUUID()
           sessionStorage.setItem(key, requestId)
@@ -344,10 +343,10 @@ export default function CheckoutPage() {
         return
       }
       setCharge(data)
-      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,method,createdAt:Date.now(),pix:data.pix,selectionKey:JSON.stringify(selection)})) } catch {} }
+      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,amount:data.amount,method,createdAt:Date.now(),pix:data.pix,selectionKey:JSON.stringify(selection)})) } catch {} }
       if (data.status === 'paid') approve(data)
       else if (data.status === 'failed') {
-        try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${JSON.stringify(selection)}`) } catch {}
+        try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${plan.price}:${JSON.stringify(selection)}`) } catch {}
         setServerError(
           method === 'pix'
             ? 'Não foi possível gerar o PIX agora. Tente novamente em instantes.'
@@ -371,12 +370,6 @@ export default function CheckoutPage() {
     }
   }
 
-  useEffect(() => {
-    if (!configReady || unavailable || charge || phase !== 'form' || method !== 'pix' || !selection || autoStarted.current.has(planId)) return
-    autoStarted.current.add(planId)
-    submit()
-  }, [configReady, unavailable, charge, phase, method, planId, selection])
-
   const copyPix = async () => {
     try {
       await navigator.clipboard.writeText(charge.pix.copyPaste)
@@ -398,7 +391,7 @@ export default function CheckoutPage() {
   return (
     <div className="checkout-root">
       <header className="checkout-topbar">
-        <a href="/chat" className="checkout-back" onClick={goBack} aria-label="Voltar">
+        <a href="/?edit=1" className="checkout-back" onClick={goBack} aria-label="Voltar">
           <ArrowLeft size={20} />
         </a>
         <div className="checkout-brand">
@@ -422,23 +415,23 @@ export default function CheckoutPage() {
 
         {phase === 'form' && (
           <form className="checkout-form" ref={formRef} onSubmit={submit} noValidate>
-            {method === 'card' && <fieldset>
-              <legend>Sua conta</legend>
-              <Field label="Como você prefere ser chamado?" error={fieldError('name')}>
+            <fieldset>
+              <legend>Seus dados</legend>
+              <Field label="Nome" error={fieldError('name')}>
                 <input
                   name="name"
-                  autoComplete="nickname"
+                  autoComplete="name"
                   maxLength={60}
                   value={customer.name}
                   onChange={(e) => updateCustomer('name', e.target.value)}
                   onBlur={() => blur('name')}
-                  placeholder="Seu nome ou apelido"
+                  placeholder="Seu nome"
                 />
               </Field>
               <Field
-                label="E-mail para criar sua conta"
+                label="E-mail"
                 error={fieldError('email')}
-                hint="Você vai usar este e-mail para entrar. O acesso também chega nele."
+                hint="Usamos seu e-mail para identificar o pedido."
               >
                 <input
                   name="email"
@@ -451,7 +444,7 @@ export default function CheckoutPage() {
                   placeholder="voce@email.com"
                 />
               </Field>
-            </fieldset>}
+            </fieldset>
 
             <fieldset>
               <legend>Pagamento</legend>
@@ -620,8 +613,7 @@ export default function CheckoutPage() {
               type="button"
               className={`checkout-submit${luxury ? ' luxury' : ''}`}
               onClick={() => {
-                try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${JSON.stringify(selection)}`); localStorage.removeItem('piskou:pendingCharge') } catch {}
-                autoStarted.current.delete(planId)
+                try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${plan.price}:${JSON.stringify(selection)}`); localStorage.removeItem('piskou:pendingCharge') } catch {}
                 setCharge(null)
                 setQrImage('')
                 setPhase('form')

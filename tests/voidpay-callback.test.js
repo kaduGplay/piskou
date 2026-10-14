@@ -8,7 +8,7 @@ process.env.VOIDPAY_SECRET_KEY = 'test-secret'
 process.env.VOIDPAY_CALLBACK_ANCHOR = 'piskou_fixed'
 process.env.VOIDPAY_FIXED_PHONE = '11999999999'
 const signature = order => createHmac('sha256', 'test-secret').update(`callback:${order}`).digest('hex')
-const order = id => ({id,amountCents:2385,plan:{id:'premium-access',name:'Premium'},customer:{name:'Test',email:'test@example.com'},siteUrl:'https://example.com',metadata:{tracking:{}}})
+const order = id => ({id,amountCents:2385,plan:{id:'premium-access',name:'Baby'},customer:{name:'Test',email:'test@example.com'},siteUrl:'https://example.com',metadata:{tracking:{}}})
 test('different orders reuse exactly the same signed callback',async()=>{
  const original=globalThis.fetch, urls=[]
  globalThis.fetch=async(url,options)=>{urls.push(JSON.parse(options.body).callbackUrl);return Response.json({transactionId:'tx',status:'PENDING',pix:{code:'test-code'}})}

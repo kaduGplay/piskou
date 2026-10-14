@@ -42,7 +42,7 @@ export async function advisorReply(
     product: {
       freeMessages: CHAT_PREVIEW_LIMIT,
       includedPaidMessages: 6,
-      paywall: `${CHAT_PREVIEW_LIMIT} mensagens gratuitas antes dos planos. Após pagamento confirmado, 6 mensagens adicionais incluídas; após usá-las, oferta de mais 120 por R$ 23,85 ou texto ilimitado nesta conversa por R$ 48,85.`,
+      paywall: 'Fluxo principal: criação → planos Baby (R$ 10,00) ou Pro (R$ 19,90) → checkout com nome/e-mail → confirmação de pagamento → chat. Pacotes adicionais: 120 mensagens por R$ 10,00 ou texto ilimitado na conversa por R$ 19,90. Sessões antigas podem ter mensagens gratuitas.',
       plans: Object.values(PLANS),
     },
     selectedConversation: chat
