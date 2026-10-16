@@ -41,8 +41,8 @@ export const PLAN_BONUSES = {
     },
     {
       id: 'audios',
-      title: 'Mensagens de voz',
-      description: 'Envie mensagens de voz para conversar com sua personagem.',
+      title: 'Envio e recebimento de áudios',
+      description: 'Envie mensagens de voz e receba áudios da sua parceira.',
       image: '/bonuses/audios.webp',
     },
     {
@@ -75,9 +75,8 @@ export const PLAN_BONUSES = {
 export const PLAN_BENEFITS = {
   premium: [
     { icon: 'character', text: 'Personagem configurada por você' },
-    { icon: 'personality', text: 'Personalidade escolhida' },
+    { icon: 'personality', text: 'Personalidade e voz escolhidas' },
     { icon: 'chat', text: 'Conversa individual por texto' },
-    { icon: 'photos', text: 'Pedidos de fotos da sua personagem' },
   ],
   luxury: [
     { icon: 'premium', text: 'Todos os recursos do Baby' },
@@ -156,7 +155,7 @@ export const FAQ = [
   {
     question: 'Qual é a diferença entre Baby e Pro?',
     answer:
-      'O Baby libera sua personagem, a conversa por texto e os pedidos de fotos. O Pro inclui todos os recursos do Baby e os oito bônus desta página, como lives, personagens extras, vídeos, envio de mensagens de voz e modos de conversa.',
+      'O Baby libera sua personagem e a conversa por texto. O Pro inclui todos os recursos do Baby e os oito bônus desta página, como lives, personagens extras, vídeos, áudios e modos de conversa.',
   },
   {
     question: `Os bônus estão incluídos nos ${LUXURY_PRICE}?`,
@@ -165,7 +164,7 @@ export const FAQ = [
   {
     question: 'Quando recebo acesso?',
     answer:
-      'Escolha Baby ou Pro antes de entrar na conversa. O acesso é liberado após a confirmação do pagamento. Pacotes adicionais: mais 120 mensagens por R$ 10,00 ou mensagens ilimitadas nesta conversa por R$ 19,90.',
+      'O acesso é liberado assim que o pagamento é confirmado, aqui mesmo no site. Com PIX, a confirmação costuma levar poucos segundos.',
   },
   {
     question: 'Onde faço o pagamento?',

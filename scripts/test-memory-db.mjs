@@ -19,6 +19,7 @@ try {
   console.log('PASS all migrations on isolated local PostgreSQL')
   for (const name of [
     'checkout-addons',
+    'upsells',
     'operational-status',
     'message-package-120',
     'free-chat-funnel',

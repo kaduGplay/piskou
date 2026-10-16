@@ -24,6 +24,21 @@ function publicSiteUrl(req) {
   return `https://${host}`
 }
 
+// Telefone de quem comprou o upsell "ela te chama no WhatsApp". O banco confere a compra.
+async function saveWhatsapp(req, res) {
+  const session = chatSession(req, res, false)
+  const phone = String(req.body?.phone ?? '').replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '')
+  if (!session) return res.status(403).json({ error: 'Sessão não encontrada.' })
+  if (!/^\d{10,11}$/.test(phone)) return res.status(400).json({ error: 'Informe seu WhatsApp com DDD.' })
+  try {
+    const saved = await chatDatabase('rpc/piskou_upsell_contact', { p_id: session, p_phone: phone })
+    if (!saved) return res.status(403).json({ error: 'Pagamento ainda não confirmado.' })
+    return res.status(200).json({ ok: true })
+  } catch {
+    return res.status(502).json({ error: 'Não foi possível salvar agora. Tente novamente.' })
+  }
+}
+
 // POST /api/checkout — cria a cobrança (PIX ou cartão) do plano escolhido.
 // O valor vem sempre do catálogo de planos; o navegador só informa qual plano é.
 export default async function handler(req, res) {
@@ -32,6 +47,7 @@ export default async function handler(req, res) {
 
   if (!sameOrigin(req))
     return res.status(403).json({ error: 'Origem inválida.' })
+  if (req.body?.action === 'whatsapp') return saveWhatsapp(req, res)
   const selection = chatSelection(req.body?.selection)
   if (!selection)
     return res
@@ -94,6 +110,16 @@ export default async function handler(req, res) {
       return res.status(403).json({
         error: 'Compre mensagens para a personagem do seu acesso atual.',
       })
+    if (plan.purpose === 'upsell') {
+      // Upsell de um clique: só depois do Baby/Pro desta conversa, e uma vez por item.
+      const owned = changed
+        ? []
+        : await chatDatabase(`piskou_chat_purchases?chat_id=eq.${session}&active=eq.true&select=plan_id`)
+      if (!owned.some((item) => ['premium-access', 'luxury-access'].includes(item.plan_id)))
+        return res.status(403).json({ error: 'Finalize seu acesso antes desta oferta.' })
+      if (owned.some((item) => item.plan_id === plan.id))
+        return res.status(409).json({ error: 'Você já tem esta oferta.', code: 'owned' })
+    }
     if (changed) session = chatSession(req, res, true, true)
     const requestKey =
       method === 'pix' && requestId

@@ -39,6 +39,14 @@
     {
       "source": "/messages/",
       "destination": "/index.html"
+    },
+    {
+      "source": "/oferta",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/oferta/",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -172,7 +180,7 @@
       "maxDuration": 90
     },
     "api/checkout.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   }
 }

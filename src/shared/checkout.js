@@ -31,20 +31,49 @@ export const PLANS = {
     id: 'premium-access',
     tier: 'premium',
     name: 'Baby',
-    price: 10,
+    price: 14.90,
     bonusCount: 0,
   },
   'luxury-access': {
     id: 'luxury-access',
     tier: 'luxury',
     name: 'Pro',
-    price: 19.90,
+    price: 27.90,
     bonusCount: 8,
+  },
+  // Upsells de um clique, oferecidos em sequência logo depois do pagamento do Baby ou do Pro.
+  'upsell-video-pack': {
+    id: 'upsell-video-pack',
+    tier: 'premium',
+    name: 'Pack de vídeos dela',
+    price: 14.90,
+    bonusCount: 0,
+    purpose: 'upsell',
+  },
+  'upsell-whatsapp': {
+    id: 'upsell-whatsapp',
+    tier: 'premium',
+    name: 'Ela te chama no WhatsApp',
+    price: 14.90,
+    bonusCount: 0,
+    purpose: 'upsell',
+  },
+  'upsell-vip': {
+    id: 'upsell-vip',
+    tier: 'luxury',
+    name: 'Acesso VIP vitalício',
+    price: 19.90,
+    bonusCount: 0,
+    purpose: 'upsell',
   },
 }
 
+export const UPSELL_SEQUENCE = ['upsell-video-pack', 'upsell-whatsapp', 'upsell-vip']
+
 // sessionStorage: o paywall guarda a personagem aqui e o checkout lê para mostrar no resumo.
 export const SELECTION_STORAGE_KEY = 'piskou:selection'
+// sessionStorage: nome e e-mail do comprador, reaproveitados nas ofertas de um clique após o pagamento.
+export const BUYER_STORAGE_KEY = 'piskou:buyer'
 
 export const formatBRL = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`
 export const toCents = (value) => Math.round(value * 100)
@@ -60,7 +89,7 @@ export function quoteCheckout(planId, selected = []) {
   if (!plan || !Array.isArray(selected) || selected.length > Object.keys(ORDER_BUMPS).length || new Set(selected).size !== selected.length) throw new Error('Confira o plano e os adicionais do pedido.')
   const addons = [...selected].sort().map((id) => {
     const item = typeof id === 'string' && Object.hasOwn(ORDER_BUMPS, id) ? ORDER_BUMPS[id] : null
-    if (!item || !item.available || plan.purpose === 'messages' || item.includedIn?.includes(planId)) throw new Error('Adicional indisponível para este plano.')
+    if (!item || !item.available || plan.purpose || item.includedIn?.includes(planId)) throw new Error('Adicional indisponível para este plano.')
     return item
   })
   const totalCents = toCents(plan.price) + addons.reduce((sum, item) => sum + toCents(item.price), 0)

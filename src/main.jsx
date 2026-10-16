@@ -9,6 +9,7 @@ startAnalytics()
 const AdminPage = lazy(() => import('./admin/AdminPage.jsx'))
 const Funnel = lazy(() => import('./funnel/Funnel.jsx'))
 const CheckoutPage = lazy(() => import('./checkout/CheckoutPage.jsx'))
+const UpsellPage = lazy(() => import('./checkout/UpsellPage.jsx'))
 const MessagesPage = lazy(() => import('./chat/MessagesPage.jsx'))
 const ChatPage = lazy(() => import('./chat/ChatPage.jsx'))
 
@@ -39,6 +40,14 @@ function App() {
         fallback={<div className="app-loading" aria-label="Carregando" />}
       >
         <CheckoutPage />
+      </Suspense>
+    )
+  }
+  // Ofertas de um clique logo após o pagamento do Baby/Pro.
+  if (window.location.pathname.replace(/\/+$/, '') === '/oferta') {
+    return (
+      <Suspense fallback={<div className="app-loading" aria-label="Carregando" />}>
+        <UpsellPage />
       </Suspense>
     )
   }

@@ -17,7 +17,7 @@ export const VOICES = [
 
 export const STEPS = [
   { key: 'style', label: 'Estilo' },
-  { key: 'general', label: 'Características' },
+  { key: 'general', label: 'Geral' },
   { key: 'face', label: 'Rosto' },
   { key: 'body', label: 'Corpo' },
   { key: 'details', label: 'Detalhes' },
@@ -47,7 +47,12 @@ const mapValues = (obj, fn) => Object.fromEntries(Object.entries(obj).map(([k, v
 
 const REALISTA_ORIGIN_MEDIA = mapValues(ANIME_ORIGIN_MEDIA, (p) => toRealista(p))
 
-export const HAIR_STYLES = ['Trançado', 'Longo', 'Franja', 'Rabo de cavalo', 'Curto', 'Coques', 'Ondulado', 'Personalizado']
+// Cortes oferecidos em cada estilo (o realista tem coques; o anime, ondulado).
+const HAIR_STYLES_BY_STYLE = {
+  realista: ['Longo', 'Franja', 'Rabo de cavalo', 'Curto', 'Coques'],
+  anime: ['Longo', 'Franja', 'Rabo de cavalo', 'Curto', 'Ondulado'],
+}
+export const hairStylesFor = (style) => HAIR_STYLES_BY_STYLE[style] || HAIR_STYLES_BY_STYLE.anime
 
 const ANIME_HAIR_MEDIA = {
   Trançado: '/funnel-media/anime/hair/trancado.avif',
@@ -67,7 +72,7 @@ export const HAIR_COLORS = [
   { label: 'Loiro', color: '#d3ae65', folder: 'LOIRA' },
 ]
 
-export const BODY_TYPES = ['Magra', 'Atlética', 'Voluptuosa', 'Curvilínea', 'Musculosa']
+export const BODY_TYPES = ['Magra', 'Atlética', 'Voluptuosa', 'Curvilínea']
 export const BREAST_SIZES = ['Pequenos', 'Médios', 'Grandes', 'XL']
 export const BUTT_SIZES = ['Pequeno', 'Atlético', 'Médio', 'Grande']
 
@@ -94,8 +99,34 @@ const ANIME_BODY_MEDIA = {
 }
 const REALISTA_BODY_MEDIA = mapValues(ANIME_BODY_MEDIA, (group) => mapValues(group, (p) => toRealista(p, '.webp')))
 
-// Imagem do card e vídeo que toca quando ele está selecionado (mesmo caminho, extensão .mp4).
+// Mídia v2 dos cards: /funnel-media/v2/<estilo>/<grupo>/<valor>.webp, com o vídeo .mp4 ao lado quando existe.
+const v2 = (style, group, slug, video = true) => ({
+  image: `/funnel-media/v2/${style}/${group}/${slug}.webp`,
+  video: video ? `/funnel-media/v2/${style}/${group}/${slug}.mp4` : null,
+})
+const v2Group = (style, group, slugs, video) => Object.fromEntries(Object.entries(slugs).map(([label, slug]) => [label, v2(style, group, slug, video)]))
+const HAIR_COLOR_SLUGS = { Castanho: 'castanho', Preto: 'preto', Loiro: 'loiro' }
+const V2_MEDIA = {
+  realista: {
+    style: { realista: v2('realista', 'style', 'realista', false) },
+    ethnicity: v2Group('realista', 'origin', { Asiática: 'asiatica', Africana: 'africana', Latina: 'latina', Europeia: 'europeia' }),
+    hairStyle: v2Group('realista', 'hair', { Longo: 'longo', Franja: 'franja', Coques: 'coques', Curto: 'curto', 'Rabo de cavalo': 'rabo-de-cavalo' }),
+    hairColor: v2Group('realista', 'hair-color', HAIR_COLOR_SLUGS, false),
+    bodyType: v2Group('realista', 'body', { Magra: 'magra', Atlética: 'atletica', Curvilínea: 'curvilinea', Voluptuosa: 'voluptuosa' }),
+    breastSize: v2Group('realista', 'breast', { Pequenos: 'pequenos', Médios: 'medios', Grandes: 'grandes', XL: 'xl' }),
+  },
+  anime: {
+    style: { anime: v2('anime', 'style', 'anime', false) },
+    hairStyle: v2Group('anime', 'hair', { Longo: 'longo', Ondulado: 'ondulado', Franja: 'franja', Curto: 'curto', 'Rabo de cavalo': 'rabo-de-cavalo' }, false),
+    hairColor: v2Group('anime', 'hair-color', HAIR_COLOR_SLUGS, false),
+    bodyType: v2Group('anime', 'body', { Magra: 'magra', Atlética: 'atletica', Curvilínea: 'curvilinea', Voluptuosa: 'voluptuosa' }),
+  },
+}
+
+// Imagem do card e vídeo que toca quando ele está selecionado. Sem mídia v2, usa a anterior (mesmo caminho, .mp4).
 export function getOptionMedia(style, field, value) {
+  const current = V2_MEDIA[style]?.[field]?.[value]
+  if (current) return current
   const maps =
     style === 'anime'
       ? { style: STYLE_MEDIA, ethnicity: ANIME_ORIGIN_MEDIA, hairStyle: ANIME_HAIR_MEDIA, ...ANIME_BODY_MEDIA }
@@ -115,6 +146,9 @@ export function getOptionMedia(style, field, value) {
 export const PERSONALITIES = ['Carinhosa', 'Confiante', 'Misteriosa', 'Divertida', 'Sedutora', 'Reservada', 'Romântica', 'Empática', 'Intelectual', 'Aventureira', 'Tranquila', 'Espontânea', 'Amigável', 'Brava', 'Tímida', 'Brincalhona']
 export const RELATIONSHIPS = ['Namorada', 'Confidente', 'Amante', 'Parceira']
 export const OCCUPATIONS = ['Artista', 'Empreendedora', 'Executiva', 'Atleta', 'Criadora', 'Professora', 'Médica', 'Enfermeira', 'Psicóloga', 'Advogada', 'Engenheira', 'Programadora', 'Designer', 'Arquiteta', 'Jornalista', 'Fotógrafa', 'Chef de cozinha', 'Veterinária', 'Música', 'Escritora', 'Cientista', 'Piloto', 'Bióloga', 'Personal trainer']
+// Opções mostradas no criador (as listas completas acima continuam válidas no servidor e no perfil).
+export const FUNNEL_PERSONALITIES = ['Carinhosa', 'Confiante', 'Misteriosa', 'Divertida', 'Sedutora', 'Reservada']
+export const FUNNEL_OCCUPATIONS = ['Artista', 'Empreendedora', 'Executiva', 'Atleta', 'Criadora', 'Professora']
 
 // Partes do nome do arquivo em public/anime-results/<origem>_<cor>_<corpo>_<seios>_<bumbum>.webp
 const ANIME_RESULT_SLUGS = {

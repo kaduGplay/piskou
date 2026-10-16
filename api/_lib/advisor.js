@@ -1,5 +1,5 @@
 import { CHAT_PREVIEW_LIMIT } from '../../src/funnel/data.js'
-import { PLANS } from '../../src/shared/checkout.js'
+import { PLANS, UPSELL_SEQUENCE, formatBRL } from '../../src/shared/checkout.js'
 import { chatDatabase } from './chat.js'
 import { UUID } from './analytics.js'
 export function redact(text) {
@@ -42,7 +42,7 @@ export async function advisorReply(
     product: {
       freeMessages: CHAT_PREVIEW_LIMIT,
       includedPaidMessages: 6,
-      paywall: 'Fluxo principal: criação → planos Baby (R$ 10,00) ou Pro (R$ 19,90) → checkout com nome/e-mail → confirmação de pagamento → chat. Pacotes adicionais: 120 mensagens por R$ 10,00 ou texto ilimitado na conversa por R$ 19,90. Sessões antigas podem ter mensagens gratuitas.',
+      paywall: `Fluxo principal: criação → planos Baby (${formatBRL(PLANS['premium-access'].price)}) ou Pro (${formatBRL(PLANS['luxury-access'].price)}) → checkout com nome/e-mail e order bumps → confirmação de pagamento → ofertas de um clique (${UPSELL_SEQUENCE.map((id) => `${PLANS[id].name} ${formatBRL(PLANS[id].price)}`).join(', ')}) → chat. Pacotes adicionais: 120 mensagens por ${formatBRL(PLANS['messages-120'].price)} ou texto ilimitado na conversa por ${formatBRL(PLANS['messages-unlimited'].price)}. Sessões antigas podem ter mensagens gratuitas.`,
       plans: Object.values(PLANS),
     },
     selectedConversation: chat

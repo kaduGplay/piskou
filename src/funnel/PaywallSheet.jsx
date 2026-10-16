@@ -414,9 +414,9 @@ export default function PaywallSheet({ sel, onClose, source }) {
               onClickCapture={(event) => goToCheckout(event, plan)}
             >
               {fromChat
-                ? 'CONTINUAR A CONVERSA'
-                : `LIBERAR ${plan.name.toUpperCase()}`}{' '}
-              · {formatBRL(plan.price)} <ArrowRight size={17} />
+                ? `CONTINUAR A CONVERSA · ${formatBRL(plan.price)}`
+                : `LIBERAR ${plan.name.toUpperCase()} POR ${formatBRL(plan.price)}`}{' '}
+              <ArrowRight size={17} />
             </a>
             <p className="paywall-checkout-note">
               <ShieldCheck size={14} aria-hidden="true" /> Pagamento seguro via
@@ -509,6 +509,22 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 </div>
               </section>
             )}
+
+            <div className="paywall-proof-checkout">
+              <a
+                href={planHref}
+                className={`paywall-cta paywall-cta-after-proof${isLuxury ? ' luxury' : ''}`}
+                onClickCapture={(event) => goToCheckout(event, plan)}
+              >
+                {fromChat
+                  ? `CONTINUAR A CONVERSA · ${formatBRL(plan.price)}`
+                  : `LIBERAR ${plan.name.toUpperCase()} POR ${formatBRL(plan.price)}`}{' '}
+                <ArrowRight size={17} />
+              </a>
+              <p className="paywall-checkout-note">
+                <ShieldCheck size={14} aria-hidden="true" /> Pagamento único · Sem assinatura
+              </p>
+            </div>
 
             <section className="paywall-faq" aria-labelledby="faq-title">
               <h2 id="faq-title">Perguntas frequentes</h2>

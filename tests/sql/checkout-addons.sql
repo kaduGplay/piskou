@@ -1,12 +1,12 @@
 begin;
 do $$ declare sid uuid:=gen_random_uuid(); sel jsonb:='{"name":"Checkout addon test","age":25,"personality":"Carinhosa","relationship":"Namorada"}'; begin
- perform public.piskou_store_set('charge:addon-base',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',10,'addons','[]'::jsonb,'status','pending'));
+ perform public.piskou_store_set('charge:addon-base',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',14.90,'addons','[]'::jsonb,'status','pending'));
  begin perform public.piskou_chat_grant(sid,'addon-base');raise exception 'Pending purchase granted';exception when others then if sqlerrm='Pending purchase granted' then raise;end if;end;
  if exists(select 1 from public.piskou_chat_purchases where chat_id=sid) then raise exception 'Pending addon active';end if;
- perform public.piskou_store_set('charge:addon-base',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',10,'addons','[]'::jsonb,'status','paid'));
+ perform public.piskou_store_set('charge:addon-base',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',14.90,'addons','[]'::jsonb,'status','paid'));
  perform public.piskou_chat_grant(sid,'addon-base');
  if (select character_slots from public.piskou_chat_purchases where charge_id='addon-base')<>1 then raise exception 'Baby base must have one slot';end if;
- perform public.piskou_store_set('charge:addon-second',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',18.90,'addons','["second-partner"]'::jsonb,'status','paid'));
+ perform public.piskou_store_set('charge:addon-second',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',23.80,'addons','["second-partner"]'::jsonb,'status','paid'));
  perform public.piskou_chat_grant(sid,'addon-second');perform public.piskou_chat_grant(sid,'addon-second');
  if (select count(*) from public.piskou_chat_purchases where charge_id='addon-second')<>1 then raise exception 'Duplicated addon';end if;
  if (select character_slots from public.piskou_chat_purchases where charge_id='addon-second')<>2 then raise exception 'Missing second slot';end if;
@@ -16,23 +16,27 @@ do $$ declare sid uuid:=gen_random_uuid(); sel jsonb:='{"name":"Checkout addon t
  perform public.piskou_store_set('charge:addon-invalid',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',10,'addons','["second-partner"]'::jsonb,'status','paid'));
  begin perform public.piskou_chat_grant(sid,'addon-invalid');raise exception 'Wrong total granted';exception when others then if sqlerrm='Wrong total granted' then raise;end if;end;
  if exists(select 1 from public.piskou_chat_purchases where charge_id='addon-invalid') then raise exception 'Invalid total persisted';end if;
- perform public.piskou_store_set('charge:addon-voice',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',18.90,'addons','["voice-call"]'::jsonb,'status','paid'));
+ perform public.piskou_store_set('charge:addon-voice',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',23.80,'addons','["voice-call"]'::jsonb,'status','paid'));
  perform public.piskou_chat_grant(sid,'addon-voice');
  if (select addons from public.piskou_chat_purchases where charge_id='addon-voice')<>array['voice-call'] then raise exception 'Voice call missing from receipt';end if;
  if (select character_slots from public.piskou_chat_purchases where charge_id='addon-voice')<>1 then raise exception 'Voice call must not add a slot';end if;
- perform public.piskou_store_set('charge:addon-both',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',27.80,'addons','["voice-call","second-partner"]'::jsonb,'status','paid'));
+ perform public.piskou_store_set('charge:addon-both',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',32.70,'addons','["voice-call","second-partner"]'::jsonb,'status','paid'));
  perform public.piskou_chat_grant(sid,'addon-both');
  if (select addons from public.piskou_chat_purchases where charge_id='addon-both')<>array['second-partner','voice-call'] then raise exception 'Both addons missing';end if;
  if (select character_slots from public.piskou_chat_purchases where charge_id='addon-both')<>2 then raise exception 'Both addons must add one slot';end if;
- perform public.piskou_store_set('charge:addon-pro-voice',jsonb_build_object('chatId',sid,'selection',sel,'planId','luxury-access','amount',28.80,'addons','["voice-call"]'::jsonb,'status','paid'));
+ perform public.piskou_store_set('charge:addon-pro-voice',jsonb_build_object('chatId',sid,'selection',sel,'planId','luxury-access','amount',36.80,'addons','["voice-call"]'::jsonb,'status','paid'));
  perform public.piskou_chat_grant(sid,'addon-pro-voice');
  if (select character_slots from public.piskou_chat_purchases where charge_id='addon-pro-voice')<>40 then raise exception 'Pro keeps all slots';end if;
- perform public.piskou_store_set('charge:addon-pro-second',jsonb_build_object('chatId',sid,'selection',sel,'planId','luxury-access','amount',28.80,'addons','["second-partner"]'::jsonb,'status','paid'));
+ perform public.piskou_store_set('charge:addon-pro-second',jsonb_build_object('chatId',sid,'selection',sel,'planId','luxury-access','amount',36.80,'addons','["second-partner"]'::jsonb,'status','paid'));
  begin perform public.piskou_chat_grant(sid,'addon-pro-second');raise exception 'Included addon charged';exception when others then if sqlerrm='Included addon charged' then raise;end if;end;
- perform public.piskou_store_set('charge:addon-dup',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',27.80,'addons','["voice-call","voice-call"]'::jsonb,'status','paid'));
+ perform public.piskou_store_set('charge:addon-dup',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',32.70,'addons','["voice-call","voice-call"]'::jsonb,'status','paid'));
  begin perform public.piskou_chat_grant(sid,'addon-dup');raise exception 'Duplicate addon granted';exception when others then if sqlerrm='Duplicate addon granted' then raise;end if;end;
  perform public.piskou_store_set('charge:addon-voice-cheap',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',10,'addons','["voice-call"]'::jsonb,'status','paid'));
  begin perform public.piskou_chat_grant(sid,'addon-voice-cheap');raise exception 'Voice call granted below price';exception when others then if sqlerrm='Voice call granted below price' then raise;end if;end;
  if exists(select 1 from public.piskou_chat_purchases where charge_id in ('addon-pro-second','addon-dup','addon-voice-cheap')) then raise exception 'Rejected addon persisted';end if;
+ -- PIX generated at the previous price (R$ 10,00 + adicional) is still honored after the price change.
+ perform public.piskou_store_set('charge:addon-legacy',jsonb_build_object('chatId',sid,'selection',sel,'planId','premium-access','amount',18.90,'addons','["voice-call"]'::jsonb,'status','paid'));
+ perform public.piskou_chat_grant(sid,'addon-legacy');
+ if not exists(select 1 from public.piskou_chat_purchases where charge_id='addon-legacy' and active) then raise exception 'Legacy price rejected';end if;
 end $$;
 rollback;

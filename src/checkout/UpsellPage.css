@@ -1,0 +1,344 @@
+.upsell-root {
+  min-height: 100dvh;
+  background: radial-gradient(ellipse at 50% 0%, #3a0a14 0%, transparent 55%), #0b0b0e;
+  color: #fff;
+  font-family: Outfit, sans-serif;
+}
+.upsell-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: #0b0b0ee6;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #ffffff14;
+}
+.upsell-brand {
+  display: flex;
+  gap: 6px;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: .5px;
+}
+.upsell-brand span {
+  color: red;
+}
+.upsell-steps {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.upsell-steps li {
+  width: 26px;
+  height: 5px;
+  border-radius: 5px;
+  background: #ffffff26;
+}
+.upsell-steps li.done {
+  background: #ff3030;
+}
+.upsell-steps li.active {
+  background: linear-gradient(90deg, #ff3030, red);
+  box-shadow: 0 0 10px #ff000080;
+}
+.upsell-main {
+  width: min(100%, 480px);
+  margin: 0 auto;
+  padding: 18px 16px 40px;
+  box-sizing: border-box;
+}
+.upsell-approved {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: #12301f;
+  border: 1px solid #2f8f5866;
+  color: #8ff0b4;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+.upsell-card {
+  border-radius: 20px;
+  overflow: hidden;
+  background: #16131a;
+  border: 1px solid #ffffff17;
+  box-shadow: 0 24px 60px #0008;
+}
+.upsell-visual {
+  position: relative;
+  aspect-ratio: 4 / 3.4;
+  overflow: hidden;
+}
+.upsell-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+.upsell-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 45%, #16131a 100%);
+}
+.upsell-visual-icon {
+  position: absolute;
+  z-index: 1;
+  right: 16px;
+  bottom: 18px;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff3030, #b0001b);
+  box-shadow: 0 0 0 6px #ff303033, 0 10px 28px #ff000059;
+}
+.upsell-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  color: #fff;
+  background: red;
+  border-radius: 6px;
+  padding: 5px 9px;
+}
+.upsell-visual .upsell-eyebrow {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  left: 14px;
+}
+.upsell-copy {
+  padding: 4px 20px 22px;
+}
+.upsell-card h1 {
+  font-size: clamp(24px, 6.4vw, 30px);
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -.4px;
+  margin: 0 0 8px;
+}
+.upsell-card h1 em {
+  font-style: normal;
+  color: red;
+}
+.upsell-copy > p {
+  color: #c9bfcc;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+.upsell-copy ul {
+  display: grid;
+  gap: 9px;
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+.upsell-copy li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.upsell-copy li svg {
+  flex-shrink: 0;
+  color: #57e08b;
+}
+.upsell-price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.upsell-price strong {
+  font-size: 34px;
+  font-weight: 900;
+}
+.upsell-price span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #b9adbd;
+  font-size: 13px;
+}
+.upsell-accept {
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #ff3030, red);
+  color: #fff;
+  font: 800 15px Outfit, sans-serif;
+  letter-spacing: .2px;
+  cursor: pointer;
+  box-shadow: 0 10px 26px #ff000047;
+  animation: upsell-pulse 2.4s ease-in-out infinite;
+}
+.upsell-accept:disabled {
+  opacity: .7;
+  cursor: progress;
+  animation: none;
+}
+.upsell-decline {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border: 0;
+  background: none;
+  color: #9a8f9e;
+  font: 600 14px Outfit, sans-serif;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.upsell-secure,
+.upsell-waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  color: #9a8f9e;
+  font-size: 12px;
+  text-align: center;
+}
+.upsell-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #3a1016;
+  color: #ffb3bd;
+  font-size: 13px;
+}
+.upsell-buyer {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.upsell-buyer label,
+.upsell-phone label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #d8cfda;
+}
+.upsell-buyer input,
+.upsell-phone input {
+  height: 48px;
+  border-radius: 10px;
+  border: 1px solid #ffffff26;
+  background: #0f0d12;
+  color: #fff;
+  padding: 0 14px;
+  font: 500 16px Outfit, sans-serif;
+}
+.upsell-pix,
+.upsell-done {
+  padding: 26px 20px 24px;
+  text-align: center;
+}
+.upsell-pix h1 {
+  margin-top: 12px;
+}
+.upsell-pix-amount {
+  font-size: 30px;
+  font-weight: 900;
+  margin: 0 0 16px;
+}
+.upsell-qr {
+  display: grid;
+  place-items: center;
+  width: min(100%, 240px);
+  aspect-ratio: 1;
+  margin: 0 auto 16px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #fff;
+  color: #222;
+  box-sizing: border-box;
+}
+.upsell-qr img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.upsell-done > svg {
+  display: block;
+  color: #57e08b;
+  margin: 0 auto 10px;
+}
+.upsell-done p {
+  color: #c9bfcc;
+  margin: 0 0 18px;
+}
+.upsell-phone {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+  margin-top: 14px;
+}
+.upsell-phone div {
+  position: relative;
+}
+.upsell-phone div svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #57e08b;
+}
+.upsell-phone input {
+  width: 100%;
+  padding-left: 42px;
+  box-sizing: border-box;
+}
+.upsell-accept:focus-visible,
+.upsell-decline:focus-visible,
+.upsell-buyer input:focus-visible,
+.upsell-phone input:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.upsell-spin {
+  animation: upsell-spin 1s linear infinite;
+}
+@keyframes upsell-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes upsell-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .upsell-accept,
+  .upsell-spin {
+    animation: none;
+  }
+}

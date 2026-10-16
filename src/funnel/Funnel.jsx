@@ -1,4 +1,3 @@
-import { CHARACTER_TASTES } from '../shared/characterTastes.js'
 import { readProgress, saveProgress, readSavedSelection, saveSelection } from '../shared/progress.js'
 import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
@@ -17,28 +16,26 @@ import {
   PersonStanding,
   Play,
   Smile,
-  WandSparkles,
   X,
 } from 'lucide-react'
 import {
   BODY_TYPES,
-  CHAT_PREFERENCES,
   BREAST_SIZES,
-  BUTT_SIZES,
   DEFAULT_SELECTION,
   ETHNICITIES,
   EVENTS,
+  FUNNEL_OCCUPATIONS,
+  FUNNEL_PERSONALITIES,
   HAIR_COLORS,
-  HAIR_STYLES,
-  OCCUPATIONS,
-  PERSONALITIES,
   RELATIONSHIPS,
   STEPS,
   VOICES,
   getOptionMedia,
   getResultImage,
+  hairStylesFor,
   track,
 } from './data.js'
+import { useCanPlayVideo } from './playback.js'
 import './Funnel.css'
 import { SELECTION_STORAGE_KEY } from '../shared/checkout.js'
 
@@ -50,12 +47,9 @@ const STEP_ICONS = [CircleUserRound, MapPin, Smile, PersonStanding, FileText, Im
 const AGES = Array.from({ length: 53 }, (_, i) => i + 18)
 
 const CHOICE_SHEETS = {
-  ...Object.fromEntries(Object.entries(CHARACTER_TASTES).map(([key, setting]) => [key, { title: setting.title, icon: Smile, options: setting.options.map(value => ({ value, label: value })) }])),
-  ...Object.fromEntries(Object.entries(CHAT_PREFERENCES).map(([key, setting]) => [key, { title: setting.title, icon: Smile, options: setting.options.map(value => ({ value, label: value })) }])),
   voice: { title: 'Voz', icon: AudioLines, options: VOICES.map((v, i) => ({ value: i, label: v.label })) },
-  secondaryPersonality: { title: 'Traço complementar', icon: Smile, options: ['Nenhum', ...PERSONALITIES].map(value => ({ value, label: value })) },
-  personality: { title: 'Personalidade', icon: Smile, options: PERSONALITIES.map((v) => ({ value: v, label: v })) },
-  occupation: { title: 'Profissão', icon: BriefcaseBusiness, options: OCCUPATIONS.map((v) => ({ value: v, label: v })) },
+  personality: { title: 'Personalidade', icon: Smile, options: FUNNEL_PERSONALITIES.map((v) => ({ value: v, label: v })) },
+  occupation: { title: 'Profissão', icon: BriefcaseBusiness, options: FUNNEL_OCCUPATIONS.map((v) => ({ value: v, label: v })) },
   relationship: { title: 'Relacionamento', icon: Heart, options: RELATIONSHIPS.map((v) => ({ value: v, label: v })) },
 }
 
@@ -120,57 +114,70 @@ function useInfiniteRail(values, value, onChange) {
   }
 }
 
-// Imagem do card; com o card selecionado e visível, toca o vídeo em loop por cima.
-function OptionMedia({ media, selected, eager = false, animate = true }) {
+function OptionVideo({ src, poster }) {
   const ref = useRef(null)
-  const [videoReady, setVideoReady] = useState(false)
-  const [visible, setVisible] = useState(false)
-  const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [playing, setPlaying] = useState(false)
+  useEffect(() => {
+    const video = ref.current
+    let alive = true
+    video
+      .play()
+      .then(() => alive && setPlaying(true))
+      .catch(() => alive && setPlaying(false))
+    return () => {
+      alive = false
+      video.pause()
+    }
+  }, [src])
+  return (
+    <video
+      ref={ref}
+      src={src}
+      poster={poster}
+      loop
+      muted
+      playsInline
+      preload="none"
+      onError={() => setPlaying(false)}
+      onPlaying={() => setPlaying(true)}
+      className={playing ? 'playing' : ''}
+    />
+  )
+}
 
-  useEffect(() => setVideoReady(false), [media?.video, selected])
+// Imagem do card; com o card selecionado e quase todo visível, toca o vídeo em loop por cima.
+function OptionMedia({ media, selected, eager = false }) {
+  const ref = useRef(null)
+  const [visible, setVisible] = useState(false)
+  const canPlay = useCanPlayVideo()
 
   useEffect(() => {
-    if (!selected || !ref.current) return
+    if (!ref.current) return
     if (!('IntersectionObserver' in window)) {
       setVisible(true)
       return
     }
-    const observer = new IntersectionObserver((entries) => setVisible(entries[0]?.intersectionRatio > 0.5), {
-      threshold: [0, 0.5],
+    const observer = new IntersectionObserver((entries) => setVisible(entries[0]?.intersectionRatio > 0.6), {
+      threshold: [0, 0.6],
     })
     observer.observe(ref.current)
     return () => observer.disconnect()
-  }, [selected])
+  }, [])
 
   if (!media) return null
 
   return (
     <span ref={ref} className="creator-option-media" aria-hidden="true">
-      <img src={media.image} alt="" loading={eager ? 'eager' : 'lazy'} />
-      {animate && selected && visible && !reducedMotion && (
-        <video
-          key={media.video}
-          src={media.video}
-          poster={media.image}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          onLoadedData={() => setVideoReady(true)}
-          onError={() => setVideoReady(false)}
-          className={videoReady ? 'playing' : ''}
-        />
-      )}
+      <img src={media.image} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" />
+      {media.video && selected && visible && canPlay && <OptionVideo key={media.video} src={media.video} poster={media.image} />}
     </span>
   )
 }
 
-function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onPreview, previewingValue, allowCustom = false }) {
+function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onPreview, previewingValue }) {
   const dialogRef = useRef(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
-  const [customValue, setCustomValue] = useState(options.some(option => option.value === value) ? '' : String(value || ''))
   const [closing, setClosing] = useState(false)
   const close = () => setClosing(true)
 
@@ -231,18 +238,6 @@ function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onP
             <X size={20} />
           </button>
         </header>
-        {allowCustom && (
-          <form className="creator-custom-occupation" onSubmit={(event) => {
-            event.preventDefault()
-            if (customValue.trim()) choose(customValue.trim().slice(0, 60))
-          }}>
-            <label htmlFor="custom-occupation">Ou crie uma profissão personalizada</label>
-            <div>
-              <input id="custom-occupation" type="text" placeholder="Ex.: oceanógrafa, confeiteira…" maxLength={60} value={customValue} onChange={event => setCustomValue(event.target.value)} />
-              <button type="submit" disabled={!customValue.trim()}>Usar</button>
-            </div>
-          </form>
-        )}
         <div className="creator-choice-options" role="radiogroup" aria-label={title} onKeyDown={onKeyDown}>
           {options.map((option) => (
             <div key={option.value} className={`creator-choice-row${value === option.value ? ' selected' : ''}`}>
@@ -278,83 +273,21 @@ function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onP
 
 function OptionGrid({ title, values, value, onChange, style, field }) {
   return (
-    <fieldset className="creator-fieldset creator-origin-field">
+    <fieldset className={`creator-fieldset creator-origin-field creator-${field}-field`}>
       <legend>{title}</legend>
       <div className="creator-origin-grid">
         {values.map((option) => (
           <button
             key={option}
             type="button"
-            className={`creator-origin-card${field === 'hairStyle' ? ' creator-hair-card' : ''}${
-              option === 'Personalizado' ? ' custom' : ''
-            }${value === option ? ' selected' : ''}`}
-            aria-label={option}
+            className={`creator-origin-card${field === 'hairStyle' ? ' creator-hair-card' : ''}${value === option ? ' selected' : ''}`}
+            aria-label={['bodyType', 'breastSize'].includes(field) ? `${title}: ${option}` : option}
             aria-pressed={value === option}
             onClick={() => onChange(option)}
           >
-            {option === 'Personalizado' ? (
-              <span className="creator-hair-custom-icon">
-                <WandSparkles size={25} aria-hidden="true" />
-              </span>
-            ) : (
-              <OptionMedia
-                media={getOptionMedia(style, field, option)}
-                selected={value === option}
-                eager={field === 'ethnicity'}
-              />
-            )}
+            <OptionMedia media={getOptionMedia(style, field, option)} selected={value === option} eager={field === 'ethnicity'} />
             <strong>{option}</strong>
             {value === option && <Check size={16} aria-hidden="true" />}
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  )
-}
-
-function ColorSwatches({ title, values, value, onChange }) {
-  return (
-    <fieldset className="creator-fieldset">
-      <legend>{title}</legend>
-      <div className="creator-swatches">
-        {values.map((option) => (
-          <button
-            key={option.label}
-            type="button"
-            className={`creator-swatch${value === option.label ? ' selected' : ''}`}
-            aria-label={`${title}: ${option.label}`}
-            aria-pressed={value === option.label}
-            onClick={() => onChange(option.label)}
-          >
-            <span style={{ background: option.color }}>
-              {value === option.label && <Check size={17} strokeWidth={3} />}
-            </span>
-            <small>{option.label}</small>
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  )
-}
-
-function CardCarousel({ title, values, value, onChange, sel, field }) {
-  const { railRef, onScroll, select } = useInfiniteRail(values, value, onChange)
-  return (
-    <fieldset className="creator-fieldset creator-carousel-field">
-      <legend>{title}</legend>
-      <div className="creator-card-rail" ref={railRef} onScroll={onScroll}>
-        {[...values, ...values, ...values].map((option, i) => (
-          <button
-            key={`${i}-${option}`}
-            type="button"
-            className={`creator-body-card${value === option ? ' selected' : ''}`}
-            aria-label={`${title}: ${option}`}
-            aria-pressed={value === option}
-            onClick={(event) => select(option, event.currentTarget)}
-          >
-            <OptionMedia media={getOptionMedia(sel.style, field, option)} selected={value === option} />
-            <strong>{option}</strong>
-            {value === option && <Check size={15} />}
           </button>
         ))}
       </div>
@@ -388,13 +321,7 @@ function AgeCarousel({ age, onChange }) {
 
 function DetailTile({ title, icon: Icon, value, onOpen }) {
   return (
-    <button
-      type="button"
-      className="creator-detail-tile"
-      aria-label={`${title}: ${value}`}
-      aria-haspopup="dialog"
-      onClick={onOpen}
-    >
+    <button type="button" className="creator-detail-tile" aria-label={`${title}: ${value}`} aria-haspopup="dialog" onClick={onOpen}>
       <span className="creator-detail-icon">
         <Icon size={20} />
       </span>
@@ -419,13 +346,7 @@ function VoiceTile({ voice, playing, onPlay, onOpen }) {
       >
         {playing ? <Pause size={19} /> : <Play size={19} />}
       </button>
-      <button
-        type="button"
-        className="creator-voice-trigger"
-        aria-label={`Voz: ${VOICES[voice].label}`}
-        aria-haspopup="dialog"
-        onClick={onOpen}
-      >
+      <button type="button" className="creator-voice-trigger" aria-label={`Voz: ${VOICES[voice].label}`} aria-haspopup="dialog" onClick={onOpen}>
         <span className="creator-detail-copy">
           <small>Voz</small>
           <strong>{VOICES[voice].label}</strong>
@@ -446,7 +367,7 @@ function SummaryRow({ title, value, image, color }) {
     <div className="creator-summary-row">
       {(image || color) && (
         <span className="creator-summary-thumb">
-          {image ? <img src={image} alt="" /> : <i style={{ backgroundColor: color }} />}
+          {image ? <img src={image} alt="" loading="lazy" decoding="async" /> : <i style={{ backgroundColor: color }} />}
         </span>
       )}
       <span className="creator-summary-copy">
@@ -479,30 +400,22 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
     return () => document.documentElement.classList.remove('landing-open')
   }, [paywallOpen])
 
-  // Na etapa de detalhes já baixa a animação, as máscaras e a imagem final.
+  // Na etapa de detalhes já baixa o painel de geração e a imagem final.
   useEffect(() => {
     if (step !== 4) return
     loadGeneratingPanel().catch(() => {})
-    const preload = [
-      '/loading-states/silhouette-3.webp',
-      '/loading-states/silhouette-7.webp',
-      `/loading-states/${sel.style === 'anime' ? 'anime' : 'real'}-final-mask.webp`,
-      getResultImage(sel).src,
-    ]
-    for (const src of preload) {
-      const img = new window.Image()
-      img.src = src
-    }
+    const img = new window.Image()
+    img.src = getResultImage(sel).src
   }, [step, sel.style, sel.ethnicity, sel.hairColor, sel.bodyType, sel.breastSize, sel.buttSize])
 
-  const goToStep = (next, visualStyle = sel.style) => {
+  const goToStep = (next) => {
     audioRef.current?.pause()
     setPlayingVoice(null)
     setOpenSheet(null)
     setRevealDone(false)
     setStep(next)
     bodyRef.current?.scrollTo(0, 0)
-    track(EVENTS.STEP_VIEW, { step: STEPS[next].key, visual_style: visualStyle })
+    track(EVENTS.STEP_VIEW, { step: STEPS[next].key, visual_style: sel.style })
   }
 
   const toggleVoice = (voice = sel.voice) => {
@@ -531,7 +444,6 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
   }
 
   const mediaImage = (field, value) => getOptionMedia(sel.style, field, value)?.image
-  const hairColor = HAIR_COLORS.find((c) => c.label === sel.hairColor)?.color
 
   return (
     <div className="creator-root">
@@ -569,9 +481,9 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
               <div className="creator-heading">
                 <p>PASSO 01 · ESTILO</p>
                 <h1>
-                  Crie sua <em>garota</em> dos sonhos
+                  Crie sua <em>garota de IA</em> dos sonhos
                 </h1>
-                <span>Compare os dois estilos, escolha o seu favorito e toque em continuar.</span>
+                <span>Escolha o visual da sua personagem adulta.</span>
               </div>
               <div className="creator-style-grid">
                 {[
@@ -585,12 +497,8 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                     aria-pressed={sel.style === option.key}
                     onClick={() => update('style', option.key)}
                   >
-                    <OptionMedia
-                      media={getOptionMedia(option.key, 'style', option.key)}
-                      selected
-                      eager
-                    />
-                    <strong>Escolher {option.label.toLowerCase()} <ArrowRight size={16} aria-hidden="true" /></strong>
+                    <OptionMedia media={getOptionMedia(option.key, 'style', option.key)} selected={sel.style === option.key} eager />
+                    <strong>{option.label}</strong>
                     {sel.style === option.key && <Check className="creator-style-check" size={18} />}
                   </button>
                 ))}
@@ -601,11 +509,11 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
           {step === 1 && (
             <>
               <div className="creator-heading">
-                <p>PASSO 02 · CARACTERÍSTICAS</p>
+                <p>PASSO 02 · GERAL</p>
                 <h1>
-                  Como você <em>imagina ela?</em>
+                  De onde vem <em>ela?</em>
                 </h1>
-                <span>Escolha a aparência que mais combina com ela. Se preferir, continue com a opção selecionada.</span>
+                <span>Escolha a origem da sua personagem.</span>
               </div>
               <OptionGrid
                 title="Origem"
@@ -631,13 +539,15 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                 title="Estilo do cabelo"
                 field="hairStyle"
                 style={sel.style}
-                values={HAIR_STYLES}
+                values={hairStylesFor(sel.style)}
                 value={sel.hairStyle}
                 onChange={(v) => update('hairStyle', v)}
               />
-              <ColorSwatches
+              <OptionGrid
                 title="Cor do cabelo"
-                values={HAIR_COLORS}
+                field="hairColor"
+                style={sel.style}
+                values={HAIR_COLORS.map((c) => c.label)}
                 value={sel.hairColor}
                 onChange={(v) => update('hairColor', v)}
               />
@@ -651,31 +561,23 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                 <h1>
                   Defina a <em>silhueta</em>
                 </h1>
-                <span>Deslize e escolha suas preferências.</span>
+                <span>Escolha suas preferências.</span>
               </div>
-              <CardCarousel
+              <OptionGrid
                 title="Tipo de corpo"
                 values={BODY_TYPES}
                 value={sel.bodyType}
                 onChange={(v) => update('bodyType', v)}
-                sel={sel}
+                style={sel.style}
                 field="bodyType"
               />
-              <CardCarousel
+              <OptionGrid
                 title="Tamanho dos seios"
                 values={BREAST_SIZES}
                 value={sel.breastSize}
                 onChange={(v) => update('breastSize', v)}
-                sel={sel}
+                style={sel.style}
                 field="breastSize"
-              />
-              <CardCarousel
-                title="Tamanho do bumbum"
-                values={BUTT_SIZES}
-                value={sel.buttSize}
-                onChange={(v) => update('buttSize', v)}
-                sel={sel}
-                field="buttSize"
               />
             </>
           )}
@@ -715,7 +617,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                     key={key}
                     title={CHOICE_SHEETS[key].title}
                     icon={CHOICE_SHEETS[key].icon}
-                    value={sel[key] || CHARACTER_TASTES[key]?.options[0]}
+                    value={sel[key]}
                     onOpen={() => setOpenSheet(key)}
                   />
                 ))}
@@ -761,30 +663,17 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
               <div className="creator-summary-list" role="tabpanel">
                 {summaryTab === 'appearance' ? (
                   <>
-                    <SummaryRow
-                      title="Estilo"
-                      value={sel.style === 'anime' ? 'Anime' : 'Realista'}
-                      image={mediaImage('style', sel.style)}
-                    />
+                    <SummaryRow title="Estilo" value={sel.style === 'anime' ? 'Anime' : 'Realista'} image={mediaImage('style', sel.style)} />
                     <SummaryRow title="Origem" value={sel.ethnicity} image={mediaImage('ethnicity', sel.ethnicity)} />
                     <SummaryRow
                       title="Estilo do cabelo"
                       value={sel.hairStyle}
                       image={mediaImage('hairStyle', sel.hairStyle)}
-                      color={hairColor}
+                      color={HAIR_COLORS.find((c) => c.label === sel.hairColor)?.color}
                     />
-                    <SummaryRow title="Cor do cabelo" value={sel.hairColor} color={hairColor} />
+                    <SummaryRow title="Cor do cabelo" value={sel.hairColor} image={mediaImage('hairColor', sel.hairColor)} />
                     <SummaryRow title="Tipo de corpo" value={sel.bodyType} image={mediaImage('bodyType', sel.bodyType)} />
-                    <SummaryRow
-                      title="Tamanho dos seios"
-                      value={sel.breastSize}
-                      image={mediaImage('breastSize', sel.breastSize)}
-                    />
-                    <SummaryRow
-                      title="Tamanho do bumbum"
-                      value={sel.buttSize}
-                      image={mediaImage('buttSize', sel.buttSize)}
-                    />
+                    <SummaryRow title="Tamanho dos seios" value={sel.breastSize} image={mediaImage('breastSize', sel.breastSize)} />
                   </>
                 ) : (
                   <>
@@ -815,7 +704,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
             disabled={!canContinue || (step === 5 && !revealDone)}
             onClick={() => (step === 5 ? openOffer() : goToStep(step + 1))}
           >
-            {step === 5 ? `DÊ VIDA À SUA ${sel.relationship.toUpperCase()}` : step === 0 ? 'CONTINUAR COM ' + sel.style.toUpperCase() : step === 1 ? 'CONTINUAR PARA O ROSTO' : 'PRÓXIMO'} <ArrowRight size={18} />
+            {step === 5 ? 'DÊ VIDA À SUA IA' : step === 0 ? 'COMEÇAR' : 'PRÓXIMO'} <ArrowRight size={18} />
           </button>
         </div>
       </footer>
@@ -829,7 +718,6 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
       {openSheet && (
         <ChoiceSheet
           {...CHOICE_SHEETS[openSheet]}
-          allowCustom={openSheet === 'occupation'}
           value={sel[openSheet]}
           onChange={(value) => {
             update(openSheet, value)
@@ -853,13 +741,29 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
   )
 }
 
+// Seleções salvas antes desta versão podem ter opções que o criador não oferece mais.
+function normalizeSelection(saved) {
+  const sel = { ...DEFAULT_SELECTION, ...saved }
+  if (!hairStylesFor(sel.style).includes(sel.hairStyle)) sel.hairStyle = 'Longo'
+  if (!BODY_TYPES.includes(sel.bodyType)) sel.bodyType = DEFAULT_SELECTION.bodyType
+  if (!FUNNEL_PERSONALITIES.includes(sel.personality)) sel.personality = DEFAULT_SELECTION.personality
+  if (!FUNNEL_OCCUPATIONS.includes(sel.occupation)) sel.occupation = DEFAULT_SELECTION.occupation
+  return sel
+}
+
 export default function Funnel({ initialPhase = 'quiz' }) {
-  const [sel, setSel] = useState(() => ({ ...DEFAULT_SELECTION, ...readSavedSelection() }))
+  const [sel, setSel] = useState(() => normalizeSelection(readSavedSelection()))
   useEffect(() => { saveSelection(sel) }, [sel])
   return (
     <Creator
       sel={sel}
-      update={(key, value) => setSel((prev) => ({ ...prev, [key]: value, ...(Object.hasOwn(CHAT_PREFERENCES, key) ? { preferenceOverrides: [...new Set([...(prev.preferenceOverrides || []), key])] } : {}) }))}
+      update={(key, value) =>
+        setSel((prev) => {
+          const next = { ...prev, [key]: value }
+          if (key === 'style' && !hairStylesFor(value).includes(next.hairStyle)) next.hairStyle = 'Longo'
+          return next
+        })
+      }
       initialStep={initialPhase === 'creating' || initialPhase === 'offer' ? 5 : Math.max(0, Math.min(5, Number(readProgress().step) || 0))}
       initialPaywallOpen={initialPhase === 'offer'}
       onComplete={() => track(EVENTS.QUIZ_COMPLETE, { visual_style: sel.style })}

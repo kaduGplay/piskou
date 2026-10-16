@@ -94,7 +94,16 @@ O Pixel não carrega em localhost, para os testes não entrarem nas métricas. O
 
 ## Checkout
 
-Após “Dê vida”, o criador abre os planos Baby (R$ 10,00) e Pro (R$ 19,90), com pagamento único. O checkout solicita somente nome e e-mail e usa esses dados também no PIX. O chat é aberto depois da confirmação do pagamento. Os preços são validados no servidor. Pacotes adicionais: 120 mensagens por R$ 10,00 e mensagens ilimitadas na conversa por R$ 19,90. Recompras preservam o histórico. A reprodução dos order bumps e banners específicos da Kirvano depende dos dados do checkout de referência, que bloqueou o acesso automatizado.
+Após “Dê vida à sua IA”, o criador abre os planos Baby (R$ 14,90) e Pro (R$ 27,90), com pagamento único, iguais aos do create.piskou.com (versão de 15/10/2026). O checkout solicita somente nome e e-mail e usa esses dados também no PIX, com os order bumps Chamada de voz e Segunda Parceira (+R$ 8,90 cada; a Segunda Parceira já vem no Pro). Os preços são validados no servidor e no banco; PIX gerados com os preços anteriores (R$ 10,00 / R$ 19,90) continuam sendo liberados. Pacotes adicionais: 120 mensagens por R$ 10,00 e mensagens ilimitadas na conversa por R$ 19,90. Recompras preservam o histórico.
+
+### Ofertas de um clique (`/oferta`)
+
+Depois do pagamento do Baby ou do Pro, o checkout abre `/oferta`, com três ofertas em sequência: **Pack de vídeos dela** (R$ 14,90), **Ela te chama no WhatsApp** (R$ 14,90) e **Acesso VIP vitalício** (R$ 19,90). “Quero” gera o PIX na hora com o nome e o e-mail já informados no checkout; “Não, obrigado” mostra a próxima oferta. No fim, a pessoa vai para o chat.
+
+- O servidor só vende uma oferta para quem já pagou o Baby/Pro na mesma conversa, e uma vez por item.
+- **VIP vitalício:** mensagens ilimitadas e conversa que não expira (enquanto a compra estiver ativa; um estorno no painel desfaz).
+- **WhatsApp:** após o pagamento, a página pede o número com DDD, gravado em `piskou_upsell_contacts` (só aceito para quem comprou). O envio da mensagem pelo WhatsApp não está automatizado.
+- **Pack de vídeos:** a compra fica registrada em `piskou_chat_purchases` (`upsell-video-pack`); a entrega do conteúdo não está automatizada.
 
 As compras e os créditos são privados no Supabase. O cookie assinado HttpOnly `piskou_access`, com caminho `/api`, vincula checkout e chat. Uma compra confirmada só é creditada uma vez, mesmo com webhook/polling repetidos. Uma resposta com falha não consome crédito. Sessões são mantidas por 90 dias; um novo envio renova essa retenção. Dados mínimos da cobrança pendente ficam no navegador para retomada, sem dados de cartão. O modelo recebe até as últimas 24 mensagens para limitar o contexto enviado, com `store: false`. Personalidade, relacionamento e preferências continuam orientando o chat, com romance sem conteúdo sexual explícito.
 
@@ -135,7 +144,7 @@ Não existe chamada de IA. `getResultImage()` monta o caminho de uma imagem pron
 - **Anime:** `public/anime-results/<origem>_<cor>_<corpo>_<seios>_<bumbum>.webp` (816 imagens). Corpo "Magra" só tem imagem com seios "Médios"; nas outras combinações aparece a imagem da origem.
 - **Realista:** `public/results/<CASTANHO|PRETO|LOIRA>/<SB|NB|BB|LB><ThinBody|AtleticBody|PlusSizeBody|CurvyBody>.webp` (48 imagens). Origem, corte de cabelo e bumbum não mudam a imagem; "Musculosa" usa a imagem de "Atlética".
 
-A animação junta partículas nas máscaras `public/loading-states/silhouette-3.webp`, `silhouette-7.webp` e `<anime|real>-final-mask.webp` e depois mostra a imagem. Com movimento reduzido ou sem WebGL, só faz um fade.
+A revelação toca o vídeo `public/funnel-media/v2/loader/loader.mp4` com o progresso acompanhando o vídeo e, no fim, mostra a imagem, como no create.piskou.com. Com movimento reduzido, economia de dados ou falha no vídeo, mostra a imagem assim que ela carrega. As imagens e vídeos dos cards ficam em `public/funnel-media/v2/`; opções sem mídia v2 usam a anterior.
 
 ## Detalhes herdados do original
 

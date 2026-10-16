@@ -22,6 +22,7 @@ import {
   pickCampaignParams,
   validateCustomer,
   quoteCheckout,
+  BUYER_STORAGE_KEY,
 } from '../shared/checkout.js'
 import { tokenizeCard } from './gatewayClient.js'
 import {
@@ -106,8 +107,10 @@ function Field({ label, error, hint, children }) {
 
 export default function CheckoutPage() {
   const params = new URLSearchParams(window.location.search)
-  const [planId, setPlanId] = useState(() => (PLANS[params.get('plano')] ? params.get('plano') : 'premium-access'))
+  // Upsells só são vendidos na página de ofertas, nunca por este formulário.
+  const [planId, setPlanId] = useState(() => (PLANS[params.get('plano')] && PLANS[params.get('plano')].purpose !== 'upsell' ? params.get('plano') : 'premium-access'))
   const plan = PLANS[planId]
+  const afterPayment = plan.purpose ? '/chat' : '/oferta'
   const [selectedBumps, setSelectedBumps] = useState([])
   // Uma seleção salva que não vale mais para o plano não pode derrubar a página.
   let quote
@@ -150,7 +153,8 @@ export default function CheckoutPage() {
   }, [])
   useEffect(() => {
     if(phase !== 'paid') return
-    const timer=setTimeout(()=>window.location.assign('/chat'),1500)
+    // Depois do Baby/Pro vêm as ofertas de um clique; pacotes de mensagens voltam direto para a conversa.
+    const timer=setTimeout(()=>window.location.assign(afterPayment),1500)
     return ()=>clearTimeout(timer)
   }, [phase])
   const formRef = useRef(null)
@@ -311,6 +315,7 @@ export default function CheckoutPage() {
     }
 
     submissionGuard.current = true
+    try { sessionStorage.setItem(BUYER_STORAGE_KEY, JSON.stringify({ name: customer.name.trim(), email: customer.email.trim() })) } catch {}
     setSubmitting(true)
     setServerError('')
     try {
@@ -657,9 +662,9 @@ export default function CheckoutPage() {
             <CircleCheck size={44} />
             <h1>Pagamento aprovado!</h1>
             <p>
-              Seu acesso foi confirmado. Estamos abrindo sua conversa.
+              Seu acesso foi confirmado. {afterPayment === '/chat' ? 'Estamos abrindo sua conversa.' : 'Só um instante.'}
             </p>
-            <a href="/chat">Ir para a conversa</a>
+            <a href={afterPayment}>{afterPayment === '/chat' ? 'Ir para a conversa' : 'Continuar'}</a>
           </section>
         )}
       </main>

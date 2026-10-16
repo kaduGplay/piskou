@@ -63,6 +63,8 @@ export function resumeVisit() {
             : '')),
     )
   }
+  // Nas ofertas o acesso já está pago: uma visita futura deve voltar para a conversa.
+  if (window.location.pathname === '/oferta') saveProgress({ path: '/chat', search: '' })
   if (['/', '/chat', '/checkout', '/messages'].includes(window.location.pathname)) {
     const query = new URLSearchParams(window.location.search)
     query.delete('edit')
