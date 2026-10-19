@@ -203,9 +203,9 @@ export function HowItWorks({ name }) {
 
 export function Reviews() {
   const reviews = [
-    { id: 'rafael', name: 'Rafael Gomes', city: 'Salvador', text: 'Buenísimo, me encantó, las pláticas siempre son bien divertidas y atrevidas, me quedé horas y horas platicando con la mía' },
-    { id: 'pedro', name: 'Pedro Santos', city: 'Belo Horizonte', text: 'Lo compré para practicar cómo hablar con mujeres en la vida real porque era muy tímido, y gracias a esta app se me quitó la timidez, muchas graciaas' },
-    { id: 'lucas', name: 'Lucas Ferreira', city: 'Fortaleza', text: 'Lo compré porque se me hizo interesante el producto, y la neta sí me gustó jajaja la plataforma es bien intuitiva, las chicas son muy realistas, parece que estoy hablando con una de verdaaad' },
+    { id: 'rafael', name: 'Rafael Gomes', text: 'Buenísimo, me encantó, las pláticas siempre son bien divertidas y atrevidas, me quedé horas y horas platicando con la mía' },
+    { id: 'pedro', name: 'Pedro Santos', text: 'Lo compré para practicar cómo hablar con mujeres en la vida real porque era muy tímido, y gracias a esta app se me quitó la timidez, muchas graciaas' },
+    { id: 'lucas', name: 'Lucas Ferreira', text: 'Lo compré porque se me hizo interesante el producto, y la neta sí me gustó jajaja la plataforma es bien intuitiva, las chicas son muy realistas, parece que estoy hablando con una de verdaaad' },
   ]
   return (
     <section className="checkout-reviews" aria-labelledby="reviews-title">
@@ -213,7 +213,7 @@ export function Reviews() {
       <div className="checkout-customer-reviews">
         {reviews.map((item) => (
           <article key={item.id}>
-            <header><img src={`/checkout-media/review-${item.id}.webp`} alt="" loading="lazy" /><span><strong>{item.name}</strong><small>{item.city}</small></span></header>
+            <header><img src={`/checkout-media/review-${item.id}.webp`} alt="" loading="lazy" /><span><strong>{item.name}</strong></span></header>
             <p>{item.text}</p>
           </article>
         ))}
