@@ -37,6 +37,7 @@ import {
   VOICES,
   getOptionMedia,
   getResultImage,
+  optionLabel,
   track,
 } from './data.js'
 import './Funnel.css'
@@ -53,10 +54,10 @@ const CHOICE_SHEETS = {
   ...Object.fromEntries(Object.entries(CHARACTER_TASTES).map(([key, setting]) => [key, { title: setting.title, icon: Smile, options: setting.options.map(value => ({ value, label: value })) }])),
   ...Object.fromEntries(Object.entries(CHAT_PREFERENCES).map(([key, setting]) => [key, { title: setting.title, icon: Smile, options: setting.options.map(value => ({ value, label: value })) }])),
   voice: { title: 'Voz', icon: AudioLines, options: VOICES.map((v, i) => ({ value: i, label: v.label })) },
-  secondaryPersonality: { title: 'Traço complementar', icon: Smile, options: ['Nenhum', ...PERSONALITIES].map(value => ({ value, label: value })) },
-  personality: { title: 'Personalidade', icon: Smile, options: PERSONALITIES.map((v) => ({ value: v, label: v })) },
-  occupation: { title: 'Profissão', icon: BriefcaseBusiness, options: OCCUPATIONS.map((v) => ({ value: v, label: v })) },
-  relationship: { title: 'Relacionamento', icon: Heart, options: RELATIONSHIPS.map((v) => ({ value: v, label: v })) },
+  secondaryPersonality: { title: 'Rasgo complementario', icon: Smile, options: ['Nenhum', ...PERSONALITIES].map(value => ({ value, label: optionLabel(value) })) },
+  personality: { title: 'Personalidad', icon: Smile, options: PERSONALITIES.map((v) => ({ value: v, label: optionLabel(v) })) },
+  occupation: { title: 'Profesión', icon: BriefcaseBusiness, options: OCCUPATIONS.map((v) => ({ value: v, label: optionLabel(v) })) },
+  relationship: { title: 'Relación', icon: Heart, options: RELATIONSHIPS.map((v) => ({ value: v, label: optionLabel(v) })) },
 }
 
 const mod = (n, m) => ((n % m) + m) % m
@@ -224,10 +225,10 @@ function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onP
             <Icon size={22} />
           </span>
           <div>
-            <small>DETALHES DA SUA PERSONAGEM</small>
+            <small>DETALLES DE TU PERSONAJE</small>
             <h2 id="detail-choice-title">{title}</h2>
           </div>
-          <button type="button" className="creator-choice-close" aria-label="Fechar opções" onClick={close}>
+          <button type="button" className="creator-choice-close" aria-label="Cerrar opciones" onClick={close}>
             <X size={20} />
           </button>
         </header>
@@ -236,9 +237,9 @@ function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onP
             event.preventDefault()
             if (customValue.trim()) choose(customValue.trim().slice(0, 60))
           }}>
-            <label htmlFor="custom-occupation">Ou crie uma profissão personalizada</label>
+            <label htmlFor="custom-occupation">O escribe una profesión personalizada</label>
             <div>
-              <input id="custom-occupation" type="text" placeholder="Ex.: oceanógrafa, confeiteira…" maxLength={60} value={customValue} onChange={event => setCustomValue(event.target.value)} />
+              <input id="custom-occupation" type="text" placeholder="Ej.: oceanógrafa, repostera…" maxLength={60} value={customValue} onChange={event => setCustomValue(event.target.value)} />
               <button type="submit" disabled={!customValue.trim()}>Usar</button>
             </div>
           </form>
@@ -262,7 +263,7 @@ function ChoiceSheet({ title, icon: Icon, options, value, onChange, onClose, onP
                 <button
                   type="button"
                   className="creator-choice-preview"
-                  aria-label={`${previewingValue === option.value ? 'Pausar' : 'Ouvir'} ${option.label}`}
+                  aria-label={`${previewingValue === option.value ? 'Pausar' : 'Escuchar'} ${option.label}`}
                   onClick={() => onPreview(option.value)}
                 >
                   {previewingValue === option.value ? <Pause size={17} /> : <Play size={17} />}
@@ -288,7 +289,7 @@ function OptionGrid({ title, values, value, onChange, style, field }) {
             className={`creator-origin-card${field === 'hairStyle' ? ' creator-hair-card' : ''}${
               option === 'Personalizado' ? ' custom' : ''
             }${value === option ? ' selected' : ''}`}
-            aria-label={option}
+            aria-label={optionLabel(option)}
             aria-pressed={value === option}
             onClick={() => onChange(option)}
           >
@@ -303,7 +304,7 @@ function OptionGrid({ title, values, value, onChange, style, field }) {
                 eager={field === 'ethnicity'}
               />
             )}
-            <strong>{option}</strong>
+            <strong>{optionLabel(option)}</strong>
             {value === option && <Check size={16} aria-hidden="true" />}
           </button>
         ))}
@@ -322,14 +323,14 @@ function ColorSwatches({ title, values, value, onChange }) {
             key={option.label}
             type="button"
             className={`creator-swatch${value === option.label ? ' selected' : ''}`}
-            aria-label={`${title}: ${option.label}`}
+            aria-label={`${title}: ${optionLabel(option.label)}`}
             aria-pressed={value === option.label}
             onClick={() => onChange(option.label)}
           >
             <span style={{ background: option.color }}>
               {value === option.label && <Check size={17} strokeWidth={3} />}
             </span>
-            <small>{option.label}</small>
+            <small>{optionLabel(option.label)}</small>
           </button>
         ))}
       </div>
@@ -348,12 +349,12 @@ function CardCarousel({ title, values, value, onChange, sel, field }) {
             key={`${i}-${option}`}
             type="button"
             className={`creator-body-card${value === option ? ' selected' : ''}`}
-            aria-label={`${title}: ${option}`}
+            aria-label={`${title}: ${optionLabel(option)}`}
             aria-pressed={value === option}
             onClick={(event) => select(option, event.currentTarget)}
           >
             <OptionMedia media={getOptionMedia(sel.style, field, option)} selected={value === option} />
-            <strong>{option}</strong>
+            <strong>{optionLabel(option)}</strong>
             {value === option && <Check size={15} />}
           </button>
         ))}
@@ -366,7 +367,7 @@ function AgeCarousel({ age, onChange }) {
   const { railRef, onScroll, select } = useInfiniteRail(AGES, Number(age), onChange)
   return (
     <div className="creator-age-wrap">
-      <strong>Idade</strong>
+      <strong>Edad</strong>
       <div className="creator-age-rail" ref={railRef} onScroll={onScroll}>
         {[...AGES, ...AGES, ...AGES].map((value, i) => (
           <button
@@ -374,7 +375,7 @@ function AgeCarousel({ age, onChange }) {
             type="button"
             data-age={value}
             className={Number(age) === value ? 'selected' : ''}
-            aria-label={`${value} anos`}
+            aria-label={`${value} años`}
             aria-pressed={Number(age) === value}
             onClick={(event) => select(value, event.currentTarget)}
           >
@@ -386,7 +387,8 @@ function AgeCarousel({ age, onChange }) {
   )
 }
 
-function DetailTile({ title, icon: Icon, value, onOpen }) {
+function DetailTile({ title, icon: Icon, value: rawValue, onOpen }) {
+  const value = optionLabel(rawValue)
   return (
     <button
       type="button"
@@ -414,8 +416,8 @@ function VoiceTile({ voice, playing, onPlay, onOpen }) {
         type="button"
         className="creator-detail-icon creator-play"
         onClick={onPlay}
-        title={playing ? 'Pausar voz' : 'Ouvir voz'}
-        aria-label={playing ? 'Pausar voz' : 'Ouvir voz'}
+        title={playing ? 'Pausar voz' : 'Escuchar voz'}
+        aria-label={playing ? 'Pausar voz' : 'Escuchar voz'}
       >
         {playing ? <Pause size={19} /> : <Play size={19} />}
       </button>
@@ -532,7 +534,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
           <strong>PISKOU</strong>
           <span>CREATE</span>
         </div>
-        <nav className="creator-progress" aria-label={`Etapa ${step + 1} de ${STEPS.length}`}>
+        <nav className="creator-progress" aria-label={`Paso ${step + 1} de ${STEPS.length}`}>
           {STEPS.map((item, i) => {
             const Icon = STEP_ICONS[i]
             return (
@@ -540,7 +542,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                 key={item.key}
                 type="button"
                 title={item.label}
-                aria-label={`Ir para ${item.label}`}
+                aria-label={`Ir a ${item.label}`}
                 aria-current={step === i ? 'step' : undefined}
                 disabled={i > step}
                 className={`creator-progress-step${i === step ? ' active' : ''}${i < step ? ' done' : ''}`}
@@ -559,11 +561,11 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
           {step === 0 && (
             <>
               <div className="creator-heading">
-                <p>PASSO 01 · ESTILO</p>
+                <p>PASO 01 · ESTILO</p>
                 <h1>
-                  Crie sua <em>garota</em> dos sonhos
+                  Crea a la <em>chica</em> de tus sueños
                 </h1>
-                <span>Compare os dois estilos, escolha o seu favorito e toque em continuar.</span>
+                <span>Compara los dos estilos, elige tu favorito y toca continuar.</span>
               </div>
               <div className="creator-style-grid">
                 {[
@@ -582,7 +584,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                       selected
                       eager
                     />
-                    <strong>Escolher {option.label.toLowerCase()} <ArrowRight size={16} aria-hidden="true" /></strong>
+                    <strong>Elegir {option.label.toLowerCase()} <ArrowRight size={16} aria-hidden="true" /></strong>
                     {sel.style === option.key && <Check className="creator-style-check" size={18} />}
                   </button>
                 ))}
@@ -593,14 +595,14 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
           {step === 1 && (
             <>
               <div className="creator-heading">
-                <p>PASSO 02 · CARACTERÍSTICAS</p>
+                <p>PASO 02 · CARACTERÍSTICAS</p>
                 <h1>
-                  Como você <em>imagina ela?</em>
+                  ¿Cómo te la <em>imaginas?</em>
                 </h1>
-                <span>Escolha a aparência que mais combina com ela. Se preferir, continue com a opção selecionada.</span>
+                <span>Elige la apariencia que más le va. Si prefieres, continúa con la opción seleccionada.</span>
               </div>
               <OptionGrid
-                title="Origem"
+                title="Origen"
                 field="ethnicity"
                 style={sel.style}
                 values={ETHNICITIES}
@@ -613,14 +615,14 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
           {step === 2 && (
             <>
               <div className="creator-heading">
-                <p>PASSO 03 · ROSTO</p>
+                <p>PASO 03 · ROSTRO</p>
                 <h1>
-                  O rosto que você <em>imagina</em>
+                  El rostro que <em>imaginas</em>
                 </h1>
-                <span>Escolha o cabelo dela.</span>
+                <span>Elige su cabello.</span>
               </div>
               <OptionGrid
-                title="Estilo do cabelo"
+                title="Estilo de cabello"
                 field="hairStyle"
                 style={sel.style}
                 values={HAIR_STYLES}
@@ -628,7 +630,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                 onChange={(v) => update('hairStyle', v)}
               />
               <ColorSwatches
-                title="Cor do cabelo"
+                title="Color de cabello"
                 values={HAIR_COLORS}
                 value={sel.hairColor}
                 onChange={(v) => update('hairColor', v)}
@@ -639,14 +641,14 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
           {step === 3 && (
             <>
               <div className="creator-heading">
-                <p>PASSO 04 · CORPO</p>
+                <p>PASO 04 · CUERPO</p>
                 <h1>
-                  Defina a <em>silhueta</em>
+                  Define su <em>silueta</em>
                 </h1>
-                <span>Deslize e escolha suas preferências.</span>
+                <span>Desliza y elige tus preferencias.</span>
               </div>
               <CardCarousel
-                title="Tipo de corpo"
+                title="Tipo de cuerpo"
                 values={BODY_TYPES}
                 value={sel.bodyType}
                 onChange={(v) => update('bodyType', v)}
@@ -654,7 +656,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                 field="bodyType"
               />
               <CardCarousel
-                title="Tamanho dos seios"
+                title="Tamaño de busto"
                 values={BREAST_SIZES}
                 value={sel.breastSize}
                 onChange={(v) => update('breastSize', v)}
@@ -662,7 +664,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                 field="breastSize"
               />
               <CardCarousel
-                title="Tamanho do bumbum"
+                title="Tamaño de pompis"
                 values={BUTT_SIZES}
                 value={sel.buttSize}
                 onChange={(v) => update('buttSize', v)}
@@ -675,25 +677,25 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
           {step === 4 && (
             <>
               <div className="creator-heading creator-detail-heading">
-                <p>PASSO 05 · DETALHES</p>
+                <p>PASO 05 · DETALLES</p>
                 <h1>
-                  Quem é <em>ela?</em>
+                  ¿Quién es <em>ella?</em>
                 </h1>
               </div>
               <label className="creator-name-field">
-                Nome da personagem
+                Nombre de tu personaje
                 <input
                   maxLength={28}
                   value={sel.name}
                   onChange={(event) => update('name', event.target.value)}
-                  placeholder="Nome dela"
+                  placeholder="Su nombre"
                   autoComplete="off"
                 />
               </label>
               <AgeCarousel age={sel.age} onChange={(v) => update('age', v)} />
               <div className="creator-detail-label">
-                <strong>Detalhes da personalidade</strong>
-                <span>Toque para alterar</span>
+                <strong>Detalles de personalidad</strong>
+                <span>Toca para cambiar</span>
               </div>
               <div className="creator-details-grid">
                 <VoiceTile
@@ -730,7 +732,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                   onReady={setRevealDone}
                 />
               </Suspense>
-              <div className="creator-summary-tabs" role="tablist" aria-label="Resumo da personagem">
+              <div className="creator-summary-tabs" role="tablist" aria-label="Resumen de tu personaje">
                 <button
                   type="button"
                   role="tab"
@@ -738,7 +740,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                   className={summaryTab === 'appearance' ? 'active' : ''}
                   onClick={() => setSummaryTab('appearance')}
                 >
-                  Aparência
+                  Apariencia
                 </button>
                 <button
                   type="button"
@@ -747,7 +749,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                   className={summaryTab === 'personality' ? 'active' : ''}
                   onClick={() => setSummaryTab('personality')}
                 >
-                  Personalidade
+                  Personalidad
                 </button>
               </div>
               <div className="creator-summary-list" role="tabpanel">
@@ -758,34 +760,34 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
                       value={sel.style === 'anime' ? 'Anime' : 'Realista'}
                       image={mediaImage('style', sel.style)}
                     />
-                    <SummaryRow title="Origem" value={sel.ethnicity} image={mediaImage('ethnicity', sel.ethnicity)} />
+                    <SummaryRow title="Origen" value={optionLabel(sel.ethnicity)} image={mediaImage('ethnicity', sel.ethnicity)} />
                     <SummaryRow
-                      title="Estilo do cabelo"
-                      value={sel.hairStyle}
+                      title="Estilo de cabello"
+                      value={optionLabel(sel.hairStyle)}
                       image={mediaImage('hairStyle', sel.hairStyle)}
                       color={hairColor}
                     />
-                    <SummaryRow title="Cor do cabelo" value={sel.hairColor} color={hairColor} />
-                    <SummaryRow title="Tipo de corpo" value={sel.bodyType} image={mediaImage('bodyType', sel.bodyType)} />
+                    <SummaryRow title="Color de cabello" value={optionLabel(sel.hairColor)} color={hairColor} />
+                    <SummaryRow title="Tipo de cuerpo" value={optionLabel(sel.bodyType)} image={mediaImage('bodyType', sel.bodyType)} />
                     <SummaryRow
-                      title="Tamanho dos seios"
-                      value={sel.breastSize}
+                      title="Tamaño de busto"
+                      value={optionLabel(sel.breastSize)}
                       image={mediaImage('breastSize', sel.breastSize)}
                     />
                     <SummaryRow
-                      title="Tamanho do bumbum"
-                      value={sel.buttSize}
+                      title="Tamaño de pompis"
+                      value={optionLabel(sel.buttSize)}
                       image={mediaImage('buttSize', sel.buttSize)}
                     />
                   </>
                 ) : (
                   <>
-                    <SummaryRow title="Nome" value={sel.name} />
-                    <SummaryRow title="Idade" value={`${sel.age} anos`} />
+                    <SummaryRow title="Nombre" value={sel.name} />
+                    <SummaryRow title="Edad" value={`${sel.age} años`} />
                     <SummaryRow title="Voz" value={VOICES[sel.voice].label} />
-                    <SummaryRow title="Personalidade" value={sel.personality} />
-                    <SummaryRow title="Profissão" value={sel.occupation} />
-                    <SummaryRow title="Relacionamento" value={sel.relationship} />
+                    <SummaryRow title="Personalidad" value={optionLabel(sel.personality)} />
+                    <SummaryRow title="Profesión" value={optionLabel(sel.occupation)} />
+                    <SummaryRow title="Relación" value={optionLabel(sel.relationship)} />
                   </>
                 )}
               </div>
@@ -797,7 +799,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
       <footer className="creator-footer">
         <div className="creator-footer-inner">
           {step > 0 && (
-            <button type="button" className="creator-back" onClick={() => goToStep(step - 1)} aria-label="Voltar">
+            <button type="button" className="creator-back" onClick={() => goToStep(step - 1)} aria-label="Regresar">
               <ArrowLeft size={20} />
             </button>
           )}
@@ -807,7 +809,7 @@ function Creator({ sel, update, initialStep = 0, initialPaywallOpen = false, onC
             disabled={!canContinue || (step === 5 && !revealDone)}
             onClick={() => (step === 5 ? openOffer() : goToStep(step + 1))}
           >
-            {step === 5 ? `DÊ VIDA À SUA ${sel.relationship.toUpperCase()}` : step === 0 ? 'CONTINUAR COM ' + sel.style.toUpperCase() : step === 1 ? 'CONTINUAR PARA O ROSTO' : 'PRÓXIMO'} <ArrowRight size={18} />
+            {step === 5 ? `DALE VIDA A TU ${optionLabel(sel.relationship).toUpperCase()}` : step === 0 ? 'CONTINUAR CON ' + sel.style.toUpperCase() : step === 1 ? 'CONTINUAR AL ROSTRO' : 'SIGUIENTE'} <ArrowRight size={18} />
           </button>
         </div>
       </footer>

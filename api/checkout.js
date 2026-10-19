@@ -28,14 +28,14 @@ function publicSiteUrl(req) {
 async function saveWhatsapp(req, res) {
   const session = chatSession(req, res, false)
   const phone = String(req.body?.phone ?? '').replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '')
-  if (!session) return res.status(403).json({ error: 'Sessão não encontrada.' })
-  if (!/^\d{10,11}$/.test(phone)) return res.status(400).json({ error: 'Informe seu WhatsApp com DDD.' })
+  if (!session) return res.status(403).json({ error: 'No encontramos tu sesión.' })
+  if (!/^\d{10,11}$/.test(phone)) return res.status(400).json({ error: 'Escribe tu WhatsApp a 10 dígitos.' })
   try {
     const saved = await chatDatabase('rpc/piskou_upsell_contact', { p_id: session, p_phone: phone })
-    if (!saved) return res.status(403).json({ error: 'Pagamento ainda não confirmado.' })
+    if (!saved) return res.status(403).json({ error: 'El pago todavía no está confirmado.' })
     return res.status(200).json({ ok: true })
   } catch {
-    return res.status(502).json({ error: 'Não foi possível salvar agora. Tente novamente.' })
+    return res.status(502).json({ error: 'No se pudo guardar en este momento. Intenta de nuevo.' })
   }
 }
 
@@ -43,22 +43,22 @@ async function saveWhatsapp(req, res) {
 // O valor vem sempre do catálogo de planos; o navegador só informa qual plano é.
 export default async function handler(req, res) {
   if (req.method !== 'POST')
-    return res.status(405).json({ error: 'Método não permitido.' })
+    return res.status(405).json({ error: 'Método no permitido.' })
 
   if (!sameOrigin(req))
-    return res.status(403).json({ error: 'Origem inválida.' })
+    return res.status(403).json({ error: 'Origen inválido.' })
   if (req.body?.action === 'whatsapp') return saveWhatsapp(req, res)
   const selection = chatSelection(req.body?.selection)
   if (!selection)
     return res
       .status(400)
-      .json({ error: 'Configure sua personagem antes de comprar.' })
+      .json({ error: 'Configura a tu personaje antes de comprar.' })
   let session = chatSession(req, res, true)
   const gateway = getGateway()
   if (!gateway)
     return res
       .status(503)
-      .json({ error: 'O pagamento está indisponível no momento.' })
+      .json({ error: 'El pago no está disponible en este momento.' })
 
   const {
     planId,
@@ -73,19 +73,19 @@ export default async function handler(req, res) {
   if (requestId && !UUID.test(requestId))
     return res.status(400).json({ error: 'Pedido inválido.' })
   const plan = PLANS[planId]
-  if (!plan) return res.status(400).json({ error: 'Plano inválido.' })
+  if (!plan) return res.status(400).json({ error: 'Plan inválido.' })
   let quote
   try { quote = quoteCheckout(planId, req.body?.addons) } catch (error) { return res.status(400).json({ error: error.message }) }
   if (!gateway.methods.includes(method))
-    return res.status(400).json({ error: 'Forma de pagamento indisponível.' })
+    return res.status(400).json({ error: 'Forma de pago no disponible.' })
 
   const errors = validateCustomer(customer)
   if (Object.keys(errors).length > 0)
     return res
       .status(400)
-      .json({ error: 'Confira seus dados.', fields: errors })
+      .json({ error: 'Revisa tus datos.', fields: errors })
   if (method === 'card' && (typeof cardToken !== 'string' || !cardToken)) {
-    return res.status(400).json({ error: 'Não foi possível validar o cartão.' })
+    return res.status(400).json({ error: 'No se pudo validar la tarjeta.' })
   }
 
   const order = {
@@ -108,7 +108,7 @@ export default async function handler(req, res) {
       existing[0] && !sameChatSelection(existing[0].selection, selection)
     if (plan.purpose === 'messages' && (!existing[0]?.allowance || changed))
       return res.status(403).json({
-        error: 'Compre mensagens para a personagem do seu acesso atual.',
+        error: 'Compra mensajes para el personaje de tu acceso actual.',
       })
     if (plan.purpose === 'upsell') {
       // Upsell de um clique: só depois do Baby/Pro desta conversa, e uma vez por item.
@@ -116,9 +116,9 @@ export default async function handler(req, res) {
         ? []
         : await chatDatabase(`piskou_chat_purchases?chat_id=eq.${session}&active=eq.true&select=plan_id`)
       if (!owned.some((item) => ['premium-access', 'luxury-access'].includes(item.plan_id)))
-        return res.status(403).json({ error: 'Finalize seu acesso antes desta oferta.' })
+        return res.status(403).json({ error: 'Completa tu acceso antes de esta oferta.' })
       if (owned.some((item) => item.plan_id === plan.id))
-        return res.status(409).json({ error: 'Você já tem esta oferta.', code: 'owned' })
+        return res.status(409).json({ error: 'Ya tienes esta oferta.', code: 'owned' })
     }
     if (changed) session = chatSession(req, res, true, true)
     const requestKey =
@@ -197,9 +197,9 @@ export default async function handler(req, res) {
     if (error.fields)
       return res
         .status(400)
-        .json({ error: 'Confira seus dados.', fields: error.fields })
+        .json({ error: 'Revisa tus datos.', fields: error.fields })
     return res.status(502).json({
-      error: 'Não foi possível processar o pagamento. Tente novamente.',
+      error: 'No se pudo procesar el pago. Intenta de nuevo.',
     })
   }
 }

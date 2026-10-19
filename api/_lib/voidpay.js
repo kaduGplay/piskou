@@ -27,8 +27,8 @@ const FAILED_CREATE_STATUSES = ['FAILED', 'REJECTED', 'CANCELED']
 // Campo da Void com erro -> campo do formulário do checkout.
 const FIELD_MAP = { 'client.name': 'name', 'client.email': 'email' }
 const FIELD_MESSAGES = {
-  name: 'Confira como você quer ser chamado.',
-  email: 'Confira seu e-mail.',
+  name: 'Revisa cómo quieres que te llamemos.',
+  email: 'Revisa tu correo.',
 }
 
 export class GatewayError extends Error {

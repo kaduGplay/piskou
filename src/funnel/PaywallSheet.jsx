@@ -75,11 +75,11 @@ export default function PaywallSheet({ sel, onClose, source }) {
       source: source || 'creator',
     })
   }, [])
-  const callKind = source === 'voice-call' ? 'Ligações de voz' : source === 'video-call' ? 'Videochamadas' : null
+  const callKind = source === 'voice-call' ? 'Llamadas de voz' : source === 'video-call' ? 'Videollamadas' : null
   const newCharacter = source === 'new-character'
   const trialEnded = source === 'trial'
   const fromChat = source === 'chat' || trialEnded
-  const characterName = sel.name || 'sua personagem'
+  const characterName = sel.name || 'tu personaje'
   const [tier, setTier] = useState('premium')
   const [openFaq, setOpenFaq] = useState(null)
   const result = getResultImage(sel)
@@ -165,25 +165,25 @@ export default function PaywallSheet({ sel, onClose, source }) {
             className="message-upgrade-close"
             type="button"
             onClick={onClose}
-            aria-label="Fechar oferta"
+            aria-label="Cerrar oferta"
           >
             <X size={20} />
           </button>
           <div className="message-upgrade-icon">
             <MessageCircle size={28} />
           </div>
-          <span className="message-upgrade-eyebrow">A conversa continua</span>
+          <span className="message-upgrade-eyebrow">La plática continúa</span>
           <h1 id="message-plans-title">
-            Ainda tem muito para conversar com <em>{characterName}</em>
+            Todavía hay mucho de qué platicar con <em>{characterName}</em>
           </h1>
           <p id="message-plans-description">
-            Retome de onde vocês pararam. Sua conversa e suas escolhas continuam
-            aqui.
+            Retoma donde se quedaron. Tu plática y tus elecciones siguen
+            aquí.
           </p>
           <div
             className="message-upgrade-options"
             role="radiogroup"
-            aria-label="Escolha como continuar"
+            aria-label="Elige cómo continuar"
           >
             {[
               ['premium', 'messages-120'],
@@ -210,21 +210,21 @@ export default function PaywallSheet({ sel, onClose, source }) {
                     <strong>
                       {unlimited ? (
                         <>
-                          <Infinity size={19} /> Mensagens ilimitadas
+                          <Infinity size={19} /> Mensajes ilimitados
                         </>
                       ) : (
-                        'Mais 120 mensagens'
+                        '120 mensajes más'
                       )}
                     </strong>
                     <small>
                       {unlimited
-                        ? 'Converse sem contar mensagens'
-                        : 'Mais espaço para conhecer vocês dois'}
+                        ? 'Platica sin contar mensajes'
+                        : 'Más espacio para conocerse'}
                     </small>
                   </span>
                   <span className="message-upgrade-price">
                     <strong>{formatBRL(option.price)}</strong>
-                    <small>pagamento único</small>
+                    <small>pago único</small>
                   </span>
                 </label>
               )
@@ -235,16 +235,16 @@ export default function PaywallSheet({ sel, onClose, source }) {
             href={checkoutHref(chosen, window.location.search)}
             onClickCapture={(event) => goToCheckout(event, chosen)}
           >
-            Continuar com{' '}
-            {tier === 'luxury' ? 'mensagens ilimitadas' : '120 mensagens'}{' '}
+            Continuar con{' '}
+            {tier === 'luxury' ? 'mensajes ilimitados' : '120 mensajes'}{' '}
             <ArrowRight size={19} />
           </a>
           <div className="message-upgrade-trust">
-            <ShieldCheck size={16} /> Sem assinatura ou renovação automática
+            <ShieldCheck size={16} /> Sin suscripción ni renovación automática
           </div>
           <p className="message-upgrade-details">
-            Mensagens por texto nesta conversa. O acesso ilimitado vale durante
-            a disponibilidade do serviço.
+            Mensajes de texto en esta plática. El acceso ilimitado es válido mientras
+            el servicio esté disponible.
           </p>
         </motion.section>
       </div>
@@ -273,28 +273,28 @@ export default function PaywallSheet({ sel, onClose, source }) {
           className="paywall-close"
           type="button"
           onClick={onClose}
-          aria-label="Fechar oferta"
+          aria-label="Cerrar oferta"
         >
           <X size={20} />
         </button>
         <div className="paywall-scroll">
           <div className="paywall-hero">
-            <img src={result.src} alt="Personagem escolhida" />
+            <img src={result.src} alt="Tu personaje" />
             <div className="paywall-hero-copy">
               <span>
-                {newCharacter ? 'MAIS PERSONAGENS · BABY' : callKind ? 'CHAMADAS · EM BREVE' : trialEnded ? 'SUAS MENSAGENS GRÁTIS ACABARAM' : fromChat ? 'A CONVERSA SÓ COMEÇOU' : 'PERSONAGEM PRONTA'}
+                {newCharacter ? 'MÁS PERSONAJES · BABY' : callKind ? 'LLAMADAS · MUY PRONTO' : trialEnded ? 'SE ACABARON TUS MENSAJES GRATIS' : fromChat ? 'LA PLÁTICA APENAS EMPIEZA' : 'PERSONAJE LISTO'}
               </span>
               <h1 id="paywall-title">
-                {newCharacter ? 'Crie outra personagem' : callKind ? `${callKind} com ${characterName}` : fromChat
-                  ? `Continue conversando com ${characterName}`
-                  : `Dê vida à ${characterName}`}
+                {newCharacter ? 'Crea otro personaje' : callKind ? `${callKind} con ${characterName}` : fromChat
+                  ? `Sigue platicando con ${characterName}`
+                  : `Dale vida a ${characterName}`}
               </h1>
               <p>
-                {newCharacter ? 'Adquira Baby ou Pro para criar outras personagens e manter suas conversas separadas.' : callKind ? 'As chamadas estão em preparação. Conheça os recursos disponíveis em cada plano; a compra ainda não habilita chamadas.' : trialEnded
-                  ? 'Sua conversa está salva. Escolha um plano e retome de onde vocês pararam, com a personalidade que você escolheu.'
+                {newCharacter ? 'Obtén Baby o Pro para crear otros personajes y mantener tus pláticas separadas.' : callKind ? 'Las llamadas están en preparación. Conoce lo que incluye cada plan; la compra todavía no habilita llamadas.' : trialEnded
+                  ? 'Tu plática está guardada. Elige un plan y retoma donde se quedaron, con la personalidad que elegiste.'
                   : fromChat
-                  ? `Gostou de conhecer ${characterName}? Escolha seu acesso para continuar a conversa do seu jeito, com a personalidade que você escolheu.`
-                  : 'Escolha o acesso que combina com você.'}
+                  ? `¿Te gustó conocer a ${characterName}? Elige tu acceso para seguir la plática a tu manera, con la personalidad que elegiste.`
+                  : 'Elige el acceso que va contigo.'}
               </p>
             </div>
           </div>
@@ -303,7 +303,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
             <div
               className="paywall-tier-tabs"
               role="tablist"
-              aria-label="Categoria do plano"
+              aria-label="Categoría del plan"
             >
               <button
                 type="button"
@@ -328,7 +328,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
             <div
               className="paywall-plans"
               role="group"
-              aria-label="Escolha seu plano"
+              aria-label="Elige tu plan"
             >
               {Object.entries(PLANS).map(([key, [option]]) => (
                 <button
@@ -350,16 +350,16 @@ export default function PaywallSheet({ sel, onClose, source }) {
                     <small>
                       {fromChat
                         ? option.bonusCount
-                          ? `Conversa + ${option.bonusCount} bônus incluídos`
-                          : `Continue sua conversa com ${characterName}`
+                          ? `Plática + ${option.bonusCount} bonos incluidos`
+                          : `Sigue tu plática con ${characterName}`
                         : option.bonusCount
-                          ? `${option.bonusCount} bônus incluídos`
-                          : 'Personagem e conversa por texto'}
+                          ? `${option.bonusCount} bonos incluidos`
+                          : 'Personaje y plática por texto'}
                     </small>
                   </span>
                   <span className="paywall-plan-price">
                     <strong>{formatBRL(option.price)}</strong>
-                    <small>Pagamento único</small>
+                    <small>Pago único</small>
                   </span>
                 </button>
               ))}
@@ -368,13 +368,13 @@ export default function PaywallSheet({ sel, onClose, source }) {
             <div className="paywall-one-payment">
               <CreditCard size={17} aria-hidden="true" />
               <span>
-                <strong>Sem assinatura. Sem mensalidade.</strong> Você paga uma
-                única vez.
+                <strong>Sin suscripción. Sin mensualidad.</strong> Pagas una
+                sola vez.
               </span>
             </div>
 
             <div className={`paywall-benefits${isLuxury ? ' luxury' : ''}`}>
-              <h2>Incluído no {tier === 'premium' ? 'Baby' : 'Pro'}</h2>
+              <h2>Incluido en {tier === 'premium' ? 'Baby' : 'Pro'}</h2>
               {PLAN_BENEFITS[tier].map((benefit) => {
                 const Icon = BENEFIT_ICONS[benefit.icon]
                 return (
@@ -388,8 +388,8 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 className={`paywall-bonus-summary${isLuxury ? '' : ' excluded'}`}
                 aria-label={
                   isLuxury
-                    ? 'Bônus incluídos no Pro'
-                    : 'Bônus não incluídos no Baby'
+                    ? 'Bonos incluidos en Pro'
+                    : 'Bonos no incluidos en Baby'
                 }
               >
                 {bonuses.map((bonus) => {
@@ -414,13 +414,13 @@ export default function PaywallSheet({ sel, onClose, source }) {
               onClickCapture={(event) => goToCheckout(event, plan)}
             >
               {fromChat
-                ? `CONTINUAR A CONVERSA · ${formatBRL(plan.price)}`
-                : `LIBERAR ${plan.name.toUpperCase()} POR ${formatBRL(plan.price)}`}{' '}
+                ? `SEGUIR LA PLÁTICA · ${formatBRL(plan.price)}`
+                : `DESBLOQUEAR ${plan.name.toUpperCase()} POR ${formatBRL(plan.price)}`}{' '}
               <ArrowRight size={17} />
             </a>
             <p className="paywall-checkout-note">
-              <ShieldCheck size={14} aria-hidden="true" /> Pagamento seguro via
-              PIX · Sem renovação automática
+              <ShieldCheck size={14} aria-hidden="true" /> Pago seguro con
+              PIX · Sin renovación automática
             </p>
 
             <div className="paywall-trust">
@@ -434,18 +434,18 @@ export default function PaywallSheet({ sel, onClose, source }) {
 
             <section className="paywall-bonus" aria-labelledby="bonus-title">
               <div className="paywall-bonus-heading">
-                <span>INCLUÍDOS NO PRO</span>
-                <h2 id="bonus-title">8 Bonus incluso</h2>
+                <span>INCLUIDOS EN PRO</span>
+                <h2 id="bonus-title">8 bonos incluidos</h2>
                 <p>
                   {isLuxury
-                    ? 'Todos incluídos no pagamento único do Pro.'
-                    : 'Exclusivos do Pro. Não incluídos no Baby.'}
+                    ? 'Todos incluidos en el pago único de Pro.'
+                    : 'Exclusivos de Pro. No incluidos en Baby.'}
                 </p>
               </div>
               {/* Dois grupos iguais para o letreiro rolar sem emenda; o segundo é só visual. */}
               <div
                 className="paywall-bonus-window"
-                aria-label="Bônus exclusivos do Pro"
+                aria-label="Bonos exclusivos de Pro"
               >
                 <div className="paywall-bonus-rail">
                   {[0, 1].map((group) => (
@@ -475,16 +475,16 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 className="paywall-bonus-cta"
                 onClickCapture={(event) => goToCheckout(event, luxuryPlan)}
               >
-                QUERO O PRO COM OS 8 BÔNUS <ArrowRight size={16} />
+                QUIERO PRO CON LOS 8 BONOS <ArrowRight size={16} />
               </a>
             </section>
 
             {TESTIMONIALS.length > 0 && (
               <section className="paywall-proof" aria-labelledby="proof-title">
-                <h2 id="proof-title">Depoimentos</h2>
+                <h2 id="proof-title">Testimonios</h2>
                 <div
                   className="paywall-proof-window"
-                  aria-label="Depoimentos de clientes"
+                  aria-label="Testimonios de clientes"
                 >
                   <div className="paywall-proof-track">
                     {[0, 1].map((group) => (
@@ -498,7 +498,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
                           <article key={item.id}>
                             <img
                               src={item.image}
-                              alt={`Depoimento ${item.id} anonimizado: ${item.quote}`}
+                              alt={`Testimonio ${item.id} anónimo: ${item.quote}`}
                               loading="lazy"
                             />
                           </article>
@@ -517,17 +517,17 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 onClickCapture={(event) => goToCheckout(event, plan)}
               >
                 {fromChat
-                  ? `CONTINUAR A CONVERSA · ${formatBRL(plan.price)}`
-                  : `LIBERAR ${plan.name.toUpperCase()} POR ${formatBRL(plan.price)}`}{' '}
+                  ? `SEGUIR LA PLÁTICA · ${formatBRL(plan.price)}`
+                  : `DESBLOQUEAR ${plan.name.toUpperCase()} POR ${formatBRL(plan.price)}`}{' '}
                 <ArrowRight size={17} />
               </a>
               <p className="paywall-checkout-note">
-                <ShieldCheck size={14} aria-hidden="true" /> Pagamento único · Sem assinatura
+                <ShieldCheck size={14} aria-hidden="true" /> Pago único · Sin suscripción
               </p>
             </div>
 
             <section className="paywall-faq" aria-labelledby="faq-title">
-              <h2 id="faq-title">Perguntas frequentes</h2>
+              <h2 id="faq-title">Preguntas frecuentes</h2>
               {FAQ.map((item, index) => (
                 <div key={item.question} className="paywall-faq-item">
                   <button

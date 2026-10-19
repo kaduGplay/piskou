@@ -37,14 +37,14 @@ async function run(choices) {
   const errors = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto(origin + '/oferta')
-  await page.getByText('Pagamento aprovado! Seu acesso já está garantido.').waitFor()
+  await page.getByText('¡Pago aprobado! Tu acceso ya está asegurado.').waitFor()
   for (const [index, [planId, choice]] of Object.entries(choices).entries()) {
     await page.locator(`ol[aria-label="Oferta ${index + 1} de 3"]`).waitFor()
     await page.locator('#upsell-title').waitFor()
     const accept = page.locator('.upsell-accept')
     assert.ok((await accept.innerText()).includes(PLANS[planId].price.toFixed(2).replace('.', ',')), `${planId} price on button`)
     if (choice === 'decline') {
-      await page.getByRole('button', { name: 'Não, obrigado' }).click()
+      await page.getByRole('button', { name: 'No, gracias' }).click()
       continue
     }
     await accept.click()
@@ -53,7 +53,7 @@ async function run(choices) {
     await page.locator('.upsell-done').waitFor({ timeout: 15000 })
     if (planId === 'upsell-whatsapp') {
       await page.locator('#upsell-phone').fill('(11) 99999-8888')
-      await page.getByRole('button', { name: 'CONFIRMAR MEU WHATSAPP' }).click()
+      await page.getByRole('button', { name: 'CONFIRMAR MI WHATSAPP' }).click()
     } else {
       await page.getByRole('button', { name: 'CONTINUAR' }).click()
     }

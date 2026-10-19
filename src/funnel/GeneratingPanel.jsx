@@ -57,7 +57,7 @@ function Reveal({ sel, onReady, restart }) {
         ref={imageRef}
         className="creator-generated-image"
         src={result.src}
-        alt={`Personagem ${sel.name || 'criada'}`}
+        alt={`Personaje ${sel.name || 'creado'}`}
         decoding="async"
         fetchPriority="high"
         onLoad={() => setImageReady(true)}
@@ -84,23 +84,23 @@ function Reveal({ sel, onReady, restart }) {
         )}
         {imageFailed && (
           <div className="creator-generation-error" role="alert">
-            <p>Não foi possível carregar a imagem.</p>
+            <p>No se pudo cargar la imagen.</p>
             <button type="button" onClick={restart}>
-              <RotateCcw size={17} /> Tentar novamente
+              <RotateCcw size={17} /> Intentar de nuevo
             </button>
           </div>
         )}
       </div>
       <div className="creator-generated-top">
-        <span>{revealed ? 'VISUAL REVELADO' : imageFailed ? 'FALHA AO CARREGAR' : `PREPARANDO VISUAL · ${Math.floor(progress.progress)}%`}</span>
-        <button type="button" onClick={restart} aria-label="Repetir revelação" title="Repetir revelação">
+        <span>{revealed ? 'LOOK REVELADO' : imageFailed ? 'ERROR AL CARGAR' : `PREPARANDO LOOK · ${Math.floor(progress.progress)}%`}</span>
+        <button type="button" onClick={restart} aria-label="Repetir revelación" title="Repetir revelación">
           <RotateCcw size={17} />
         </button>
       </div>
       <div
         className="creator-generation-progress"
         role="progressbar"
-        aria-label="Preparando sua personagem"
+        aria-label="Preparando a tu personaje"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={revealed ? 100 : Math.floor(progress.progress)}
@@ -108,9 +108,9 @@ function Reveal({ sel, onReady, restart }) {
         <span style={{ transform: `scaleX(${revealed ? 1 : progress.progress / 100})` }} />
       </div>
       <div className="creator-generated-bottom">
-        <strong>{sel.name || 'Sua personagem'}</strong>
+        <strong>{sel.name || 'Tu personaje'}</strong>
         <span>
-          {sel.age} anos · {sel.style === 'anime' ? 'Anime' : 'Realista'}
+          {sel.age} años · {sel.style === 'anime' ? 'Anime' : 'Realista'}
         </span>
       </div>
     </div>

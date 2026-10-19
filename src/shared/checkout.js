@@ -5,7 +5,7 @@ export const PLANS = {
   'messages-120': {
     id: 'messages-120',
     tier: 'premium',
-    name: 'Mais 120 mensagens',
+    name: '120 mensajes más',
     price: 10,
     bonusCount: 0,
     purpose: 'messages',
@@ -14,7 +14,7 @@ export const PLANS = {
   'messages-six': {
     id: 'messages-six',
     tier: 'premium',
-    name: 'Mais 6 mensagens',
+    name: '6 mensajes más',
     price: 10,
     bonusCount: 0,
     purpose: 'messages',
@@ -22,7 +22,7 @@ export const PLANS = {
   'messages-unlimited': {
     id: 'messages-unlimited',
     tier: 'luxury',
-    name: 'Mensagens ilimitadas',
+    name: 'Mensajes ilimitados',
     price: 19.90,
     bonusCount: 0,
     purpose: 'messages',
@@ -45,7 +45,7 @@ export const PLANS = {
   'upsell-video-pack': {
     id: 'upsell-video-pack',
     tier: 'premium',
-    name: 'Pack de vídeos dela',
+    name: 'Pack de videos de ella',
     price: 14.90,
     bonusCount: 0,
     purpose: 'upsell',
@@ -53,7 +53,7 @@ export const PLANS = {
   'upsell-whatsapp': {
     id: 'upsell-whatsapp',
     tier: 'premium',
-    name: 'Ela te chama no WhatsApp',
+    name: 'Ella te escribe por WhatsApp',
     price: 14.90,
     bonusCount: 0,
     purpose: 'upsell',
@@ -61,7 +61,7 @@ export const PLANS = {
   'upsell-vip': {
     id: 'upsell-vip',
     tier: 'luxury',
-    name: 'Acesso VIP vitalício',
+    name: 'Acceso VIP de por vida',
     price: 19.90,
     bonusCount: 0,
     purpose: 'upsell',
@@ -80,16 +80,16 @@ export const toCents = (value) => Math.round(value * 100)
 
 // Order bumps do primeiro checkout (Baby/Pro). O banco confere os mesmos valores em piskou_purchase_addons.
 export const ORDER_BUMPS = {
-  'voice-call': { id: 'voice-call', name: 'Chamada de voz', description: 'Ligações de voz com ela, em tempo real 📞', price: 8.90, originalPrice: 14.90, image: '/checkout-media/voice-call-192.jpg', available: true },
-  'second-partner': { id: 'second-partner', name: 'Segunda Parceira', description: 'Crie uma segunda parceira só sua 👯‍♀️', price: 8.90, originalPrice: 14.90, image: '/checkout-media/second-partner-192.jpg', available: true, includedIn: ['luxury-access'] },
+  'voice-call': { id: 'voice-call', name: 'Llamada de voz', description: 'Llamadas de voz con ella, en tiempo real 📞', price: 8.90, originalPrice: 14.90, image: '/checkout-media/voice-call-192.jpg', available: true },
+  'second-partner': { id: 'second-partner', name: 'Segunda compañera', description: 'Crea una segunda compañera solo para ti 👯‍♀️', price: 8.90, originalPrice: 14.90, image: '/checkout-media/second-partner-192.jpg', available: true, includedIn: ['luxury-access'] },
 }
 
 export function quoteCheckout(planId, selected = []) {
   const plan = typeof planId === 'string' && Object.hasOwn(PLANS, planId) ? PLANS[planId] : null
-  if (!plan || !Array.isArray(selected) || selected.length > Object.keys(ORDER_BUMPS).length || new Set(selected).size !== selected.length) throw new Error('Confira o plano e os adicionais do pedido.')
+  if (!plan || !Array.isArray(selected) || selected.length > Object.keys(ORDER_BUMPS).length || new Set(selected).size !== selected.length) throw new Error('Revisa el plan y los extras del pedido.')
   const addons = [...selected].sort().map((id) => {
     const item = typeof id === 'string' && Object.hasOwn(ORDER_BUMPS, id) ? ORDER_BUMPS[id] : null
-    if (!item || !item.available || plan.purpose || item.includedIn?.includes(planId)) throw new Error('Adicional indisponível para este plano.')
+    if (!item || !item.available || plan.purpose || item.includedIn?.includes(planId)) throw new Error('Extra no disponible para este plan.')
     return item
   })
   const totalCents = toCents(plan.price) + addons.reduce((sum, item) => sum + toCents(item.price), 0)
@@ -130,8 +130,8 @@ export const isValidEmail = (value = '') =>
 export function validateCustomer(customer = {}) {
   const errors = {}
   const name = String(customer.name ?? '').trim()
-  if (name.length < 2) errors.name = 'Diga como você quer ser chamado.'
-  else if (name.length > 60) errors.name = 'Use até 60 caracteres.'
-  if (!isValidEmail(customer.email)) errors.email = 'Informe um e-mail válido.'
+  if (name.length < 2) errors.name = 'Dinos cómo quieres que te llamemos.'
+  else if (name.length > 60) errors.name = 'Usa máximo 60 caracteres.'
+  if (!isValidEmail(customer.email)) errors.email = 'Escribe un correo válido.'
   return errors
 }

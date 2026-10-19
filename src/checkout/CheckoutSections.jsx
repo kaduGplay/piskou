@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BadgeCheck, Check, ChevronDown, Crown, Gem, Mail, MessageCircle, Plus, QrCode, ShieldCheck, X } from 'lucide-react'
-import { getResultImage } from '../funnel/data.js'
+import { getResultImage, optionLabel } from '../funnel/data.js'
 import { BENEFIT_ICONS, BONUS_ICONS, FAQ, PLAN_BENEFITS, PLAN_BONUSES, TRUST } from '../funnel/offer.js'
 import { PLANS, ORDER_BUMPS, formatBRL } from '../shared/checkout.js'
 
@@ -10,7 +10,7 @@ const LUXURY_EXTRA = formatBRL(LUXURY.price - PREMIUM.price)
 const LUXURY_BONUSES = PLAN_BONUSES[LUXURY.id]
 
 export function CheckoutBanner() {
-  return <img className="checkout-banner" src="/checkout-media/banner.webp" width="800" height="325" alt="Piskou: falta pouco para dar vida à sua personagem ideal. Realista ou anime, personalize aparência, voz e personalidade do seu jeito. Finalize seu acesso e desbloqueie a experiência Piskou." fetchPriority="high" />
+  return <img className="checkout-banner" src="/checkout-media/banner.webp" width="800" height="325" alt="Piskou: falta poco para darle vida a tu personaje ideal. Realista o anime, personaliza apariencia, voz y personalidad a tu gusto. Finaliza tu acceso y desbloquea la experiencia Piskou." fetchPriority="high" />
 }
 
 // Personagem que a pessoa montou no funil (lida do sessionStorage). Sem ela, só o título.
@@ -20,22 +20,22 @@ export function CharacterHero({ selection }) {
     return (
       <section className="checkout-hero plain">
         <div className="checkout-hero-copy">
-          <span>QUASE LÁ</span>
-          <h1>Finalize seu acesso</h1>
-          <p>Falta só um passo para conversar com sua personagem.</p>
+          <span>YA CASI</span>
+          <h1>Completa tu acceso</h1>
+          <p>Solo falta un paso para platicar con tu personaje.</p>
         </div>
       </section>
     )
   }
-  const details = [`${selection.age} anos`, selection.personality, selection.relationship].filter(Boolean)
+  const details = [`${selection.age} años`, selection.personality && optionLabel(selection.personality), selection.relationship && optionLabel(selection.relationship)].filter(Boolean)
   return (
     <section className="checkout-hero">
       {!imageFailed && (
-        <img src={getResultImage(selection).src} alt="Sua personagem" onError={() => setImageFailed(true)} />
+        <img src={getResultImage(selection).src} alt="Tu personaje" onError={() => setImageFailed(true)} />
       )}
       <div className="checkout-hero-copy">
-        <span>PERSONAGEM PRONTA</span>
-        <h1>{selection.name ? `${selection.name} está esperando por você` : 'Sua personagem está pronta'}</h1>
+        <span>PERSONAJE LISTO</span>
+        <h1>{selection.name ? `${selection.name} te está esperando` : 'Tu personaje está listo'}</h1>
         <ul>
           {details.map((detail) => (
             <li key={detail}>{detail}</li>
@@ -49,7 +49,7 @@ export function CharacterHero({ selection }) {
 export function PlanPicker({ planId, onChange }) {
   return (
     <section className="checkout-plans" id="checkout-plans" aria-labelledby="plans-title">
-      <h2 id="plans-title">Escolha seu plano</h2>
+      <h2 id="plans-title">Elige tu plan</h2>
       <div role="radiogroup" aria-labelledby="plans-title">
         {(PLANS[planId]?.purpose === 'messages' ? [PLANS[planId === 'messages-six' ? 'messages-six' : 'messages-120'],PLANS['messages-unlimited']] : [PREMIUM,LUXURY]).map((plan) => {
           const luxury = plan.tier === 'luxury'
@@ -64,18 +64,18 @@ export function PlanPicker({ planId, onChange }) {
               className={`checkout-plan${selected ? ' selected' : ''}${luxury ? ' luxury' : ''}`}
               onClick={() => onChange(plan.id)}
             >
-              {luxury && <span className="checkout-plan-badge">MAIS COMPLETO</span>}
+              {luxury && <span className="checkout-plan-badge">MÁS COMPLETO</span>}
               <span className="checkout-plan-radio" aria-hidden="true" />
               <span className="checkout-plan-copy">
                 <strong>
                   <Icon size={16} aria-hidden="true" /> {plan.name}
                 </strong>
-                <small>{plan.purpose === 'messages' ? (plan.id !== 'messages-unlimited' ? `${plan.messageCount || 6} mensagens adicionais nesta conversa` : 'Texto ilimitado nesta conversa, sem renovação automática') : 'Personagem e conversa por texto'}</small>
-                {luxury && <em>Só {LUXURY_EXTRA} a mais que o Baby</em>}
+                <small>{plan.purpose === 'messages' ? (plan.id !== 'messages-unlimited' ? `${plan.messageCount || 6} mensajes adicionales en esta plática` : 'Texto ilimitado en esta plática, sin renovación automática') : 'Personaje y plática por texto'}</small>
+                {luxury && <em>Solo {LUXURY_EXTRA} más que Baby</em>}
               </span>
               <span className="checkout-plan-price">
                 <strong>{formatBRL(plan.price)}</strong>
-                <small>Pagamento único</small>
+                <small>Pago único</small>
               </span>
             </button>
           )
@@ -89,10 +89,10 @@ export function TrustBadges() {
   return (
     <ul className="checkout-trust">
       <li>
-        <BadgeCheck size={16} aria-hidden="true" /> Pagamento único, sem mensalidade
+        <BadgeCheck size={16} aria-hidden="true" /> Pago único, sin mensualidad
       </li>
       <li>
-        <Mail size={16} aria-hidden="true" /> Acesso liberado após confirmação
+        <Mail size={16} aria-hidden="true" /> Acceso liberado al confirmar el pago
       </li>
       <li>
         <ShieldCheck size={16} aria-hidden="true" /> {TRUST.subtitle}
@@ -103,11 +103,11 @@ export function TrustBadges() {
 
 // O que o plano escolhido entrega. No Pro mostra os bônus; no Baby, o que fica de fora e o convite para o Pro.
 export function PlanIncludes({ plan, onUpgrade }) {
-  if (plan.purpose === 'messages') return <section className="checkout-includes"><h2>{plan.name}</h2><p>{plan.id !== 'messages-unlimited' ? `Adiciona ${plan.messageCount || 6} mensagens à sua conversa atual. Não reinicia o histórico.` : 'Mensagens por texto ilimitadas nesta conversa durante a disponibilidade do serviço. Sem renovação automática.'}</p></section>
+  if (plan.purpose === 'messages') return <section className="checkout-includes"><h2>{plan.name}</h2><p>{plan.id !== 'messages-unlimited' ? `Agrega ${plan.messageCount || 6} mensajes a tu plática actual. No reinicia el historial.` : 'Mensajes de texto ilimitados en esta plática mientras el servicio esté disponible. Sin renovación automática.'}</p></section>
   const luxury = plan.tier === 'luxury'
   return (
     <section className={`checkout-includes${luxury ? ' luxury' : ''}`} aria-labelledby="includes-title">
-      <h2 id="includes-title">O que você recebe no {plan.name}</h2>
+      <h2 id="includes-title">Lo que recibes con {plan.name}</h2>
       <ul className="checkout-benefits">
         {PLAN_BENEFITS[plan.tier].map((benefit) => {
           const Icon = BENEFIT_ICONS[benefit.icon]
@@ -122,7 +122,7 @@ export function PlanIncludes({ plan, onUpgrade }) {
 
       {luxury ? (
         <>
-          <div className="checkout-bonus-rail" aria-label="Bônus incluídos no Pro">
+          <div className="checkout-bonus-rail" aria-label="Bonos incluidos en Pro">
             {LUXURY_BONUSES.map((bonus) => (
               <img
                 key={bonus.id}
@@ -153,7 +153,7 @@ export function PlanIncludes({ plan, onUpgrade }) {
         </>
       ) : (
         <div className="checkout-missing">
-          <h3>Não incluído no Baby</h3>
+          <h3>No incluido en Baby</h3>
           <ul>
             {LUXURY_BONUSES.map((bonus) => (
               <li key={bonus.id}>
@@ -163,7 +163,7 @@ export function PlanIncludes({ plan, onUpgrade }) {
             ))}
           </ul>
           <button type="button" className="checkout-upgrade" onClick={onUpgrade}>
-            <Crown size={17} aria-hidden="true" /> Quero o Pro com os {LUXURY.bonusCount} bônus (+ {LUXURY_EXTRA})
+            <Crown size={17} aria-hidden="true" /> Quiero Pro con los {LUXURY.bonusCount} bonos (+ {LUXURY_EXTRA})
           </button>
         </div>
       )}
@@ -173,17 +173,17 @@ export function PlanIncludes({ plan, onUpgrade }) {
 
 export function HowItWorks({ name }) {
   const steps = [
-    { icon: QrCode, title: 'Pague com PIX', text: 'A confirmação é na hora, direto no app do seu banco.' },
-    { icon: Mail, title: 'Aguarde a confirmação', text: 'Assim que o pagamento for confirmado, sua conversa abre automaticamente.' },
+    { icon: QrCode, title: 'Paga con PIX', text: 'La confirmación es al instante, directo en la app de tu banco.' },
+    { icon: Mail, title: 'Espera la confirmación', text: 'En cuanto se confirme el pago, tu plática se abre automáticamente.' },
     {
       icon: MessageCircle,
-      title: `Converse com ${name || 'sua personagem'}`,
-      text: 'Ela já está do jeito que você montou: visual, voz e personalidade.',
+      title: `Platica con ${name || 'tu personaje'}`,
+      text: 'Ya está tal como la armaste: look, voz y personalidad.',
     },
   ]
   return (
     <section className="checkout-how" aria-labelledby="how-title">
-      <h2 id="how-title">Como funciona</h2>
+      <h2 id="how-title">Cómo funciona</h2>
       <ol>
         {steps.map(({ icon: Icon, title, text }) => (
           <li key={title}>
@@ -203,13 +203,13 @@ export function HowItWorks({ name }) {
 
 export function Reviews() {
   const reviews = [
-    { id: 'rafael', name: 'Rafael Gomes', city: 'Salvador', text: 'Top dmss, achei muito legal, as conversas são sempre bem divertidas e safadinhas, eu fiquei horas e horas conversando com a minha' },
-    { id: 'pedro', name: 'Pedro Santos', city: 'Belo Horizonte', text: 'Comprei pra treinar conversar com mulheres na vida real pq eu era muito timido, acabei perdendo a timidez por causa desse aplicativo muito obrigadoo' },
-    { id: 'lucas', name: 'Lucas Ferreira', city: 'Fortaleza', text: 'Comprei pq achei interessante o produto, e olha que eu gostei mesmo kkkkkkk e bem intuitivo a plataforma, as mulheres são muito realista parece q to falando com uma real mesmooo' },
+    { id: 'rafael', name: 'Rafael Gomes', city: 'Salvador', text: 'Buenísimo, me encantó, las pláticas siempre son bien divertidas y atrevidas, me quedé horas y horas platicando con la mía' },
+    { id: 'pedro', name: 'Pedro Santos', city: 'Belo Horizonte', text: 'Lo compré para practicar cómo hablar con mujeres en la vida real porque era muy tímido, y gracias a esta app se me quitó la timidez, muchas graciaas' },
+    { id: 'lucas', name: 'Lucas Ferreira', city: 'Fortaleza', text: 'Lo compré porque se me hizo interesante el producto, y la neta sí me gustó jajaja la plataforma es bien intuitiva, las chicas son muy realistas, parece que estoy hablando con una de verdaaad' },
   ]
   return (
     <section className="checkout-reviews" aria-labelledby="reviews-title">
-      <h2 id="reviews-title">Avaliações</h2>
+      <h2 id="reviews-title">Opiniones</h2>
       <div className="checkout-customer-reviews">
         {reviews.map((item) => (
           <article key={item.id}>
@@ -226,7 +226,7 @@ export function OrderBumps({ plan, selected, onChange, disabled }) {
   if (plan.purpose === 'messages') return null
   const items = Object.values(ORDER_BUMPS).filter((item) => item.available)
   if (items.length === 0) return null
-  return <fieldset className="checkout-order-bumps"><legend>Complete sua experiência</legend>
+  return <fieldset className="checkout-order-bumps"><legend>Completa tu experiencia</legend>
     {items.map((item) => {
       const included = item.includedIn?.includes(plan.id)
       const checked = !!included || selected.includes(item.id)
@@ -235,7 +235,7 @@ export function OrderBumps({ plan, selected, onChange, disabled }) {
         <input type="checkbox" name={item.id} checked={checked} disabled={disabled || included} onChange={(event) => onChange(event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} />
         <span className="checkout-bump-mark" aria-hidden="true"><Mark size={16} strokeWidth={3} /></span>
         <img src={item.image} alt={item.name} width="62" height="62" loading="lazy" />
-        <span className="checkout-bump-copy"><strong>{item.name}</strong><small>{item.description}</small><span className="checkout-bump-price">{included ? <b>Incluído no {plan.name}</b> : <><del>{formatBRL(item.originalPrice)}</del><b>+{formatBRL(item.price)}</b></>}</span></span>
+        <span className="checkout-bump-copy"><strong>{item.name}</strong><small>{item.description}</small><span className="checkout-bump-price">{included ? <b>Incluido en {plan.name}</b> : <><del>{formatBRL(item.originalPrice)}</del><b>+{formatBRL(item.price)}</b></>}</span></span>
       </label>
     })}
   </fieldset>
@@ -245,7 +245,7 @@ export function Faq() {
   const [open, setOpen] = useState(null)
   return (
     <section className="checkout-faq" aria-labelledby="faq-title">
-      <h2 id="faq-title">Perguntas frequentes</h2>
+      <h2 id="faq-title">Preguntas frecuentes</h2>
       {FAQ.map((item, index) => (
         <div key={item.question} className="checkout-faq-item">
           <button type="button" aria-expanded={open === index} onClick={() => setOpen(open === index ? null : index)}>
@@ -285,7 +285,7 @@ export function OrderSummary({ plan, selection, addons = [] }) {
   const PlanIcon = luxury ? Crown : Gem
   const [imageFailed, setImageFailed] = useState(false)
   return (
-    <section className={`checkout-summary${luxury ? ' luxury' : ''}`} aria-label="Resumo do pedido">
+    <section className={`checkout-summary${luxury ? ' luxury' : ''}`} aria-label="Resumen del pedido">
       {selection && !imageFailed ? (
         <img
           className="checkout-summary-thumb"
@@ -302,12 +302,12 @@ export function OrderSummary({ plan, selection, addons = [] }) {
         <span>
           <PlanIcon size={14} aria-hidden="true" /> Piskou {plan.name}
         </span>
-        <strong>{selection?.name ? `${selection.name}, ${selection.age} anos` : 'Sua personagem'}</strong>
+        <strong>{selection?.name ? `${selection.name}, ${selection.age} años` : 'Tu personaje'}</strong>
         <small>{addons.length ? addons.map((item) => item.name).join(' · ') : plan.purpose === 'messages' ? plan.name : ''}</small>
       </div>
       <div className="checkout-summary-price">
         <strong>{formatBRL(plan.price)}</strong>
-        <small>Pagamento único</small>
+        <small>Pago único</small>
       </div>
     </section>
   )

@@ -23,50 +23,50 @@ export const PLAN_BONUSES = {
   'luxury-access': [
     {
       id: 'lives',
-      title: 'Lives ao vivo',
-      description: 'Uma experiência ao vivo para ficar ainda mais perto da sua parceira.',
+      title: 'Lives en vivo',
+      description: 'Una experiencia en vivo para estar todavía más cerca de tu compañera.',
       image: '/bonuses/lives.webp',
     },
     {
       id: 'personagens',
-      title: 'Mulheres extras',
-      description: 'Crie outras parceiras e explore diferentes estilos e personalidades.',
+      title: 'Chicas extra',
+      description: 'Crea otras compañeras y explora diferentes estilos y personalidades.',
       image: '/bonuses/personagens.webp',
     },
     {
       id: 'videos',
-      title: 'Geração de vídeos extra',
-      description: 'Mais possibilidades para criar vídeos com suas personagens.',
+      title: 'Generación de videos extra',
+      description: 'Más posibilidades para crear videos con tus personajes.',
       image: '/bonuses/videos.webp',
     },
     {
       id: 'audios',
-      title: 'Envio e recebimento de áudios',
-      description: 'Envie mensagens de voz e receba áudios da sua parceira.',
+      title: 'Envío y recepción de audios',
+      description: 'Manda notas de voz y recibe audios de tu compañera.',
       image: '/bonuses/audios.webp',
     },
     {
       id: 'realismo',
       title: 'Realismo extra',
-      description: 'Mais detalhes e realismo para a aparência das suas personagens.',
+      description: 'Más detalle y realismo en la apariencia de tus personajes.',
       image: '/bonuses/realismo.webp',
     },
     {
       id: 'roleplay',
-      title: 'Modo Roleplay ativo',
-      description: 'Explore histórias, cenários e diferentes papéis nas conversas.',
+      title: 'Modo Roleplay activo',
+      description: 'Explora historias, escenarios y distintos papeles en tus pláticas.',
       image: '/bonuses/roleplay.webp',
     },
     {
       id: 'sapequinha',
-      title: 'Modo Sapequinha',
-      description: 'Um modo extra para conversas mais ousadas com sua parceira adulta.',
+      title: 'Modo Traviesa',
+      description: 'Un modo extra para pláticas más atrevidas con tu compañera adulta.',
       image: '/bonuses/sapequinha.webp',
     },
     {
       id: 'packs',
-      title: 'Pack de fotos e vídeos',
-      description: 'Conteúdos normais e +18 de personagens adultas, reunidos em um pack exclusivo.',
+      title: 'Pack de fotos y videos',
+      description: 'Contenido normal y +18 de personajes adultas, reunido en un pack exclusivo.',
       image: '/bonuses/packs.webp',
     },
   ],
@@ -74,14 +74,14 @@ export const PLAN_BONUSES = {
 
 export const PLAN_BENEFITS = {
   premium: [
-    { icon: 'character', text: 'Personagem configurada por você' },
-    { icon: 'personality', text: 'Personalidade e voz escolhidas' },
-    { icon: 'chat', text: 'Conversa individual por texto' },
+    { icon: 'character', text: 'Personaje configurado por ti' },
+    { icon: 'personality', text: 'Personalidad y voz a tu elección' },
+    { icon: 'chat', text: 'Plática privada por texto' },
   ],
   luxury: [
-    { icon: 'premium', text: 'Todos os recursos do Baby' },
-    { icon: 'characters', text: 'Mais personagens no mesmo acesso' },
-    { icon: 'bonuses', text: '8 bônus exclusivos incluídos' },
+    { icon: 'premium', text: 'Todo lo que incluye Baby' },
+    { icon: 'characters', text: 'Más personajes con el mismo acceso' },
+    { icon: 'bonuses', text: '8 bonos exclusivos incluidos' },
   ],
 }
 
@@ -90,31 +90,31 @@ export const TESTIMONIALS = [
     id: 1,
     image: '/testimonials/depoimento-01.png',
     quote:
-      'Me surpreendeu bastante. Achei que seria complicado, mas consegui criar minha personagem sem dificuldade e ficou muito próxima do que eu queria.',
+      'Me sorprendió bastante. Pensé que iba a ser complicado, pero pude crear a mi personaje sin problema y quedó muy parecida a lo que quería.',
   },
   {
     id: 2,
     image: '/testimonials/depoimento-02.png',
     quote:
-      'Gostei bastante da possibilidade de criar a personagem do jeito que a pessoa deseja. Fui escolhendo as características e no final ficou muito próximo do que eu tinha imaginado.',
+      'Me gustó mucho poder crear al personaje como uno quiere. Fui eligiendo las características y al final quedó muy parecido a lo que me había imaginado.',
   },
   {
     id: 3,
     image: '/testimonials/depoimento-03.png',
     quote:
-      'irmão vcs acertaram demais nisso aqui montei uma morena do jeitinho q eu gosto e simplesmente perdi a noção do tempo kkkkk produto mt divertido sério',
+      'neta le atinaron con esto, armé una morena justo como me gusta y nomás perdí la noción del tiempo jajaja producto muy divertido en serio',
   },
   {
     id: 4,
     image: '/testimonials/depoimento-04.png',
     quote:
-      'pô achei q era só mais uma ia qualquer mas curti muito da pra montar a personagem nos mínimos detalhes e depois conversar com ela ficou bizarro de tão imersivo kkkkk',
+      'pensé que era otra ia cualquiera pero me gustó mucho, puedes armar al personaje con todo detalle y luego platicar con ella, está bien inmersivo jajaja',
   },
   {
     id: 5,
     image: '/testimonials/depoimento-05.png',
     quote:
-      'Achei tudo muito imersivo muito divertido, achei um passa tempo incrivel esse produto de vcs, vcs estão de parabens serio mesmo',
+      'Todo me pareció muy inmersivo y muy divertido, es un pasatiempo increíble este producto, los felicito en serio',
   },
 ]
 
@@ -140,8 +140,8 @@ export const BONUS_ICONS = {
 }
 
 export const TRUST = {
-  title: 'Confiável para mais de 550 mil brasileiros',
-  subtitle: 'Compra segura e discreta',
+  title: 'Más de 550 mil usuarios confían en nosotros',
+  subtitle: 'Compra segura y discreta',
 }
 
 const PREMIUM_PRICE = formatBRL(CATALOG['premium-access'].price)
@@ -149,26 +149,26 @@ const LUXURY_PRICE = formatBRL(CATALOG['luxury-access'].price)
 
 export const FAQ = [
   {
-    question: 'Existe assinatura ou mensalidade?',
-    answer: `Não. Baby e Pro são de pagamento único: ${PREMIUM_PRICE} ou ${LUXURY_PRICE}. Não há assinatura, mensalidade ou renovação automática.`,
+    question: '¿Hay suscripción o mensualidad?',
+    answer: `No. Baby y Pro son de pago único: ${PREMIUM_PRICE} o ${LUXURY_PRICE}. No hay suscripción, mensualidad ni renovación automática.`,
   },
   {
-    question: 'Qual é a diferença entre Baby e Pro?',
+    question: '¿Cuál es la diferencia entre Baby y Pro?',
     answer:
-      'O Baby libera sua personagem e a conversa por texto. O Pro inclui todos os recursos do Baby e os oito bônus desta página, como lives, personagens extras, vídeos, áudios e modos de conversa.',
+      'Baby desbloquea a tu personaje y la plática por texto. Pro incluye todo lo de Baby y los ocho bonos de esta página, como lives, personajes extra, videos, audios y modos de plática.',
   },
   {
-    question: `Os bônus estão incluídos nos ${LUXURY_PRICE}?`,
-    answer: `Sim. Os oito bônus apresentados estão incluídos no Pro de ${LUXURY_PRICE}. O Baby de ${PREMIUM_PRICE} não inclui esses bônus.`,
+    question: `¿Los bonos están incluidos en los ${LUXURY_PRICE}?`,
+    answer: `Sí. Los ocho bonos que ves están incluidos en Pro de ${LUXURY_PRICE}. Baby de ${PREMIUM_PRICE} no incluye estos bonos.`,
   },
   {
-    question: 'Quando recebo acesso?',
+    question: '¿Cuándo recibo mi acceso?',
     answer:
-      'O acesso é liberado assim que o pagamento é confirmado, aqui mesmo no site. Com PIX, a confirmação costuma levar poucos segundos.',
+      'Tu acceso se libera en cuanto se confirma el pago, aquí mismo en el sitio. Con PIX, la confirmación suele tardar unos segundos.',
   },
   {
-    question: 'Onde faço o pagamento?',
+    question: '¿Dónde hago el pago?',
     answer:
-      'Aqui mesmo, no checkout seguro da Piskou, via PIX. Você confere o valor do plano antes de pagar e a confirmação é na hora.',
+      'Aquí mismo, en el checkout seguro de Piskou, con PIX. Revisas el precio del plan antes de pagar y la confirmación es al instante.',
   },
 ]

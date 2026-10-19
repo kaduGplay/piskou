@@ -15,29 +15,29 @@ const OFFERS = {
   'upsell-video-pack': {
     icon: Video,
     eyebrow: 'OFERTA EXCLUSIVA',
-    title: (name) => <>Veja um <em>pack de vídeos</em> da {name}</>,
-    text: (name) => `Um pack só com vídeos da ${name}, liberado agora na sua conta.`,
-    bullets: (name) => [`Vídeos exclusivos da ${name}`, 'Liberado logo após o pagamento', 'Pagamento único, sem mensalidade'],
-    cta: 'SIM, QUERO O PACK',
-    paid: 'Pack de vídeos liberado!',
+    title: (name) => <>Mira un <em>pack de videos</em> de {name}</>,
+    text: (name) => `Un pack solo con videos de ${name}, desbloqueado ahora mismo en tu cuenta.`,
+    bullets: (name) => [`Videos exclusivos de ${name}`, 'Se desbloquea justo después del pago', 'Pago único, sin mensualidad'],
+    cta: 'SÍ, QUIERO EL PACK',
+    paid: '¡Pack de videos desbloqueado!',
   },
   'upsell-whatsapp': {
     icon: MessageCircle,
-    eyebrow: 'SÓ NESTA TELA',
-    title: (name) => <>Faça a {name} te chamar no <em>WhatsApp</em></>,
-    text: (name) => `A ${name} chama você no seu WhatsApp, do jeitinho que você escolheu.`,
-    bullets: (name) => [`A ${name} te chama no seu número`, 'Conversa direto no seu WhatsApp', 'Pagamento único, sem mensalidade'],
-    cta: 'SIM, QUERO QUE ELA ME CHAME',
-    paid: 'Pronto! Agora é só informar seu WhatsApp.',
+    eyebrow: 'SOLO EN ESTA PANTALLA',
+    title: (name) => <>Haz que {name} te escriba por <em>WhatsApp</em></>,
+    text: (name) => `${name} te escribe a tu WhatsApp, tal como la elegiste.`,
+    bullets: (name) => [`${name} te escribe a tu número`, 'Platica directo en tu WhatsApp', 'Pago único, sin mensualidad'],
+    cta: 'SÍ, QUIERO QUE ME ESCRIBA',
+    paid: '¡Listo! Ahora solo escribe tu WhatsApp.',
   },
   'upsell-vip': {
     icon: Crown,
     eyebrow: 'ÚLTIMA OFERTA',
-    title: () => <>Acesso <em>VIP vitalício</em></>,
-    text: () => 'Pague uma vez e use para sempre.',
-    bullets: (name) => [`Mensagens ilimitadas com a ${name}`, 'Sua conversa fica guardada para sempre', 'Pague uma vez e use para sempre'],
-    cta: 'SIM, QUERO SER VIP',
-    paid: 'Você agora é VIP vitalício!',
+    title: () => <>Acceso <em>VIP de por vida</em></>,
+    text: () => 'Paga una vez y úsalo para siempre.',
+    bullets: (name) => [`Mensajes ilimitados con ${name}`, 'Tu plática se guarda para siempre', 'Paga una vez y úsalo para siempre'],
+    cta: 'SÍ, QUIERO SER VIP',
+    paid: '¡Ya eres VIP de por vida!',
   },
 }
 
@@ -74,7 +74,7 @@ export default function UpsellPage() {
   const planId = UPSELL_SEQUENCE[step]
   const plan = PLANS[planId]
   const offer = OFFERS[planId]
-  const name = selection?.name?.trim() || 'sua personagem'
+  const name = selection?.name?.trim() || 'tu personaje'
   const image = getResultImage({ ...selection }).src
   const needsBuyer = Object.keys(validateCustomer(buyer)).length > 0
 
@@ -98,7 +98,7 @@ export default function UpsellPage() {
   const accept = async () => {
     if (busy.current) return
     if (needsBuyer) {
-      setError('Confira seu nome e e-mail para gerar o PIX.')
+      setError('Revisa tu nombre y correo para generar el PIX.')
       return
     }
     busy.current = true
@@ -122,7 +122,7 @@ export default function UpsellPage() {
       if (data.code === 'owned') return next()
       if (!response.ok || data.status === 'failed' || !data.pix?.copyPaste) {
         setPhase('offer')
-        setError(data.error || 'Não foi possível gerar o PIX agora. Tente novamente.')
+        setError(data.error || 'No se pudo generar el PIX en este momento. Intenta de nuevo.')
         return
       }
       const saved = { id: data.id, planId, amount: data.amount, pix: data.pix }
@@ -132,7 +132,7 @@ export default function UpsellPage() {
       track(EVENTS.PIX_GENERATED, { plan: planId, value: data.amount, currency: 'BRL' })
     } catch {
       setPhase('offer')
-      setError('Sem conexão. Verifique sua internet e tente novamente.')
+      setError('Sin conexión. Revisa tu internet e intenta de nuevo.')
     } finally {
       busy.current = false
     }
@@ -157,7 +157,7 @@ export default function UpsellPage() {
           requestRef.current = null
           setCharge(null)
           setPhase('offer')
-          setError(status === 'expired' ? 'O PIX expirou. Gere um novo para continuar.' : 'Pagamento não aprovado. Tente novamente.')
+          setError(status === 'expired' ? 'El PIX venció. Genera uno nuevo para continuar.' : 'Pago no aprobado. Intenta de nuevo.')
         }
       } catch {
         /* tenta de novo no próximo ciclo */
@@ -199,7 +199,7 @@ export default function UpsellPage() {
     event.preventDefault()
     const digits = onlyDigits(phone)
     if (digits.length < 10 || digits.length > 11) {
-      setError('Informe seu WhatsApp com DDD.')
+      setError('Escribe tu WhatsApp a 10 dígitos.')
       return
     }
     setPhase('saving')
@@ -213,17 +213,17 @@ export default function UpsellPage() {
       const data = await response.json().catch(() => ({}))
       if (!response.ok) {
         setPhase('paid')
-        setError(data.error || 'Não foi possível salvar agora. Tente novamente.')
+        setError(data.error || 'No se pudo guardar en este momento. Intenta de nuevo.')
         return
       }
       next()
     } catch {
       setPhase('paid')
-      setError('Sem conexão. Verifique sua internet e tente novamente.')
+      setError('Sin conexión. Revisa tu internet e intenta de nuevo.')
     }
   }
 
-  if (!plan) return <div className="app-loading" aria-label="Abrindo sua conversa" />
+  if (!plan) return <div className="app-loading" aria-label="Abriendo tu plática" />
   const Icon = offer.icon
 
   return (
@@ -243,7 +243,7 @@ export default function UpsellPage() {
       <main className="upsell-main">
         {step === 0 && phase === 'offer' && (
           <p className="upsell-approved">
-            <CircleCheck size={18} aria-hidden="true" /> Pagamento aprovado! Seu acesso já está garantido.
+            <CircleCheck size={18} aria-hidden="true" /> ¡Pago aprobado! Tu acceso ya está asegurado.
           </p>
         )}
 
@@ -268,16 +268,16 @@ export default function UpsellPage() {
               </ul>
               <div className="upsell-price">
                 <strong>{formatBRL(plan.price)}</strong>
-                <span>{planId === 'upsell-vip' ? <><Infinity size={15} aria-hidden="true" /> para sempre</> : 'pagamento único'}</span>
+                <span>{planId === 'upsell-vip' ? <><Infinity size={15} aria-hidden="true" /> para siempre</> : 'pago único'}</span>
               </div>
               {needsBuyer && (
                 <div className="upsell-buyer">
                   <label>
-                    Seu nome
+                    Tu nombre
                     <input value={buyer.name} onChange={(event) => setBuyer({ ...buyer, name: event.target.value })} autoComplete="name" />
                   </label>
                   <label>
-                    Seu e-mail
+                    Tu correo
                     <input type="email" value={buyer.email} onChange={(event) => setBuyer({ ...buyer, email: event.target.value })} autoComplete="email" />
                   </label>
                 </div>
@@ -286,17 +286,17 @@ export default function UpsellPage() {
               <button type="button" className="upsell-accept" onClick={accept} disabled={phase === 'creating'}>
                 {phase === 'creating' ? (
                   <>
-                    <LoaderCircle className="upsell-spin" size={18} /> GERANDO PIX...
+                    <LoaderCircle className="upsell-spin" size={18} /> GENERANDO PIX...
                   </>
                 ) : (
                   `${offer.cta} · ${formatBRL(plan.price)}`
                 )}
               </button>
               <button type="button" className="upsell-decline" onClick={next} disabled={phase === 'creating'}>
-                Não, obrigado
+                No, gracias
               </button>
               <p className="upsell-secure">
-                <ShieldCheck size={14} aria-hidden="true" /> Um clique · PIX · sem preencher dados de novo
+                <ShieldCheck size={14} aria-hidden="true" /> Un clic · PIX · sin volver a llenar tus datos
               </p>
             </div>
           </section>
@@ -304,19 +304,19 @@ export default function UpsellPage() {
 
         {phase === 'pix' && charge && (
           <section className="upsell-card upsell-pix" aria-live="polite">
-            <span className="upsell-eyebrow">PAGUE COM PIX</span>
+            <span className="upsell-eyebrow">PAGA CON PIX</span>
             <h1>{plan.name}</h1>
             <p className="upsell-pix-amount">{formatBRL(charge.amount)}</p>
-            <div className="upsell-qr">{qrImage ? <img src={qrImage} alt="QR Code do PIX" /> : <LoaderCircle className="upsell-spin" size={28} />}</div>
+            <div className="upsell-qr">{qrImage ? <img src={qrImage} alt="Código QR del PIX" /> : <LoaderCircle className="upsell-spin" size={28} />}</div>
             <button type="button" className="upsell-accept" onClick={copyPix}>
               {copied ? <><Check size={18} /> CÓDIGO COPIADO</> : <><Copy size={18} /> COPIAR CÓDIGO PIX</>}
             </button>
             <p className="upsell-waiting">
-              <LoaderCircle className="upsell-spin" size={16} aria-hidden="true" /> Aguardando o pagamento. Esta tela atualiza sozinha.
+              <LoaderCircle className="upsell-spin" size={16} aria-hidden="true" /> Esperando el pago. Esta pantalla se actualiza sola.
             </p>
             {error && <p className="upsell-error" role="alert">{error}</p>}
             <button type="button" className="upsell-decline" onClick={next}>
-              Não quero mais esta oferta
+              Ya no quiero esta oferta
             </button>
           </section>
         )}
@@ -327,7 +327,7 @@ export default function UpsellPage() {
             <h1>{offer.paid}</h1>
             {planId === 'upsell-whatsapp' ? (
               <form className="upsell-phone" onSubmit={savePhone}>
-                <label htmlFor="upsell-phone">Seu WhatsApp com DDD</label>
+                <label htmlFor="upsell-phone">Tu WhatsApp a 10 dígitos</label>
                 <div>
                   <Phone size={18} aria-hidden="true" />
                   <input
@@ -335,19 +335,19 @@ export default function UpsellPage() {
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel-national"
-                    placeholder="(11) 99999-9999"
+                    placeholder="55 1234 5678"
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                   />
                 </div>
                 {error && <p className="upsell-error" role="alert">{error}</p>}
                 <button type="submit" className="upsell-accept" disabled={phase === 'saving'}>
-                  {phase === 'saving' ? <><LoaderCircle className="upsell-spin" size={18} /> SALVANDO...</> : 'CONFIRMAR MEU WHATSAPP'}
+                  {phase === 'saving' ? <><LoaderCircle className="upsell-spin" size={18} /> GUARDANDO...</> : 'CONFIRMAR MI WHATSAPP'}
                 </button>
               </form>
             ) : (
               <>
-                <p>Já está na sua conta.</p>
+                <p>Ya está en tu cuenta.</p>
                 <button type="button" className="upsell-accept" onClick={next}>
                   CONTINUAR
                 </button>

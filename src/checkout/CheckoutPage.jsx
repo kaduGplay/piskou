@@ -45,8 +45,8 @@ const POLL_INTERVAL_MS = 5000
 const POLL_LIMIT_MS = 60 * 60 * 1000
 
 const PAYMENT_METHODS = [
-  { key: 'pix', label: 'PIX', note: 'Aprovação na hora', icon: QrCode },
-  { key: 'card', label: 'Cartão de crédito', note: 'À vista', icon: CreditCard },
+  { key: 'pix', label: 'PIX', note: 'Aprobación al instante', icon: QrCode },
+  { key: 'card', label: 'Tarjeta de crédito', note: 'En una sola exhibición', icon: CreditCard },
 ]
 
 const maskCardNumber = (value) => onlyDigits(value).slice(0, 19).replace(/(\d{4})(?=\d)/g, '$1 ')
@@ -72,11 +72,11 @@ function passesLuhn(number) {
 function validateCard(card) {
   const errors = {}
   const number = onlyDigits(card.number)
-  if (number.length < 13 || !passesLuhn(number)) errors.cardNumber = 'Número do cartão inválido.'
-  if (card.holder.trim().length < 3) errors.cardHolder = 'Informe o nome impresso no cartão.'
+  if (number.length < 13 || !passesLuhn(number)) errors.cardNumber = 'Número de tarjeta inválido.'
+  if (card.holder.trim().length < 3) errors.cardHolder = 'Escribe el nombre como aparece en la tarjeta.'
   const [month, year] = card.expiry.split('/').map(Number)
   const expiresAt = new Date(2000 + year, month)
-  if (!(month >= 1 && month <= 12) || !year || expiresAt <= new Date()) errors.cardExpiry = 'Validade inválida.'
+  if (!(month >= 1 && month <= 12) || !year || expiresAt <= new Date()) errors.cardExpiry = 'Fecha de vencimiento inválida.'
   if (!/^\d{3,4}$/.test(card.cvv)) errors.cardCvv = 'CVV inválido.'
   return errors
 }
@@ -247,7 +247,7 @@ export default function CheckoutPage() {
           try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`) } catch {}
           approvedRef.current=false;
           setPhase('form')
-          setServerError('Pagamento não aprovado. Tente novamente ou use outra forma de pagamento.')
+          setServerError('Pago no aprobado. Intenta de nuevo o usa otra forma de pago.')
         }
         else if (status === 'pending' || status === 'processing') {
           approvedRef.current=false;
@@ -357,7 +357,7 @@ export default function CheckoutPage() {
       if (!response.ok) {
         track('CheckoutErro')
         if (data.fields) setErrors(data.fields)
-        setServerError(data.error || 'Não foi possível processar o pagamento. Tente novamente.')
+        setServerError(data.error || 'No se pudo procesar el pago. Intenta de nuevo.')
         return
       }
       setCharge(data)
@@ -367,8 +367,8 @@ export default function CheckoutPage() {
         try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`) } catch {}
         setServerError(
           method === 'pix'
-            ? 'Não foi possível gerar o PIX agora. Tente novamente em instantes.'
-            : 'Pagamento recusado. Confira os dados do cartão ou pague com PIX.',
+            ? 'No se pudo generar el PIX en este momento. Intenta de nuevo en unos instantes.'
+            : 'Pago rechazado. Revisa los datos de la tarjeta o paga con PIX.',
         )
       } else if (data.status === 'processing') {
         setPhase('processing')
@@ -381,7 +381,7 @@ export default function CheckoutPage() {
       }
     } catch {
       track('CheckoutErro')
-      setServerError('Sem conexão. Verifique sua internet e tente novamente.')
+      setServerError('Sin conexión. Revisa tu internet e intenta de nuevo.')
     } finally {
       submissionGuard.current = false
       setSubmitting(false)
@@ -409,7 +409,7 @@ export default function CheckoutPage() {
   return (
     <div className="checkout-root">
       <header className="checkout-topbar">
-        <a href="/?edit=1" className="checkout-back" onClick={goBack} aria-label="Voltar">
+        <a href="/?edit=1" className="checkout-back" onClick={goBack} aria-label="Regresar">
           <ArrowLeft size={20} />
         </a>
         <div className="checkout-brand">
@@ -435,8 +435,8 @@ export default function CheckoutPage() {
         {phase === 'form' && (
           <form className="checkout-form" ref={formRef} onSubmit={submit} noValidate>
             <fieldset>
-              <legend>Seus dados</legend>
-              <Field label="Nome" error={fieldError('name')}>
+              <legend>Tus datos</legend>
+              <Field label="Nombre" error={fieldError('name')}>
                 <input
                   name="name"
                   autoComplete="name"
@@ -444,13 +444,13 @@ export default function CheckoutPage() {
                   value={customer.name}
                   onChange={(e) => updateCustomer('name', e.target.value)}
                   onBlur={() => blur('name')}
-                  placeholder="Seu nome"
+                  placeholder="Tu nombre"
                 />
               </Field>
               <Field
-                label="E-mail"
+                label="Correo electrónico"
                 error={fieldError('email')}
-                hint="Usamos seu e-mail para identificar o pedido."
+                hint="Usamos tu correo para identificar tu pedido."
               >
                 <input
                   name="email"
@@ -460,17 +460,17 @@ export default function CheckoutPage() {
                   value={customer.email}
                   onChange={(e) => updateCustomer('email', e.target.value)}
                   onBlur={() => blur('email')}
-                  placeholder="voce@email.com"
+                  placeholder="tu@correo.com"
                 />
               </Field>
             </fieldset>
 
             <fieldset>
-              <legend>Pagamento</legend>
+              <legend>Pago</legend>
               <div
                 className={`checkout-methods${methods.length === 1 ? ' single' : ''}`}
                 role="radiogroup"
-                aria-label="Forma de pagamento"
+                aria-label="Forma de pago"
               >
                 {PAYMENT_METHODS.filter((m) => methods.includes(m.key)).map(({ key, label, note, icon: Icon }) => (
                   <button
@@ -497,7 +497,7 @@ export default function CheckoutPage() {
 
               {method === 'card' && (
                 <div className="checkout-card-fields">
-                  <Field label="Número do cartão" error={fieldError('cardNumber')}>
+                  <Field label="Número de tarjeta" error={fieldError('cardNumber')}>
                     <input
                       name="cardNumber"
                       inputMode="numeric"
@@ -508,18 +508,18 @@ export default function CheckoutPage() {
                       placeholder="0000 0000 0000 0000"
                     />
                   </Field>
-                  <Field label="Nome impresso no cartão" error={fieldError('cardHolder')}>
+                  <Field label="Nombre como aparece en la tarjeta" error={fieldError('cardHolder')}>
                     <input
                       name="cardHolder"
                       autoComplete="cc-name"
                       value={card.holder}
                       onChange={(e) => updateCard('holder', e.target.value.toUpperCase())}
                       onBlur={() => blur('cardHolder')}
-                      placeholder="NOME COMO NO CARTÃO"
+                      placeholder="NOMBRE COMO EN LA TARJETA"
                     />
                   </Field>
                   <div className="checkout-row">
-                    <Field label="Validade" error={fieldError('cardExpiry')}>
+                    <Field label="Vencimiento" error={fieldError('cardExpiry')}>
                       <input
                         name="cardExpiry"
                         inputMode="numeric"
@@ -546,15 +546,15 @@ export default function CheckoutPage() {
               )}
             </fieldset>
 
-            {!selection && <p className="checkout-error" role="alert">Configure sua personagem antes de comprar. <a href="/">Voltar ao criador</a></p>}
+            {!selection && <p className="checkout-error" role="alert">Configura a tu personaje antes de comprar. <a href="/">Volver al creador</a></p>}
             {(serverError || unavailable) && (
               <p className="checkout-error" role="alert">
-                {unavailable ? 'O pagamento está indisponível no momento. Tente novamente em alguns minutos.' : serverError}
+                {unavailable ? 'El pago no está disponible en este momento. Intenta de nuevo en unos minutos.' : serverError}
               </p>
             )}
 
             <OrderBumps plan={plan} selected={selectedBumps} onChange={setSelectedBumps} disabled={submitting} />
-            <div className="checkout-cart-total" aria-live="polite"><span>Plano {plan.name}<b>{formatBRL(plan.price)}</b></span>{quote.addons.map((item) => <span key={item.id}>{item.name}<b>+ {formatBRL(item.price)}</b></span>)}<strong>Total do pedido<b>{formatBRL(quote.amount)}</b></strong></div>
+            <div className="checkout-cart-total" aria-live="polite"><span>Plan {plan.name}<b>{formatBRL(plan.price)}</b></span>{quote.addons.map((item) => <span key={item.id}>{item.name}<b>+ {formatBRL(item.price)}</b></span>)}<strong>Total del pedido<b>{formatBRL(quote.amount)}</b></strong></div>
 
             <button
               ref={submitRef}
@@ -564,10 +564,10 @@ export default function CheckoutPage() {
             >
               {submitting ? (
                 <>
-                  <LoaderCircle className="checkout-spin" size={18} /> PROCESSANDO...
+                  <LoaderCircle className="checkout-spin" size={18} /> PROCESANDO...
                 </>
               ) : method === 'pix' ? (
-                `${serverError ? 'TENTAR NOVAMENTE ·' : 'GERAR PIX DE'} ${formatBRL(quote.amount)}`
+                `${serverError ? 'INTENTAR DE NUEVO ·' : 'GENERAR PIX DE'} ${formatBRL(quote.amount)}`
               ) : (
                 `PAGAR ${formatBRL(quote.amount)}`
               )}
@@ -579,15 +579,15 @@ export default function CheckoutPage() {
         {phase === 'pix' && charge?.pix && (
           <section className="checkout-pix" aria-live="polite">
             {charge.testMode && (
-              <p className="checkout-test-banner">Modo de teste: nada é cobrado. Este PIX é aprovado sozinho em alguns segundos.</p>
+              <p className="checkout-test-banner">Modo de prueba: no se cobra nada. Este PIX se aprueba solo en unos segundos.</p>
             )}
-            <h1>Pague com PIX</h1>
+            <h1>Paga con PIX</h1>
             <p className="checkout-pix-amount">{formatBRL(charge.amount)}</p>
             <div className="checkout-qr">
-              {qrImage ? <img src={qrImage} alt="QR Code do PIX" /> : <LoaderCircle className="checkout-spin" size={28} />}
+              {qrImage ? <img src={qrImage} alt="Código QR del PIX" /> : <LoaderCircle className="checkout-spin" size={28} />}
             </div>
             <label className="checkout-copy">
-              <span>PIX copia e cola</span>
+              <span>PIX copiar y pegar</span>
               <input id="pix-code" readOnly value={charge.pix.copyPaste} onFocus={(e) => e.target.select()} />
             </label>
             <button type="button" className="checkout-submit" onClick={copyPix}>
@@ -602,18 +602,18 @@ export default function CheckoutPage() {
               )}
             </button>
             <p className="checkout-waiting">
-              <LoaderCircle className="checkout-spin" size={15} /> Aguardando pagamento
+              <LoaderCircle className="checkout-spin" size={15} /> Esperando el pago
               {charge.pix.expiresAt && (
                 <>
                   {' '}
-                  · <Clock size={13} aria-hidden="true" /> expira em {formatCountdown(pixRemaining)}
+                  · <Clock size={13} aria-hidden="true" /> vence en {formatCountdown(pixRemaining)}
                 </>
               )}
             </p>
             <ol className="checkout-steps">
-              <li>Abra o app do seu banco e entre na área PIX.</li>
-              <li>Escolha pagar com QR Code ou PIX copia e cola.</li>
-              <li>Confirme o pagamento. Esta página atualiza sozinha.</li>
+              <li>Abre la app de tu banco y entra a la sección PIX.</li>
+              <li>Elige pagar con código QR o con PIX copiar y pegar.</li>
+              <li>Confirma el pago. Esta página se actualiza sola.</li>
             </ol>
           </section>
         )}
@@ -621,16 +621,16 @@ export default function CheckoutPage() {
         {phase === 'processing' && (
           <section className="checkout-status" aria-live="polite">
             <LoaderCircle className="checkout-spin" size={36} />
-            <h1>Processando pagamento</h1>
-            <p>Estamos conferindo a confirmação do seu pagamento. Esta tela atualiza automaticamente.</p>
+            <h1>Procesando pago</h1>
+            <p>Estamos verificando la confirmación de tu pago. Esta pantalla se actualiza automáticamente.</p>
           </section>
         )}
 
         {phase === 'expired' && (
           <section className="checkout-status">
             <Clock size={36} />
-            <h1>O PIX expirou</h1>
-            <p>O código não foi pago a tempo. Gere um novo para concluir a compra.</p>
+            <h1>El PIX venció</h1>
+            <p>El código no se pagó a tiempo. Genera uno nuevo para completar tu compra.</p>
             <button
               type="button"
               className={`checkout-submit${luxury ? ' luxury' : ''}`}
@@ -641,7 +641,7 @@ export default function CheckoutPage() {
                 setPhase('form')
               }}
             >
-              GERAR NOVO PIX
+              GENERAR NUEVO PIX
             </button>
           </section>
         )}
@@ -660,11 +660,11 @@ export default function CheckoutPage() {
         {phase === 'paid' && (
           <section className="checkout-status success" aria-live="polite">
             <CircleCheck size={44} />
-            <h1>Pagamento aprovado!</h1>
+            <h1>¡Pago aprobado!</h1>
             <p>
-              Seu acesso foi confirmado. {afterPayment === '/chat' ? 'Estamos abrindo sua conversa.' : 'Só um instante.'}
+              Tu acceso está confirmado. {afterPayment === '/chat' ? 'Estamos abriendo tu plática.' : 'Un momento.'}
             </p>
-            <a href={afterPayment}>{afterPayment === '/chat' ? 'Ir para a conversa' : 'Continuar'}</a>
+            <a href={afterPayment}>{afterPayment === '/chat' ? 'Ir a la plática' : 'Continuar'}</a>
           </section>
         )}
       </main>
@@ -673,7 +673,7 @@ export default function CheckoutPage() {
         <StickyCta
           visible={stickyVisible}
           plan={totalPlan}
-          label={method === 'pix' ? 'GERAR PIX' : 'PAGAR'}
+          label={method === 'pix' ? 'GENERAR PIX' : 'PAGAR'}
           disabled={submitting || unavailable || !configReady || !selection}
           onClick={() => formRef.current?.requestSubmit()}
         />

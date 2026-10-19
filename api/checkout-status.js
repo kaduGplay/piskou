@@ -6,23 +6,23 @@ import { chargeKey, store } from './_lib/store.js'
 // Gateways com confirmação por webhook (Void) são lidos do store, nunca consultados direto.
 export default async function handler(req, res) {
   if (req.method !== 'GET')
-    return res.status(405).json({ error: 'Método não permitido.' })
+    return res.status(405).json({ error: 'Método no permitido.' })
 
   const gateway = getGateway()
   if (!gateway)
     return res
       .status(503)
-      .json({ error: 'O pagamento está indisponível no momento.' })
+      .json({ error: 'El pago no está disponible en este momento.' })
 
   const id = typeof req.query?.id === 'string' ? req.query.id : ''
   if (!id || id.length > 120)
-    return res.status(400).json({ error: 'Cobrança inválida.' })
+    return res.status(400).json({ error: 'Cobro inválido.' })
 
   try {
     const session = chatSession(req, res)
     const saved = await store.get(chargeKey(id))
     if (!session || saved?.chatId !== session)
-      return res.status(404).json({ error: 'Cobrança não encontrada.' })
+      return res.status(404).json({ error: 'No encontramos el cobro.' })
     let status
     if (gateway.confirmsByWebhook) {
       status = saved.status ?? null
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       })
     }
     if (!status)
-      return res.status(404).json({ error: 'Cobrança não encontrada.' })
+      return res.status(404).json({ error: 'No encontramos el cobro.' })
     res.setHeader('Cache-Control', 'no-store')
     return res
       .status(200)
@@ -54,6 +54,6 @@ export default async function handler(req, res) {
     console.error('checkout-status: falha ao consultar cobrança', error.message)
     return res
       .status(502)
-      .json({ error: 'Não foi possível consultar o pagamento.' })
+      .json({ error: 'No se pudo consultar el pago.' })
   }
 }

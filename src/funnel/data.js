@@ -2,14 +2,14 @@ import { sendAnalytics } from '../shared/analytics.js'
 // Dados do funil: opções do quiz, mídia de cada card, regra da imagem final e eventos de rastreio.
 
 export const VOICES = [
-  { label: 'Rainha Charmosa', file: 'Portuguese_CharmingQueen.mp3' },
-  { label: 'Falante', file: 'Portuguese_ChattyGirl.mp3' },
-  { label: 'Confiante', file: 'Portuguese_ConfidentWoman.mp3' },
+  { label: 'Reina Encantadora', file: 'Portuguese_CharmingQueen.mp3' },
+  { label: 'Platicadora', file: 'Portuguese_ChattyGirl.mp3' },
+  { label: 'Segura', file: 'Portuguese_ConfidentWoman.mp3' },
   { label: 'Elegante', file: 'Portuguese_ElegantGirl.mp3' },
   { label: 'Gentil', file: 'Portuguese_Kind-heartedGirl.mp3' },
   { label: 'Imponente', file: 'Portuguese_Pompouslady.mp3' },
   { label: 'Serena', file: 'Portuguese_SereneWoman.mp3' },
-  { label: 'Doce', file: 'Portuguese_SweetGirl.mp3' },
+  { label: 'Dulce', file: 'Portuguese_SweetGirl.mp3' },
   { label: 'Pensativa', file: 'Portuguese_ThoughtfulLady.mp3' },
   { label: 'Emotiva', file: 'Portuguese_UpsetGirl.mp3' },
   { label: 'Caprichosa', file: 'Portuguese_WhimsicalGirl.mp3' },
@@ -18,10 +18,10 @@ export const VOICES = [
 export const STEPS = [
   { key: 'style', label: 'Estilo' },
   { key: 'general', label: 'Características' },
-  { key: 'face', label: 'Rosto' },
-  { key: 'body', label: 'Corpo' },
-  { key: 'details', label: 'Detalhes' },
-  { key: 'generating', label: 'Gerando' },
+  { key: 'face', label: 'Rostro' },
+  { key: 'body', label: 'Cuerpo' },
+  { key: 'details', label: 'Detalles' },
+  { key: 'generating', label: 'Generando' },
 ]
 
 export const ETHNICITIES = ['Asiática', 'Africana', 'Latina', 'Europeia']
@@ -115,6 +115,31 @@ export function getOptionMedia(style, field, value) {
 export const PERSONALITIES = ['Carinhosa', 'Confiante', 'Misteriosa', 'Divertida', 'Sedutora', 'Reservada', 'Romântica', 'Empática', 'Intelectual', 'Aventureira', 'Tranquila', 'Espontânea', 'Amigável', 'Brava', 'Tímida', 'Brincalhona']
 export const RELATIONSHIPS = ['Namorada', 'Confidente', 'Amante', 'Parceira']
 export const OCCUPATIONS = ['Artista', 'Empreendedora', 'Executiva', 'Atleta', 'Criadora', 'Professora', 'Médica', 'Enfermeira', 'Psicóloga', 'Advogada', 'Engenheira', 'Programadora', 'Designer', 'Arquiteta', 'Jornalista', 'Fotógrafa', 'Chef de cozinha', 'Veterinária', 'Música', 'Escritora', 'Cientista', 'Piloto', 'Bióloga', 'Personal trainer']
+
+// O funil é exibido em espanhol do México. Os valores acima continuam em português porque o servidor
+// valida e o chat usa esses valores, e as imagens são achadas por eles; aqui fica só o texto mostrado.
+const OPTION_LABELS = {
+  Realista: 'Realista', Anime: 'Anime',
+  Asiática: 'Asiática', Africana: 'Africana', Latina: 'Latina', Europeia: 'Europea',
+  Trançado: 'Trenzado', Longo: 'Largo', Franja: 'Fleco', 'Rabo de cavalo': 'Cola de caballo', Curto: 'Corto',
+  Coques: 'Chongos', Ondulado: 'Ondulado', Personalizado: 'Personalizado',
+  Castanho: 'Castaño', Preto: 'Negro', Loiro: 'Rubio',
+  Magra: 'Delgada', Atlética: 'Atlética', Voluptuosa: 'Voluptuosa', Curvilínea: 'Curvilínea', Musculosa: 'Musculosa',
+  Pequenos: 'Pequeños', Médios: 'Medianos', Grandes: 'Grandes', XL: 'XL',
+  Pequeno: 'Pequeño', Atlético: 'Atlético', Médio: 'Mediano', Grande: 'Grande',
+  Carinhosa: 'Cariñosa', Confiante: 'Segura de sí', Misteriosa: 'Misteriosa', Divertida: 'Divertida', Sedutora: 'Seductora',
+  Reservada: 'Reservada', Romântica: 'Romántica', Empática: 'Empática', Intelectual: 'Intelectual', Aventureira: 'Aventurera',
+  Tranquila: 'Tranquila', Espontânea: 'Espontánea', Amigável: 'Amigable', Brava: 'Enojona', Tímida: 'Tímida',
+  Brincalhona: 'Juguetona', Nenhum: 'Ninguno',
+  Namorada: 'Novia', Confidente: 'Confidente', Amante: 'Amante', Parceira: 'Compañera',
+  Artista: 'Artista', Empreendedora: 'Emprendedora', Executiva: 'Ejecutiva', Atleta: 'Atleta', Criadora: 'Creadora de contenido',
+  Professora: 'Maestra', Médica: 'Doctora', Enfermeira: 'Enfermera', Psicóloga: 'Psicóloga', Advogada: 'Abogada',
+  Engenheira: 'Ingeniera', Programadora: 'Programadora', Designer: 'Diseñadora', Arquiteta: 'Arquitecta',
+  Jornalista: 'Periodista', Fotógrafa: 'Fotógrafa', 'Chef de cozinha': 'Chef', Veterinária: 'Veterinaria', Música: 'Músico',
+  Escritora: 'Escritora', Cientista: 'Científica', Piloto: 'Piloto', Bióloga: 'Bióloga', 'Personal trainer': 'Entrenadora personal',
+}
+// Profissões digitadas pela pessoa não estão no mapa e aparecem como foram escritas.
+export const optionLabel = (value) => OPTION_LABELS[value] ?? value
 
 // Partes do nome do arquivo em public/anime-results/<origem>_<cor>_<corpo>_<seios>_<bumbum>.webp
 const ANIME_RESULT_SLUGS = {

@@ -71,6 +71,7 @@ original-build/                 o build publicado antigo, intacto, como backup (
 | ID do Meta Pixel | `fbq('init', …)` em `index.html` |
 | Quais eventos vão para o Pixel | `META_PIXEL_EVENTS` em `src/funnel/data.js` |
 | Opções do quiz e valores padrão | `src/funnel/data.js` |
+| Texto em espanhol das opções do quiz | `OPTION_LABELS` em `src/funnel/data.js` (o funil é exibido em espanhol do México; os valores salvos e validados pelo servidor continuam em português) |
 | Qual imagem aparece no final | `getResultImage()` em `src/funnel/data.js` |
 | Textos das etapas | JSX em `src/funnel/Funnel.jsx` |
 

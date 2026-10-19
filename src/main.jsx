@@ -27,7 +27,7 @@ function App() {
     return (
       <Suspense
         fallback={
-          <div className="app-loading" aria-label="Carregando conversa" />
+          <div className="app-loading" aria-label="Cargando plática" />
         }
       >
         <ChatPage />
@@ -37,7 +37,7 @@ function App() {
   if (window.location.pathname.replace(/\/+$/, '') === '/checkout') {
     return (
       <Suspense
-        fallback={<div className="app-loading" aria-label="Carregando" />}
+        fallback={<div className="app-loading" aria-label="Cargando" />}
       >
         <CheckoutPage />
       </Suspense>
@@ -46,7 +46,7 @@ function App() {
   // Ofertas de um clique logo após o pagamento do Baby/Pro.
   if (window.location.pathname.replace(/\/+$/, '') === '/oferta') {
     return (
-      <Suspense fallback={<div className="app-loading" aria-label="Carregando" />}>
+      <Suspense fallback={<div className="app-loading" aria-label="Cargando" />}>
         <UpsellPage />
       </Suspense>
     )
@@ -55,7 +55,7 @@ function App() {
   const initialPhase = ['creating', 'offer'].includes(dev) ? dev : 'quiz'
   return (
     <Suspense
-      fallback={<div className="app-loading" aria-label="Carregando" />}
+      fallback={<div className="app-loading" aria-label="Cargando" />}
     >
       <Funnel initialPhase={initialPhase} />
     </Suspense>
