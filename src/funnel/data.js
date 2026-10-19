@@ -1,4 +1,5 @@
 import { sendAnalytics } from '../shared/analytics.js'
+import { CURRENCY } from '../shared/checkout.js'
 // Dados do funil: opções do quiz, mídia de cada card, regra da imagem final e eventos de rastreio.
 
 export const VOICES = [
@@ -232,7 +233,7 @@ function metaPixelParams(params) {
   }
   if (typeof params.value === 'number') {
     out.value = params.value
-    out.currency = params.currency ?? 'BRL'
+    out.currency = params.currency ?? CURRENCY
   }
   if (params.step) out.step = params.step
   if (params.visual_style) out.visual_style = params.visual_style

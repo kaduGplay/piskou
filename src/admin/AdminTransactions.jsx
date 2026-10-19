@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useId } from 'react'
-import { PLANS, formatBRL } from '../shared/checkout.js'
+import { PLANS, formatPrice } from '../shared/checkout.js'
 const LABELS = {
   pending: 'Pendente',
   paid: 'Pago',
@@ -60,7 +60,7 @@ function Transaction({ item, onSaved }) {
         <strong>
           {PLANS[item.plan_id]?.name || item.plan_id || 'Plano não registrado'}
         </strong>
-        <strong>{formatBRL(Number(item.amount) || 0)}</strong>
+        <strong>{formatPrice(Number(item.amount) || 0)}</strong>
       </div>
       <p>
         {date(item.created_at)} · {String(item.method || '').toUpperCase()} ·{' '}
@@ -229,7 +229,7 @@ export default function AdminTransactions({ active, days }) {
             ['Pagas pelo gateway', data.summary.gatewayPaid],
             [
               'Valor confirmado pelo gateway',
-              formatBRL(Number(data.summary.gatewayPaidAmount) || 0),
+              formatPrice(Number(data.summary.gatewayPaidAmount) || 0),
             ],
             ['Confirmadas manualmente', data.summary.manualPaid],
           ].map(([title, value]) => (

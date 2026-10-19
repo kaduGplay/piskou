@@ -180,7 +180,10 @@
       "maxDuration": 90
     },
     "api/checkout.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "regions": [
+        "iad1"
+      ]
     }
   }
 }

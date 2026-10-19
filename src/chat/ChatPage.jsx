@@ -49,7 +49,7 @@ import {
   getResultImage,
   track,
 } from '../funnel/data.js'
-import { PLANS, SELECTION_STORAGE_KEY, formatBRL } from '../shared/checkout.js'
+import { PLANS, SELECTION_STORAGE_KEY, formatPrice } from '../shared/checkout.js'
 import './ChatPage.css'
 
 const PaywallSheet = lazy(() => import('../funnel/PaywallSheet.jsx'))
@@ -607,7 +607,7 @@ export default function ChatPage() {
               <strong>Sua conexão começa aqui</strong>
               <small>
                 Conheça os planos a partir de{' '}
-                {formatBRL(PLANS['premium-access'].price)}
+                {formatPrice(PLANS['premium-access'].price)}
               </small>
             </span>
             <button type="button" onClick={openOffer}>

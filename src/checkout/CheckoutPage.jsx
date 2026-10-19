@@ -1,30 +1,28 @@
 import { readSavedSelection } from '../shared/progress.js'
 import { analyticsIdentity } from '../shared/analytics.js'
 import { useEffect, useRef, useState } from 'react'
-import QRCode from 'qrcode'
 import {
   ArrowLeft,
   Check,
   CircleCheck,
   Clock,
   Copy,
-  CreditCard,
+  Landmark,
   LoaderCircle,
   Lock,
-  QrCode,
+  Store,
 } from 'lucide-react'
 import { EVENTS, track } from '../funnel/data.js'
 import {
+  CURRENCY,
   PLANS,
   SELECTION_STORAGE_KEY,
-  formatBRL,
-  onlyDigits,
+  formatPrice,
   pickCampaignParams,
   validateCustomer,
   quoteCheckout,
   BUYER_STORAGE_KEY,
 } from '../shared/checkout.js'
-import { tokenizeCard } from './gatewayClient.js'
 import {
   CharacterHero,
   CheckoutBanner,
@@ -45,41 +43,9 @@ const POLL_INTERVAL_MS = 5000
 const POLL_LIMIT_MS = 60 * 60 * 1000
 
 const PAYMENT_METHODS = [
-  { key: 'pix', label: 'PIX', note: 'Aprobación al instante', icon: QrCode },
-  { key: 'card', label: 'Tarjeta de crédito', note: 'En una sola exhibición', icon: CreditCard },
+  { key: 'spei', label: 'SPEI', note: 'Transferencia desde tu banco · se confirma en segundos', icon: Landmark },
+  { key: 'oxxo', label: 'OXXO', note: 'Efectivo en tienda · puede tardar unas horas', icon: Store },
 ]
-
-const maskCardNumber = (value) => onlyDigits(value).slice(0, 19).replace(/(\d{4})(?=\d)/g, '$1 ')
-
-function maskExpiry(value) {
-  const d = onlyDigits(value).slice(0, 4)
-  return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d
-}
-
-function passesLuhn(number) {
-  let sum = 0
-  for (let i = 0; i < number.length; i++) {
-    let digit = Number(number[number.length - 1 - i])
-    if (i % 2 === 1) {
-      digit *= 2
-      if (digit > 9) digit -= 9
-    }
-    sum += digit
-  }
-  return sum % 10 === 0
-}
-
-function validateCard(card) {
-  const errors = {}
-  const number = onlyDigits(card.number)
-  if (number.length < 13 || !passesLuhn(number)) errors.cardNumber = 'Número de tarjeta inválido.'
-  if (card.holder.trim().length < 3) errors.cardHolder = 'Escribe el nombre como aparece en la tarjeta.'
-  const [month, year] = card.expiry.split('/').map(Number)
-  const expiresAt = new Date(2000 + year, month)
-  if (!(month >= 1 && month <= 12) || !year || expiresAt <= new Date()) errors.cardExpiry = 'Fecha de vencimiento inválida.'
-  if (!/^\d{3,4}$/.test(card.cvv)) errors.cardCvv = 'CVV inválido.'
-  return errors
-}
 
 function readSelection() {
   try {
@@ -88,11 +54,6 @@ function readSelection() {
   } catch {
     return null
   }
-}
-
-function formatCountdown(ms) {
-  const total = Math.max(0, Math.floor(ms / 1000))
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
 function Field({ label, error, hint, children }) {
@@ -118,36 +79,33 @@ export default function CheckoutPage() {
   const totalPlan = { ...plan, price: quote.amount }
   const [selection] = useState(readSelection)
   const [customer, setCustomer] = useState({ name: '', email: '' })
-  const [method, setMethod] = useState('pix')
-  const [methods, setMethods] = useState(['pix'])
+  const [method, setMethod] = useState('spei')
+  const [methods, setMethods] = useState(['spei', 'oxxo'])
   const [unavailable, setUnavailable] = useState(false)
   const [configReady, setConfigReady] = useState(false)
   const submissionGuard = useRef(false)
-  const [card, setCard] = useState({ number: '', holder: '', expiry: '', cvv: '' })
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState('')
   const [phase, setPhase] = useState('form')
   const [charge, setCharge] = useState(null)
-  const [qrImage, setQrImage] = useState('')
   const [copied, setCopied] = useState(false)
-  const [now, setNow] = useState(Date.now())
   const [stickyVisible, setStickyVisible] = useState(false)
   const approvedRef = useRef(false)
+  // Mesmo pedido (plano, extras, forma de pagamento e personagem) reaproveita o requestId: o servidor não cria cobrança repetida.
+  const requestStorageKey = (forMethod = method, forQuote = quote) =>
+    `piskou:payment-request:${plan.id}:${forQuote.totalCents}:${forQuote.addonIds.join(',')}:${forMethod}:${JSON.stringify(selection)}`
   useEffect(() => {
     try {
       const saved=JSON.parse(localStorage.getItem('piskou:pendingCharge') || 'null')
       const savedQuote = saved ? quoteCheckout(planId, saved.addons || []) : null
-      if(saved && saved.planId===planId && saved.amount===savedQuote.amount && Date.now()-saved.createdAt<90*86400000 && (!saved.selectionKey || saved.selectionKey === JSON.stringify(selection))) {
-        if (saved.pix?.expiresAt && new Date(saved.pix.expiresAt).getTime() <= Date.now()) {
-          localStorage.removeItem('piskou:pendingCharge')
-          sessionStorage.removeItem(`piskou:pix-request:${planId}:${savedQuote?.totalCents}:${savedQuote?.addonIds.join(",")}:${JSON.stringify(selection)}`)
-        } else {
-          setSelectedBumps(savedQuote.addonIds)
-          setCharge(saved)
-          setPhase(saved.pix?.copyPaste ? 'pix' : 'processing')
-        }
+      // Cobranças salvas antes da troca para SPEI/OXXO (sem deposit) não são retomadas.
+      if(saved?.deposit?.code && saved.planId===planId && saved.amount===savedQuote.amount && Date.now()-saved.createdAt<90*86400000 && (!saved.selectionKey || saved.selectionKey === JSON.stringify(selection))) {
+        setSelectedBumps(savedQuote.addonIds)
+        if (saved.method) setMethod(saved.method)
+        setCharge(saved)
+        setPhase('deposit')
       }
     } catch {}
   }, [])
@@ -161,13 +119,16 @@ export default function CheckoutPage() {
   const submitRef = useRef(null)
   const luxury = plan.tier === 'luxury'
 
-  // O gateway atual define as formas de pagamento (a Void Payments só aceita PIX).
+  // O gateway atual define as formas de pagamento (LiberPay: SPEI e OXXO).
   useEffect(() => {
     fetch('/api/checkout-config')
       .then((response) => response.json())
       .then((config) => {
         if (config.available === false) setUnavailable(true)
-        if (Array.isArray(config.methods) && config.methods.length > 0) setMethods(config.methods)
+        if (Array.isArray(config.methods) && config.methods.length > 0) {
+          setMethods(config.methods)
+          setMethod((current) => (config.methods.includes(current) ? current : config.methods[0]))
+        }
       })
       .catch(() => { setUnavailable(true) })
       .finally(() => setConfigReady(true))
@@ -175,7 +136,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     document.title = 'Checkout | Piskou Create'
-    track(EVENTS.CHECKOUT_VIEW, { plan: plan.id, value: plan.price, currency: 'BRL' })
+    track(EVENTS.CHECKOUT_VIEW, { plan: plan.id, value: plan.price, currency: CURRENCY })
   }, []) // só na entrada; trocas de plano têm evento próprio
 
   // A barra fixa aparece quando o botão principal sai da tela.
@@ -199,7 +160,7 @@ export default function CheckoutPage() {
     const url = new URL(window.location.href)
     url.searchParams.set('plano', id)
     window.history.replaceState(null, '', url)
-    track(EVENTS.CHECKOUT_PLAN_CHANGE, { plan: id, value: PLANS[id].price, currency: 'BRL' })
+    track(EVENTS.CHECKOUT_PLAN_CHANGE, { plan: id, value: PLANS[id].price, currency: CURRENCY })
   }
 
   const upgradeToLuxury = () => {
@@ -207,10 +168,7 @@ export default function CheckoutPage() {
     document.getElementById('checkout-plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const collectErrors = (nextCustomer = customer, nextCard = card, nextMethod = method) => ({
-    ...validateCustomer(nextCustomer),
-    ...(nextMethod === 'card' ? validateCard(nextCard) : {}),
-  })
+  const collectErrors = (nextCustomer = customer) => validateCustomer(nextCustomer)
 
   const approve = (paidCharge) => {
     setPhase('paid')
@@ -220,13 +178,13 @@ export default function CheckoutPage() {
     track(EVENTS.PAYMENT_APPROVED, {
       plan: plan.id,
       value: paidCharge?.amount ?? quote.amount,
-      currency: 'BRL',
+      currency: CURRENCY,
       method: paidCharge?.method ?? method,
       transaction_id: paidCharge?.id,
     })
   }
 
-  // Enquanto o PIX (ou um cartão em análise) não é confirmado, consulta o status a cada 5 s, por até 1 hora.
+  // Enquanto o SPEI ou o OXXO não é confirmado, consulta o status a cada 5 s, por até 1 hora (OXXO pode levar mais: ao voltar à página, a consulta recomeça).
   useEffect(() => {
     if (!charge) return
     let stopped = false
@@ -244,15 +202,14 @@ export default function CheckoutPage() {
         if (status === 'paid') approve(charge)
         else if (status === 'expired') { approvedRef.current=false; setPhase('expired') }
         else if (status === 'failed') {
-          try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`) } catch {}
+          try { sessionStorage.removeItem(requestStorageKey(charge.method)) } catch {}
           approvedRef.current=false;
           setPhase('form')
           setServerError('Pago no aprobado. Intenta de nuevo o usa otra forma de pago.')
         }
         else if (status === 'pending' || status === 'processing') {
           approvedRef.current=false;
-          const freshPix=charge.method==='pix' && charge.pix?.copyPaste && (!charge.pix.expiresAt || new Date(charge.pix.expiresAt).getTime()>Date.now())
-          if (freshPix) setPhase('pix')
+          if (charge.deposit?.code) setPhase('deposit')
           else if (phase !== 'expired') setPhase('processing')
         }
       } catch {
@@ -266,34 +223,10 @@ export default function CheckoutPage() {
     }
   }, [charge, phase])
 
-  useEffect(() => {
-    if (!charge?.pix?.copyPaste) return
-    QRCode.toDataURL(charge.pix.copyPaste, { margin: 1, width: 480, errorCorrectionLevel: 'M' })
-      .then(setQrImage)
-      .catch(() => setQrImage(''))
-  }, [charge])
-
-  useEffect(() => {
-    if (phase !== 'pix') return
-    const timer = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(timer)
-  }, [phase])
-
-  const pixRemaining = charge?.pix?.expiresAt ? new Date(charge.pix.expiresAt).getTime() - now : 0
-  useEffect(() => {
-    if (phase === 'pix' && charge?.pix?.expiresAt && pixRemaining <= 0) setPhase('expired')
-  }, [phase, charge, pixRemaining])
-
   const updateCustomer = (field, value) => {
     const next = { ...customer, [field]: value }
     setCustomer(next)
     if (touched[field]) setErrors(collectErrors(next))
-  }
-
-  const updateCard = (field, value) => {
-    const next = { ...card, [field]: value }
-    setCard(next)
-    if (touched[field]) setErrors(collectErrors(customer, next))
   }
 
   const blur = (field) => {
@@ -308,7 +241,7 @@ export default function CheckoutPage() {
     if (submissionGuard.current || unavailable || !selection) return
     const found = collectErrors()
     setErrors(found)
-    setTouched(Object.fromEntries(Object.keys({ ...customer, cardNumber: 1, cardHolder: 1, cardExpiry: 1, cardCvv: 1 }).map((k) => [k, true])))
+    setTouched(Object.fromEntries(Object.keys(customer).map((k) => [k, true])))
     if (Object.keys(found).length > 0) {
       document.querySelector(`[name="${Object.keys(found)[0]}"]`)?.focus()
       return
@@ -319,25 +252,11 @@ export default function CheckoutPage() {
     setSubmitting(true)
     setServerError('')
     try {
-      let cardToken
-      if (method === 'card') {
-        const [expMonth, expYear] = card.expiry.split('/')
-        cardToken = await tokenizeCard({
-          number: onlyDigits(card.number),
-          holder: card.holder.trim(),
-          expMonth,
-          expYear: `20${expYear}`,
-          cvv: card.cvv,
-        })
-      }
       let requestId
-      if (method === 'pix') {
-        const key = `piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`
-        try {
-          requestId = sessionStorage.getItem(key) || crypto.randomUUID()
-          sessionStorage.setItem(key, requestId)
-        } catch { requestId = crypto.randomUUID() }
-      }
+      try {
+        requestId = sessionStorage.getItem(requestStorageKey()) || crypto.randomUUID()
+        sessionStorage.setItem(requestStorageKey(), requestId)
+      } catch { requestId = crypto.randomUUID() }
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -349,7 +268,6 @@ export default function CheckoutPage() {
           analyticsSession: analyticsIdentity().session,
           method,
           customer,
-          cardToken,
           tracking: pickCampaignParams(params),
         }),
       })
@@ -361,21 +279,16 @@ export default function CheckoutPage() {
         return
       }
       setCharge(data)
-      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,amount:data.amount,addons:data.addons || quote.addonIds,method,createdAt:Date.now(),pix:data.pix,selectionKey:JSON.stringify(selection)})) } catch {} }
+      if (data.status !== 'failed' && data.status !== 'paid') { try { localStorage.setItem('piskou:pendingCharge',JSON.stringify({id:data.id,planId:plan.id,amount:data.amount,addons:data.addons || quote.addonIds,method,createdAt:Date.now(),deposit:data.deposit,testMode:data.testMode,selectionKey:JSON.stringify(selection)})) } catch {} }
       if (data.status === 'paid') approve(data)
       else if (data.status === 'failed') {
-        try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`) } catch {}
-        setServerError(
-          method === 'pix'
-            ? 'No se pudo generar el PIX en este momento. Intenta de nuevo en unos instantes.'
-            : 'Pago rechazado. Revisa los datos de la tarjeta o paga con PIX.',
-        )
+        try { sessionStorage.removeItem(requestStorageKey()) } catch {}
+        setServerError('No se pudo generar tu pago en este momento. Intenta de nuevo en unos instantes.')
       } else if (data.status === 'processing') {
         setPhase('processing')
-      } else if (method === 'pix') {
-        setNow(Date.now())
-        setPhase('pix')
-        track(EVENTS.PIX_GENERATED, { plan: plan.id, value: data.amount, currency: 'BRL' })
+      } else if (data.deposit?.code) {
+        setPhase('deposit')
+        track(EVENTS.PIX_GENERATED, { plan: plan.id, value: data.amount, currency: CURRENCY, method })
       } else {
         setPhase('processing')
       }
@@ -388,11 +301,11 @@ export default function CheckoutPage() {
     }
   }
 
-  const copyPix = async () => {
+  const copyCode = async (code, fieldId) => {
     try {
-      await navigator.clipboard.writeText(charge.pix.copyPaste)
+      await navigator.clipboard.writeText(code)
     } catch {
-      document.getElementById('pix-code')?.select()
+      document.getElementById(fieldId)?.select()
       document.execCommand?.('copy')
     }
     setCopied(true)
@@ -482,7 +395,6 @@ export default function CheckoutPage() {
                     onClick={() => {
                       setMethod(key)
                       setServerError('')
-                      setErrors(collectErrors(customer, card, key))
                     }}
                   >
                     <Icon size={20} aria-hidden="true" />
@@ -495,55 +407,6 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              {method === 'card' && (
-                <div className="checkout-card-fields">
-                  <Field label="Número de tarjeta" error={fieldError('cardNumber')}>
-                    <input
-                      name="cardNumber"
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      value={card.number}
-                      onChange={(e) => updateCard('number', maskCardNumber(e.target.value))}
-                      onBlur={() => blur('cardNumber')}
-                      placeholder="0000 0000 0000 0000"
-                    />
-                  </Field>
-                  <Field label="Nombre como aparece en la tarjeta" error={fieldError('cardHolder')}>
-                    <input
-                      name="cardHolder"
-                      autoComplete="cc-name"
-                      value={card.holder}
-                      onChange={(e) => updateCard('holder', e.target.value.toUpperCase())}
-                      onBlur={() => blur('cardHolder')}
-                      placeholder="NOMBRE COMO EN LA TARJETA"
-                    />
-                  </Field>
-                  <div className="checkout-row">
-                    <Field label="Vencimiento" error={fieldError('cardExpiry')}>
-                      <input
-                        name="cardExpiry"
-                        inputMode="numeric"
-                        autoComplete="cc-exp"
-                        value={card.expiry}
-                        onChange={(e) => updateCard('expiry', maskExpiry(e.target.value))}
-                        onBlur={() => blur('cardExpiry')}
-                        placeholder="MM/AA"
-                      />
-                    </Field>
-                    <Field label="CVV" error={fieldError('cardCvv')}>
-                      <input
-                        name="cardCvv"
-                        inputMode="numeric"
-                        autoComplete="cc-csc"
-                        value={card.cvv}
-                        onChange={(e) => updateCard('cvv', onlyDigits(e.target.value).slice(0, 4))}
-                        onBlur={() => blur('cardCvv')}
-                        placeholder="123"
-                      />
-                    </Field>
-                  </div>
-                </div>
-              )}
             </fieldset>
 
             {!selection && <p className="checkout-error" role="alert">Configura a tu personaje antes de comprar. <a href="/">Volver al creador</a></p>}
@@ -554,7 +417,7 @@ export default function CheckoutPage() {
             )}
 
             <OrderBumps plan={plan} selected={selectedBumps} onChange={setSelectedBumps} disabled={submitting} />
-            <div className="checkout-cart-total" aria-live="polite"><span>Plan {plan.name}<b>{formatBRL(plan.price)}</b></span>{quote.addons.map((item) => <span key={item.id}>{item.name}<b>+ {formatBRL(item.price)}</b></span>)}<strong>Total del pedido<b>{formatBRL(quote.amount)}</b></strong></div>
+            <div className="checkout-cart-total" aria-live="polite"><span>Plan {plan.name}<b>{formatPrice(plan.price)}</b></span>{quote.addons.map((item) => <span key={item.id}>{item.name}<b>+ {formatPrice(item.price)}</b></span>)}<strong>Total del pedido<b>{formatPrice(quote.amount)}</b></strong></div>
 
             <button
               ref={submitRef}
@@ -566,54 +429,62 @@ export default function CheckoutPage() {
                 <>
                   <LoaderCircle className="checkout-spin" size={18} /> PROCESANDO...
                 </>
-              ) : method === 'pix' ? (
-                `${serverError ? 'INTENTAR DE NUEVO ·' : 'GENERAR PIX DE'} ${formatBRL(quote.amount)}`
+              ) : serverError ? (
+                `INTENTAR DE NUEVO · ${formatPrice(quote.amount)}`
+              ) : method === 'spei' ? (
+                `PAGAR ${formatPrice(quote.amount)} CON SPEI`
               ) : (
-                `PAGAR ${formatBRL(quote.amount)}`
+                `GENERAR REFERENCIA OXXO · ${formatPrice(quote.amount)}`
               )}
             </button>
             <TrustBadges />
           </form>
         )}
 
-        {phase === 'pix' && charge?.pix && (
-          <section className="checkout-pix" aria-live="polite">
+        {phase === 'deposit' && charge?.deposit && (
+          <section className="checkout-pix checkout-deposit" aria-live="polite">
             {charge.testMode && (
-              <p className="checkout-test-banner">Modo de prueba: no se cobra nada. Este PIX se aprueba solo en unos segundos.</p>
+              <p className="checkout-test-banner">Modo de prueba: no se cobra nada. Este pago se aprueba solo en unos segundos.</p>
             )}
-            <h1>Paga con PIX</h1>
-            <p className="checkout-pix-amount">{formatBRL(charge.amount)}</p>
-            <div className="checkout-qr">
-              {qrImage ? <img src={qrImage} alt="Código QR del PIX" /> : <LoaderCircle className="checkout-spin" size={28} />}
-            </div>
+            <h1>{charge.deposit.method === 'oxxo' ? 'Paga en OXXO' : 'Paga con SPEI'}</h1>
+            <p className="checkout-pix-amount">{formatPrice(charge.amount)}</p>
+            {charge.deposit.method === 'oxxo' && charge.deposit.barcodeUrl && (
+              <div className="checkout-barcode">
+                <img src={charge.deposit.barcodeUrl} alt={`Código de barras de la referencia ${charge.deposit.code}`} />
+              </div>
+            )}
             <label className="checkout-copy">
-              <span>PIX copiar y pegar</span>
-              <input id="pix-code" readOnly value={charge.pix.copyPaste} onFocus={(e) => e.target.select()} />
+              <span>{charge.deposit.method === 'oxxo' ? 'Referencia OXXO' : 'CLABE (18 dígitos)'}</span>
+              <input id="deposit-code" readOnly value={charge.deposit.code} onFocus={(e) => e.target.select()} />
             </label>
-            <button type="button" className="checkout-submit" onClick={copyPix}>
+            <button type="button" className="checkout-submit" onClick={() => copyCode(charge.deposit.code, 'deposit-code')}>
               {copied ? (
                 <>
-                  <Check size={18} /> CÓDIGO COPIADO
+                  <Check size={18} /> COPIADO
                 </>
               ) : (
                 <>
-                  <Copy size={18} /> COPIAR CÓDIGO PIX
+                  <Copy size={18} /> {charge.deposit.method === 'oxxo' ? 'COPIAR REFERENCIA' : 'COPIAR CLABE'}
                 </>
               )}
             </button>
             <p className="checkout-waiting">
               <LoaderCircle className="checkout-spin" size={15} /> Esperando el pago
-              {charge.pix.expiresAt && (
-                <>
-                  {' '}
-                  · <Clock size={13} aria-hidden="true" /> vence en {formatCountdown(pixRemaining)}
-                </>
-              )}
             </p>
             <ol className="checkout-steps">
-              <li>Abre la app de tu banco y entra a la sección PIX.</li>
-              <li>Elige pagar con código QR o con PIX copiar y pegar.</li>
-              <li>Confirma el pago. Esta página se actualiza sola.</li>
+              {charge.deposit.method === 'oxxo' ? (
+                <>
+                  <li>Ve a cualquier tienda OXXO y dile al cajero que vas a hacer un pago de OXXO Pay.</li>
+                  <li>Muestra el código de barras o dicta la referencia y paga {formatPrice(charge.amount)} en efectivo.</li>
+                  <li>La confirmación puede tardar unas horas. Tu acceso se libera solo: vuelve a esta página para entrar.</li>
+                </>
+              ) : (
+                <>
+                  <li>Abre la app de tu banco y elige transferir por SPEI.</li>
+                  <li>Pega la CLABE y envía exactamente {formatPrice(charge.amount)}.</li>
+                  <li>La confirmación llega en segundos. Esta página se actualiza sola.</li>
+                </>
+              )}
             </ol>
           </section>
         )}
@@ -629,19 +500,18 @@ export default function CheckoutPage() {
         {phase === 'expired' && (
           <section className="checkout-status">
             <Clock size={36} />
-            <h1>El PIX venció</h1>
-            <p>El código no se pagó a tiempo. Genera uno nuevo para completar tu compra.</p>
+            <h1>Tu pago venció</h1>
+            <p>El pago no se completó a tiempo. Genera uno nuevo para terminar tu compra.</p>
             <button
               type="button"
               className={`checkout-submit${luxury ? ' luxury' : ''}`}
               onClick={() => {
-                try { sessionStorage.removeItem(`piskou:pix-request:${plan.id}:${quote.totalCents}:${quote.addonIds.join(",")}:${JSON.stringify(selection)}`); localStorage.removeItem('piskou:pendingCharge') } catch {}
+                try { sessionStorage.removeItem(requestStorageKey()); localStorage.removeItem('piskou:pendingCharge') } catch {}
                 setCharge(null)
-                setQrImage('')
                 setPhase('form')
               }}
             >
-              GENERAR NUEVO PIX
+              GENERAR UNO NUEVO
             </button>
           </section>
         )}
@@ -655,7 +525,7 @@ export default function CheckoutPage() {
           </>
         )}
 
-        {phase === 'pix' && <Reviews />}
+        {phase === 'deposit' && <Reviews />}
 
         {phase === 'paid' && (
           <section className="checkout-status success" aria-live="polite">
@@ -673,7 +543,7 @@ export default function CheckoutPage() {
         <StickyCta
           visible={stickyVisible}
           plan={totalPlan}
-          label={method === 'pix' ? 'GENERAR PIX' : 'PAGAR'}
+          label={method === 'oxxo' ? 'GENERAR REFERENCIA' : 'PAGAR CON SPEI'}
           disabled={submitting || unavailable || !configReady || !selection}
           onClick={() => formRef.current?.requestSubmit()}
         />

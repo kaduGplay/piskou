@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
-import { quoteCheckout } from '../src/shared/checkout.js'
+import { formatPrice, quoteCheckout } from '../src/shared/checkout.js'
 import { DEFAULT_SELECTION } from '../src/funnel/data.js'
 const { chromium } = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href)
 const browser = await chromium.launch({ headless: true })
@@ -11,10 +11,11 @@ try {
   await context.route('**/api/**', async (route) => {
     const path = new URL(route.request().url()).pathname
     if (path === '/api/chat') chatRequests++
-    if (path === '/api/checkout-config') return route.fulfill({ json: { available: true, methods: ['pix'] } })
+    if (path === '/api/checkout-config') return route.fulfill({ json: { available: true, methods: ['spei', 'oxxo'] } })
     if (path === '/api/checkout' && route.request().method() === 'POST') {
       const body = route.request().postDataJSON(); charges.push(body); const quote = quoteCheckout(body.planId, body.addons)
-      return route.fulfill({ json: { id: 'test-order', status: 'pending', method: 'pix', planId: body.planId, amount: quote.amount, addons: quote.addonIds, pix: { copyPaste: '000201SYNTHETIC-TEST', expiresAt: new Date(Date.now() + 1800000).toISOString() } } })
+      const deposit = body.method === 'oxxo' ? { method: 'oxxo', code: '8203650002620292', barcodeUrl: null, expiresAt: null } : { method: 'spei', code: '684180417019567955', barcodeUrl: null, expiresAt: null }
+      return route.fulfill({ json: { id: 'test-order', status: 'pending', method: body.method, planId: body.planId, amount: quote.amount, addons: quote.addonIds, deposit } })
     }
     if (path === '/api/checkout-status') return route.fulfill({ json: { status: 'pending' } })
     return route.fulfill({ json: {} })
@@ -29,8 +30,9 @@ try {
   assert.equal(await page.locator('.creator-chat-transition').count(), 0)
   assert.equal(new URL(page.url()).pathname, '/')
   assert.equal(chatRequests, 0)
-  assert.ok(await page.getByText('R$ 14,90', { exact: true }).count())
-  assert.ok(await page.getByText('R$ 27,90', { exact: true }).count())
+  assert.ok(await page.getByText(formatPrice(99), { exact: true }).count())
+  assert.ok(await page.getByText(formatPrice(179), { exact: true }).count())
+  assert.equal(await page.getByText(/R\$/).count(), 0)
   await page.locator('a[href*="plano=premium-access"]').first().click()
   await page.locator('input[name="email"]').waitFor()
   await page.waitForTimeout(500)
@@ -46,18 +48,18 @@ try {
   assert.equal(await voice.isChecked(), false)
   assert.equal(await voice.isDisabled(), false)
   await bump('second-partner').click()
-  assert.ok((await total()).includes('R$ 23,80'))
+  assert.ok((await total()).includes(formatPrice(128)))
   await bump('voice-call').click()
   assert.equal(await voice.isChecked(), true)
-  assert.ok((await total()).includes('R$ 32,70'))
+  assert.ok((await total()).includes(formatPrice(157)))
   await bump('voice-call').click()
-  assert.ok((await total()).includes('R$ 23,80'))
+  assert.ok((await total()).includes(formatPrice(128)))
   await page.getByRole('radio').filter({ hasText: 'Pro' }).first().click()
   assert.equal(await partner.isChecked(), true)
   assert.equal(await partner.isDisabled(), true)
-  assert.ok((await total()).includes('R$ 27,90'))
+  assert.ok((await total()).includes(formatPrice(179)))
   await bump('voice-call').click()
-  assert.ok((await total()).includes('R$ 36,80'))
+  assert.ok((await total()).includes(formatPrice(208)))
   await page.getByRole('radio').filter({ hasText: 'Baby' }).first().click()
   assert.equal(await partner.isChecked(), false)
   assert.equal(await voice.isChecked(), false)
@@ -70,18 +72,24 @@ try {
   assert.ok(await page.getByText('Lucas Ferreira', { exact: true }).count())
   await page.locator('input[name="name"]').fill('Comprador Teste')
   await page.locator('input[name="email"]').fill('comprador@example.test')
+  assert.equal(await page.getByRole('radio', { name: /SPEI/ }).getAttribute('aria-checked'), 'true')
+  await page.getByRole('radio', { name: /OXXO/ }).click()
+  assert.ok((await page.locator('button[type="submit"]').innerText()).includes('OXXO'))
   await page.locator('button[type="submit"]').click()
-  await page.locator('#pix-code').waitFor()
+  await page.locator('#deposit-code').waitFor()
   assert.equal(charges.length, 1)
+  assert.equal(charges[0].method, 'oxxo')
   assert.deepEqual(charges[0].addons, ['second-partner'])
-  assert.equal(await page.locator('.checkout-pix-amount').innerText(), 'R$ 23,80')
+  assert.equal(await page.locator('#deposit-code').inputValue(), '8203650002620292')
+  assert.ok(await page.getByText('Paga en OXXO').count())
+  assert.equal(await page.locator('.checkout-pix-amount').innerText(), formatPrice(128))
   await page.reload()
-  await page.locator('#pix-code').waitFor()
-  assert.equal(await page.locator('.checkout-pix-amount').innerText(), 'R$ 23,80')
+  await page.locator('#deposit-code').waitFor()
+  assert.equal(await page.locator('.checkout-pix-amount').innerText(), formatPrice(128))
   assert.equal(charges.length, 1)
   assert.deepEqual(charges[0].customer, { name: 'Comprador Teste', email: 'comprador@example.test' })
   assert.equal(new URL(page.url()).pathname, '/checkout')
   assert.equal(chatRequests, 0)
   assert.deepEqual(errors, [])
-  console.log('PASS purchase-first funnel: Baby/Pro prices, plans before chat, name/email-only checkout, explicit PIX creation, pending payment stays at checkout')
+  console.log('PASS purchase-first funnel: Baby/Pro MXN prices, plans before chat, name/email-only checkout, SPEI default and OXXO reference, pending payment stays at checkout')
 } finally { await browser.close() }

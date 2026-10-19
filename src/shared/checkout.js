@@ -1,12 +1,14 @@
 // Compartilhado entre o site e as rotas /api. Os preços saem só daqui: o paywall mostra estes valores
 // e o servidor cobra estes valores, ignorando qualquer preço que venha do navegador.
+// Preços em pesos mexicanos (o banco confere os mesmos valores em piskou_purchase_addons).
+export const CURRENCY = 'MXN'
 
 export const PLANS = {
   'messages-120': {
     id: 'messages-120',
     tier: 'premium',
     name: '120 mensajes más',
-    price: 10,
+    price: 39,
     bonusCount: 0,
     purpose: 'messages',
     messageCount: 120,
@@ -15,7 +17,7 @@ export const PLANS = {
     id: 'messages-six',
     tier: 'premium',
     name: '6 mensajes más',
-    price: 10,
+    price: 39,
     bonusCount: 0,
     purpose: 'messages',
   },
@@ -23,7 +25,7 @@ export const PLANS = {
     id: 'messages-unlimited',
     tier: 'luxury',
     name: 'Mensajes ilimitados',
-    price: 19.90,
+    price: 69,
     bonusCount: 0,
     purpose: 'messages',
   },
@@ -31,14 +33,14 @@ export const PLANS = {
     id: 'premium-access',
     tier: 'premium',
     name: 'Baby',
-    price: 14.90,
+    price: 99,
     bonusCount: 0,
   },
   'luxury-access': {
     id: 'luxury-access',
     tier: 'luxury',
     name: 'Pro',
-    price: 27.90,
+    price: 179,
     bonusCount: 8,
   },
   // Upsells de um clique, oferecidos em sequência logo depois do pagamento do Baby ou do Pro.
@@ -46,7 +48,7 @@ export const PLANS = {
     id: 'upsell-video-pack',
     tier: 'premium',
     name: 'Pack de videos de ella',
-    price: 14.90,
+    price: 49,
     bonusCount: 0,
     purpose: 'upsell',
   },
@@ -54,7 +56,7 @@ export const PLANS = {
     id: 'upsell-whatsapp',
     tier: 'premium',
     name: 'Ella te escribe por WhatsApp',
-    price: 14.90,
+    price: 49,
     bonusCount: 0,
     purpose: 'upsell',
   },
@@ -62,7 +64,7 @@ export const PLANS = {
     id: 'upsell-vip',
     tier: 'luxury',
     name: 'Acceso VIP de por vida',
-    price: 19.90,
+    price: 69,
     bonusCount: 0,
     purpose: 'upsell',
   },
@@ -75,13 +77,15 @@ export const SELECTION_STORAGE_KEY = 'piskou:selection'
 // sessionStorage: nome e e-mail do comprador, reaproveitados nas ofertas de um clique após o pagamento.
 export const BUYER_STORAGE_KEY = 'piskou:buyer'
 
-export const formatBRL = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`
+// Preço na moeda atual, ex.: "$49 MXN" ou "$49.50 MXN".
+export const formatPrice = (value) =>
+  `$${value.toLocaleString('es-MX', { minimumFractionDigits: Number.isInteger(value) ? 0 : 2, maximumFractionDigits: 2 })} MXN`
 export const toCents = (value) => Math.round(value * 100)
 
 // Order bumps do primeiro checkout (Baby/Pro). O banco confere os mesmos valores em piskou_purchase_addons.
 export const ORDER_BUMPS = {
-  'voice-call': { id: 'voice-call', name: 'Llamada de voz', description: 'Llamadas de voz con ella, en tiempo real 📞', price: 8.90, originalPrice: 14.90, image: '/checkout-media/voice-call-192.jpg', available: true },
-  'second-partner': { id: 'second-partner', name: 'Segunda compañera', description: 'Crea una segunda compañera solo para ti 👯‍♀️', price: 8.90, originalPrice: 14.90, image: '/checkout-media/second-partner-192.jpg', available: true, includedIn: ['luxury-access'] },
+  'voice-call': { id: 'voice-call', name: 'Llamada de voz', description: 'Llamadas de voz con ella, en tiempo real 📞', price: 29, originalPrice: 49, image: '/checkout-media/voice-call-192.jpg', available: true },
+  'second-partner': { id: 'second-partner', name: 'Segunda compañera', description: 'Crea una segunda compañera solo para ti 👯‍♀️', price: 29, originalPrice: 49, image: '/checkout-media/second-partner-192.jpg', available: true, includedIn: ['luxury-access'] },
 }
 
 export function quoteCheckout(planId, selected = []) {

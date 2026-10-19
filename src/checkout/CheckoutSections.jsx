@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { BadgeCheck, Check, ChevronDown, Crown, Gem, Mail, MessageCircle, Plus, QrCode, ShieldCheck, X } from 'lucide-react'
+import { BadgeCheck, Check, ChevronDown, Crown, Gem, Landmark, Mail, MessageCircle, Plus, ShieldCheck, X } from 'lucide-react'
 import { getResultImage, optionLabel } from '../funnel/data.js'
 import { BENEFIT_ICONS, BONUS_ICONS, FAQ, PLAN_BENEFITS, PLAN_BONUSES, TRUST } from '../funnel/offer.js'
-import { PLANS, ORDER_BUMPS, formatBRL } from '../shared/checkout.js'
+import { PLANS, ORDER_BUMPS, formatPrice } from '../shared/checkout.js'
 
 const PREMIUM = PLANS['premium-access']
 const LUXURY = PLANS['luxury-access']
-const LUXURY_EXTRA = formatBRL(LUXURY.price - PREMIUM.price)
+const LUXURY_EXTRA = formatPrice(LUXURY.price - PREMIUM.price)
 const LUXURY_BONUSES = PLAN_BONUSES[LUXURY.id]
 
 export function CheckoutBanner() {
@@ -74,7 +74,7 @@ export function PlanPicker({ planId, onChange }) {
                 {luxury && <em>Solo {LUXURY_EXTRA} más que Baby</em>}
               </span>
               <span className="checkout-plan-price">
-                <strong>{formatBRL(plan.price)}</strong>
+                <strong>{formatPrice(plan.price)}</strong>
                 <small>Pago único</small>
               </span>
             </button>
@@ -173,7 +173,7 @@ export function PlanIncludes({ plan, onUpgrade }) {
 
 export function HowItWorks({ name }) {
   const steps = [
-    { icon: QrCode, title: 'Paga con PIX', text: 'La confirmación es al instante, directo en la app de tu banco.' },
+    { icon: Landmark, title: 'Paga con SPEI u OXXO', text: 'Con SPEI se confirma en segundos desde la app de tu banco; en OXXO pagas en efectivo y puede tardar unas horas.' },
     { icon: Mail, title: 'Espera la confirmación', text: 'En cuanto se confirme el pago, tu plática se abre automáticamente.' },
     {
       icon: MessageCircle,
@@ -235,7 +235,7 @@ export function OrderBumps({ plan, selected, onChange, disabled }) {
         <input type="checkbox" name={item.id} checked={checked} disabled={disabled || included} onChange={(event) => onChange(event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} />
         <span className="checkout-bump-mark" aria-hidden="true"><Mark size={16} strokeWidth={3} /></span>
         <img src={item.image} alt={item.name} width="62" height="62" loading="lazy" />
-        <span className="checkout-bump-copy"><strong>{item.name}</strong><small>{item.description}</small><span className="checkout-bump-price">{included ? <b>Incluido en {plan.name}</b> : <><del>{formatBRL(item.originalPrice)}</del><b>+{formatBRL(item.price)}</b></>}</span></span>
+        <span className="checkout-bump-copy"><strong>{item.name}</strong><small>{item.description}</small><span className="checkout-bump-price">{included ? <b>Incluido en {plan.name}</b> : <><del>{formatPrice(item.originalPrice)}</del><b>+{formatPrice(item.price)}</b></>}</span></span>
       </label>
     })}
   </fieldset>
@@ -265,7 +265,7 @@ export function StickyCta({ visible, plan, label, disabled, onClick }) {
     <div className={`checkout-sticky${visible ? ' visible' : ''}`} aria-hidden={!visible}>
       <div>
         <small>Piskou {plan.name}</small>
-        <strong>{formatBRL(plan.price)}</strong>
+        <strong>{formatPrice(plan.price)}</strong>
       </div>
       <button
         type="button"
@@ -306,7 +306,7 @@ export function OrderSummary({ plan, selection, addons = [] }) {
         <small>{addons.length ? addons.map((item) => item.name).join(' · ') : plan.purpose === 'messages' ? plan.name : ''}</small>
       </div>
       <div className="checkout-summary-price">
-        <strong>{formatBRL(plan.price)}</strong>
+        <strong>{formatPrice(plan.price)}</strong>
         <small>Pago único</small>
       </div>
     </section>

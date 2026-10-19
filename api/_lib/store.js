@@ -1,4 +1,4 @@
-// Guarda o status de cada cobrança entre o webhook do gateway e a tela do PIX.
+// Guarda o status de cada cobrança entre o webhook do gateway e a tela de pagamento.
 // As funções da Vercel não compartilham memória: em produção usamos Supabase ou Redis.
 // Fora da Vercel (npm run dev), usa um Map em memória: o servidor local é um processo só.
 

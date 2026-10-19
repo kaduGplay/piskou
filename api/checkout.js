@@ -8,12 +8,14 @@ import { sameOrigin } from './_lib/analytics.js'
 import { UUID } from './_lib/analytics.js'
 import { randomUUID, createHash } from 'node:crypto'
 import {
+  CURRENCY,
   PLANS,
   pickCampaignParams,
   validateCustomer,
   quoteCheckout,
 } from '../src/shared/checkout.js'
 import { getGateway } from './_lib/gateway.js'
+import { metaVisit } from './_lib/meta.js'
 import { chargeKey, store } from './_lib/store.js'
 
 // Endereço público do site, usado no callback do gateway. Em localhost não há como o gateway chamar de volta.
@@ -27,11 +29,12 @@ function publicSiteUrl(req) {
 // Telefone de quem comprou o upsell "ela te chama no WhatsApp". O banco confere a compra.
 async function saveWhatsapp(req, res) {
   const session = chatSession(req, res, false)
-  const phone = String(req.body?.phone ?? '').replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '')
+  // Celular mexicano: 10 dígitos, aceitos também com +52 ou +521; grava com o código do país (52).
+  const local = String(req.body?.phone ?? '').replace(/\D/g, '').replace(/^52(1)?(?=\d{10}$)/, '')
   if (!session) return res.status(403).json({ error: 'No encontramos tu sesión.' })
-  if (!/^\d{10,11}$/.test(phone)) return res.status(400).json({ error: 'Escribe tu WhatsApp a 10 dígitos.' })
+  if (!/^\d{10}$/.test(local)) return res.status(400).json({ error: 'Escribe tu WhatsApp a 10 dígitos.' })
   try {
-    const saved = await chatDatabase('rpc/piskou_upsell_contact', { p_id: session, p_phone: phone })
+    const saved = await chatDatabase('rpc/piskou_upsell_contact', { p_id: session, p_phone: `52${local}` })
     if (!saved) return res.status(403).json({ error: 'El pago todavía no está confirmado.' })
     return res.status(200).json({ ok: true })
   } catch {
@@ -39,7 +42,7 @@ async function saveWhatsapp(req, res) {
   }
 }
 
-// POST /api/checkout — cria a cobrança (PIX ou cartão) do plano escolhido.
+// POST /api/checkout — cria a cobrança (depósito SPEI ou OXXO, em pesos) do plano escolhido.
 // O valor vem sempre do catálogo de planos; o navegador só informa qual plano é.
 export default async function handler(req, res) {
   if (req.method !== 'POST')
@@ -64,7 +67,6 @@ export default async function handler(req, res) {
     planId,
     method,
     customer: suppliedCustomer,
-    cardToken,
     tracking,
     analyticsSession,
     requestId,
@@ -84,12 +86,9 @@ export default async function handler(req, res) {
     return res
       .status(400)
       .json({ error: 'Revisa tus datos.', fields: errors })
-  if (method === 'card' && (typeof cardToken !== 'string' || !cardToken)) {
-    return res.status(400).json({ error: 'No se pudo validar la tarjeta.' })
-  }
 
   const order = {
-    id: `piskou_${requestId || randomUUID()}_${createHash('sha256').update(`${plan.id}:${quote.totalCents}:${quote.addonIds.join(',')}`).digest('hex').slice(0, 10)}`,
+    id: `piskou_${requestId || randomUUID()}_${createHash('sha256').update(`${plan.id}:${quote.totalCents}:${quote.addonIds.join(',')}:${method}`).digest('hex').slice(0, 10)}`,
     amountCents: quote.totalCents,
     plan,
     customer: {
@@ -122,24 +121,21 @@ export default async function handler(req, res) {
     }
     if (changed) session = chatSession(req, res, true, true)
     const requestKey =
-      method === 'pix' && requestId
-        ? `checkout:${session}:${plan.id}:${quote.totalCents}:${quote.addonIds.join(',')}:${requestId}`
+      requestId
+        ? `checkout:${session}:${plan.id}:${quote.totalCents}:${quote.addonIds.join(',')}:${method}:${requestId}`
         : null
     if (requestKey) {
       const previous = await store.get(requestKey)
+      const pending = previous?.response.deposit
       if (
         previous &&
         sameChatSelection(previous.selection, selection) &&
-        (!previous.response.pix?.expiresAt ||
-          new Date(previous.response.pix.expiresAt).getTime() > Date.now())
+        (!pending?.expiresAt || new Date(pending.expiresAt).getTime() > Date.now())
       )
         return res.status(200).json(previous.response)
     }
-    const charge =
-      method === 'pix'
-        ? await gateway.createPixCharge(order)
-        : await gateway.createCardCharge({ ...order, cardToken })
-    // Com confirmação por webhook, o pedido precisa ficar registrado para o aviso e a tela do PIX se encontrarem.
+    const charge = await gateway.createDeposit(order, method)
+    // Com confirmação por webhook, o pedido precisa ficar registrado para o aviso e a tela de pagamento se encontrarem.
     if (charge.id) {
       await store.set(chargeKey(charge.id), {
         customer: {
@@ -154,9 +150,11 @@ export default async function handler(req, res) {
         orderId: order.id,
         planId: plan.id,
         amount: quote.amount,
+        currency: CURRENCY,
         addons: quote.addonIds,
         method,
         status: charge.status,
+        meta: metaVisit(req, order.siteUrl),
         createdAt: new Date().toISOString(),
       })
     }
@@ -181,7 +179,7 @@ export default async function handler(req, res) {
       planId: plan.id,
       amount: quote.amount,
       addons: quote.addonIds,
-      pix: charge.pix ?? null,
+      deposit: charge.deposit ?? null,
       testMode: gateway.testMode === true,
     }
     if (requestKey && charge.id && charge.status !== 'failed')

@@ -1,6 +1,6 @@
 # Piskou Create
 
-Código-fonte recuperado de create.piskou.com (o deploy não tinha source maps). O código foi reconstruído a partir do bundle publicado e testado contra o site no ar: o HTML gerado é idêntico e a diferença de pixels é 0% em todas as etapas do funil. Depois disso ganhou checkout próprio (Void Payments, PIX) e rastreio pelo Meta Pixel.
+Código-fonte recuperado de create.piskou.com (o deploy não tinha source maps). O código foi reconstruído a partir do bundle publicado e testado contra o site no ar: o HTML gerado é idêntico e a diferença de pixels é 0% em todas as etapas do funil. Depois disso ganhou checkout próprio e rastreio pelo Meta Pixel. Hoje o funil é para o México: textos em espanhol, preços em pesos (MXN) e pagamento por SPEI ou OXXO pela LiberPay.
 
 ## Rodar localmente
 
@@ -10,11 +10,11 @@ npm run dev       # http://localhost:5173  (?dev=creating ou ?dev=offer pulam di
 npm run build     # gera dist/
 ```
 
-Sem `.env.local`, o checkout roda em modo de teste: nada é cobrado e o PIX é aprovado sozinho em uns 10 s. Com as chaves da Void no `.env.local` (modelo em `.env.example`), os PIX gerados são reais. Em localhost, porém, a tela nunca muda para "aprovado", porque a Void não consegue mandar o aviso de pagamento para o seu computador.
+Sem `PAYMENT_GATEWAY` no `.env.local`, o checkout roda em modo de teste: nada é cobrado e o SPEI/OXXO de teste é aprovado sozinho em uns 10 s. A LiberPay real não funciona localmente: a conta só aceita os IPs fixos da Vercel, e o código recusa chamar a LiberPay fora das regiões com IP fixo.
 
 ## Deploy na Vercel
 
-O projeto já está configurado (`vercel.json`): preset Vite, `npm ci`, saída `dist`, funções da pasta `api/` na região São Paulo (`gru1`), cache longo para as mídias e headers de segurança. O `.vercelignore` impede que `.env*` e o backup `original-build/` sejam enviados.
+O projeto já está configurado (`vercel.json`): preset Vite, `npm ci`, saída `dist`, funções da pasta `api/` na região São Paulo (`gru1`), exceto `api/checkout.js`, que roda em `iad1` para sair pelos IPs fixos da Vercel (ver “Como o pagamento é confirmado”), cache longo para as mídias e headers de segurança. O `.vercelignore` impede que `.env*` e o backup `original-build/` sejam enviados.
 
 1. **Suba o código.** Pode ser pelo GitHub (crie o repositório e importe em vercel.com/new) ou pela CLI (`npx vercel` na pasta do projeto).
 2. **Crie o banco no Supabase Free.** Aplique a migration `supabase/migrations/202610100001_payment_store.sql`. A tabela tem RLS habilitado, sem acesso para visitantes ou usuários do navegador. As funções da Vercel usam uma chave secreta de servidor. Redis continua disponível como alternativa; com ambos configurados, Supabase tem prioridade.
@@ -22,12 +22,14 @@ O projeto já está configurado (`vercel.json`): preset Vite, `npm ci`, saída `
 
    | Variável | Valor |
    |---|---|
-   | `PAYMENT_GATEWAY` | `voidpay` |
-   | `VOIDPAY_PUBLIC_KEY` | chave pública da Void |
-   | `VOIDPAY_SECRET_KEY` | chave secreta da Void |
-   | `VOIDPAY_FIXED_PHONE` | telefone enviado em todas as cobranças (a Void exige) |
-   | `VOIDPAY_FIXED_DOCUMENT` | CPF enviado em todas as cobranças |
-   | `SITE_URL` | `https://criesuaiapiskou.vercel.app` |
+   | `PAYMENT_GATEWAY` | `liberpay` |
+   | `LIBERPAY_CLIENT_ID` | client_id da LiberPay |
+   | `LIBERPAY_CLIENT_SECRET` | client_secret da LiberPay (`lp_sk_...`) |
+   | `LIBERPAY_WEBHOOK_SECRET` | segredo longo e aleatório; vai no endereço do webhook cadastrado no portal da LiberPay |
+   | `LIBERPAY_STATIC_REGIONS` | opcional; regiões da Vercel com IP fixo (padrão `iad1`) |
+   | `META_PIXEL_ID` | `1429884866005189` |
+   | `META_ACCESS_TOKEN` | token da API de Conversões do Pixel |
+   | `SITE_URL` | `https://piskoumx.vercel.app` |
    | `SUPABASE_URL` | URL do projeto Supabase |
    | `SUPABASE_SECRET_KEY` | chave secreta `sb_secret_...` (ou use `SUPABASE_SERVICE_ROLE_KEY` legada) |
 
@@ -52,11 +54,12 @@ src/funnel/offer.js             benefícios, bônus, depoimentos, frase de confi
 src/checkout/                   página /checkout (fluxo em CheckoutPage.jsx, seções em CheckoutSections.jsx)
 src/shared/checkout.js          preços dos planos e validações, usados pelo site e pelo servidor
 api/checkout.js                 cria a cobrança
-api/checkout-status.js          status lido pela tela do PIX
+api/checkout-status.js          status lido pela tela de pagamento (SPEI/OXXO)
 api/checkout-config.js          formas de pagamento disponíveis / se o pagamento está configurado
 api/webhook.js                  recebe o aviso de pagamento do gateway
-api/_lib/gateway.js             escolhe o gateway (mock ou voidpay)
-api/_lib/voidpay.js             integração com a Void Payments
+api/_lib/gateway.js             escolhe o gateway (mock ou liberpay)
+api/_lib/liberpay.js            integração com a LiberPay (SPEI/OXXO em MXN)
+api/_lib/meta.js                compra confirmada enviada à API de Conversões da Meta
 api/_lib/store.js               status das cobranças (Supabase ou Redis na Vercel, memória localmente)
 public/                         todas as mídias do site (66 MB)
 original-build/                 o build publicado antigo, intacto, como backup (não vai para a Vercel)
@@ -75,7 +78,7 @@ original-build/                 o build publicado antigo, intacto, como backup (
 | Qual imagem aparece no final | `getResultImage()` em `src/funnel/data.js` |
 | Textos das etapas | JSX em `src/funnel/Funnel.jsx` |
 
-## Rastreio (Meta Pixel 1512882057313106)
+## Rastreio (Meta Pixel 1429884866005189)
 
 O código base em `index.html` faz o `PageView`; o resto sai de `track()` em `src/funnel/data.js`:
 
@@ -85,30 +88,30 @@ O código base em `index.html` faz o `PageView`; o resto sai de `track()` em `sr
 | Cada etapa do quiz | `EtapaCriador` (personalizado) | `step` |
 | Clicou em "Dê vida à sua IA" | `Lead` | |
 | Viu a oferta | `ViewContent` | |
-| Clicou para ir ao checkout | `AddToCart` | plano, valor, BRL |
-| Abriu o checkout | `InitiateCheckout` | plano, valor, BRL |
+| Clicou para ir ao checkout | `AddToCart` | plano, valor, MXN |
+| Abriu o checkout | `InitiateCheckout` | plano, valor, MXN |
 | Trocou de plano no checkout | `TrocouPlano` (personalizado) | plano, valor |
-| Gerou o PIX | `AddPaymentInfo` | plano, valor |
-| Pagamento aprovado | `Purchase` | plano, valor, BRL, `eventID` = ID da transação |
+| Gerou o SPEI/OXXO | `AddPaymentInfo` | plano, valor |
+| Pagamento aprovado | `Purchase` | plano, valor, MXN, `eventID` = ID da transação |
 
-O Pixel não carrega em localhost, para os testes não entrarem nas métricas. O `Purchase` sai do navegador, então só é registrado se a pessoa ainda estiver na tela do PIX quando o pagamento cair. Para registrar toda venda, mesmo com a aba fechada, dá para enviar o `Purchase` também pelo servidor (API de Conversões do Meta) no webhook, usando o mesmo `eventID` para não contar em dobro. Isso precisa de um token de acesso gerado no Gerenciador de Eventos.
+O Pixel não carrega em localhost, para os testes não entrarem nas métricas. O `Purchase` sai do navegador quando a pessoa ainda está na tela de pagamento e também do servidor: quando o webhook confirma o pagamento, `api/_lib/meta.js` envia a compra à API de Conversões (`META_PIXEL_ID` + `META_ACCESS_TOKEN`), com e-mail e nome com hash, IP, navegador e os cookies `_fbp`/`_fbc` guardados ao gerar a cobrança. O `event_id` é o ID da transação, o mesmo `eventID` do navegador, então a Meta conta a venda uma vez. Assim entram também as vendas do OXXO, que caem horas depois com a página fechada.
 
 ## Checkout
 
-Após “Dê vida”, o criador abre os planos Baby (R$ 14,90) e Pro (R$ 27,90), com pagamento único, iguais aos do create.piskou.com (versão de 15/10/2026). O checkout solicita somente nome e e-mail e usa esses dados também no PIX, com os order bumps Chamada de voz e Segunda Parceira (+R$ 8,90 cada; a Segunda Parceira já vem no Pro). Os preços são validados no servidor e no banco; PIX gerados com os preços anteriores (R$ 10,00 / R$ 19,90) continuam sendo liberados. Pacotes adicionais: 120 mensagens por R$ 10,00 e mensagens ilimitadas na conversa por R$ 19,90. Recompras preservam o histórico.
+Após “Dê vida”, o criador abre os planos Baby (MX$ 99) e Pro (MX$ 179), com pagamento único. O checkout solicita somente nome e e-mail e oferece **SPEI** (transferência; a página mostra a CLABE de 18 dígitos para copiar e confirma em segundos) ou **OXXO** (dinheiro na loja; a página mostra a referência e o código de barras, e a confirmação pode levar horas), com os order bumps Llamada de voz e Segunda compañera (+MX$ 29 cada, de MX$ 49; a Segunda compañera já vem no Pro). Os preços são validados no servidor e no banco (`piskou_purchase_addons`), só em pesos. Pacotes adicionais: 120 mensagens por MX$ 39 e mensagens ilimitadas na conversa por MX$ 69. Recompras preservam o histórico.
 
 ### Ofertas de um clique (`/oferta`)
 
-Depois do pagamento do Baby ou do Pro, o checkout abre `/oferta`, com três ofertas em sequência: **Pack de vídeos dela** (R$ 14,90), **Ela te chama no WhatsApp** (R$ 14,90) e **Acesso VIP vitalício** (R$ 19,90). “Quero” gera o PIX na hora com o nome e o e-mail já informados no checkout; “Não, obrigado” mostra a próxima oferta. No fim, a pessoa vai para o chat.
+Depois do pagamento do Baby ou do Pro, o checkout abre `/oferta`, com três ofertas em sequência: **Pack de videos de ella** (MX$ 49), **Ella te escribe por WhatsApp** (MX$ 49) e **Acceso VIP de por vida** (MX$ 69). “Quero” gera na hora uma CLABE do SPEI com o nome e o e-mail já informados no checkout; “Não, obrigado” mostra a próxima oferta. No fim, a pessoa vai para o chat.
 
 - O servidor só vende uma oferta para quem já pagou o Baby/Pro na mesma conversa, e uma vez por item.
 - **VIP vitalício:** mensagens ilimitadas e conversa que não expira (enquanto a compra estiver ativa; um estorno no painel desfaz).
-- **WhatsApp:** após o pagamento, a página pede o número com DDD, gravado em `piskou_upsell_contacts` (só aceito para quem comprou). O envio da mensagem pelo WhatsApp não está automatizado.
+- **WhatsApp:** após o pagamento, a página pede o celular de 10 dígitos (aceita +52/+521), gravado com o código do país (`52…`) em `piskou_upsell_contacts` (só aceito para quem comprou). O envio da mensagem pelo WhatsApp não está automatizado.
 - **Pack de vídeos:** a compra fica registrada em `piskou_chat_purchases` (`upsell-video-pack`); a entrega do conteúdo não está automatizada.
 
 As compras e os créditos são privados no Supabase. O cookie assinado HttpOnly `piskou_access`, com caminho `/api`, vincula checkout e chat. Uma compra confirmada só é creditada uma vez, mesmo com webhook/polling repetidos. Uma resposta com falha não consome crédito. Sessões são mantidas por 90 dias; um novo envio renova essa retenção. Dados mínimos da cobrança pendente ficam no navegador para retomada, sem dados de cartão. O modelo recebe até as últimas 24 mensagens para limitar o contexto enviado, com `store: false`. Personalidade, relacionamento e preferências continuam orientando o chat, com romance sem conteúdo sexual explícito.
 
-Configure `OPENAI_API_KEY`, `OPENAI_MODEL` e `CHAT_SESSION_SECRET` apenas no servidor e aplique todas as migrações. O fluxo principal segue criação → planos → checkout → PIX → pagamento → chat; as métricas anteriores à mudança conservam os eventos históricos e precisam ser interpretadas separadamente.
+Configure `OPENAI_API_KEY`, `OPENAI_MODEL` e `CHAT_SESSION_SECRET` apenas no servidor e aplique todas as migrações. O fluxo principal segue criação → planos → checkout → SPEI/OXXO → pagamento → chat; as métricas anteriores à mudança conservam os eventos históricos e precisam ser interpretadas separadamente.
 
 Os botões da oferta levam para `/checkout?plano=<id>`, junto com as UTMs. A página mostra, nesta ordem:
 
@@ -123,20 +126,20 @@ O `html`/`body` do site não rolam (o funil rola dentro de `.creator-body`), ent
 
 ### Como o pagamento é confirmado
 
-A Void **bloqueia consultas repetidas de status**: a resposta é "Tentativa de polling bloqueada. Receba atualizações via webhook", com bloqueio de 5 minutos. Por isso o fluxo é este:
+A conta da LiberPay só aceita chamadas de IPs liberados. O projeto tem IPs fixos da Vercel na região `iad1`, e só `api/checkout.js` (a única rota que chama a LiberPay) roda nessa região. Além disso, `api/_lib/liberpay.js` recusa fazer qualquer chamada fora das regiões de `LIBERPAY_STATIC_REGIONS` (inclusive localmente): nenhuma cobrança sai por outro IP. Os IPs fixos aparecem em Vercel → Settings → Networking e precisam estar liberados no portal da LiberPay.
 
-1. `api/checkout.js` cria o PIX na Void (`POST /pix/receive`) com o identificador `piskou_<uuid>` e um único endereço fixo de aviso assinado (`/api/webhook?order=<âncora>&sig=…`, um HMAC da chave secreta), reutilizado entre cobranças. Depois grava a cobrança no banco.
-2. Quando o status muda, a Void chama `api/webhook.js`. O aviso só é aceito com assinatura válida e para uma cobrança gravada no banco. No callback compartilhado, o pedido real é resolvido pelo ID da transação; callbacks antigos por pedido continuam compatíveis. O status é conferido uma vez na Void (`GET /transactions?id=…`); se ela limitar a consulta, vale o status do aviso.
-3. A tela do PIX consulta `api/checkout-status.js` a cada 5 s, por até 1 hora. Essa rota lê o banco e nunca a Void. No Supabase, registros expiram após dois dias, deixam de aparecer nas consultas e são removidos na próxima escrita.
+1. `api/checkout.js` pede um token (`POST /auth/token` com `client_id`/`client_secret`, guardado enquanto vale) e cria o depósito (`POST /payments/deposit`, `currency: "MXN"`, `payment_method: "spei"` ou `"oxxo"`, `external_id` = `piskou_<uuid>_<hash>`, que evita cobrança repetida). Depois grava a cobrança no banco, com moeda, forma de pagamento e os dados da visita para a Meta. O `instructionText` da LiberPay vem em português, então a página mostra as próprias instruções em espanhol.
+2. A LiberPay avisa `api/webhook.js` (`payment.paid`, `payment.failed`, `payment.cancelled`, `payment.refunded`). O aviso só é aceito com a chave secreta no endereço (`?key=<LIBERPAY_WEBHOOK_SECRET>`), para uma transação gravada no banco e com o mesmo valor. Avisos repetidos não liberam duas vezes, e um `payment.created` atrasado não desfaz um pagamento confirmado. Com o pagamento confirmado, o webhook libera a conversa e envia o `Purchase` à API de Conversões.
+3. A tela de pagamento consulta `api/checkout-status.js` a cada 5 s, por até 1 hora; essa rota lê o banco e nunca a LiberPay. No OXXO a pessoa pode fechar a página: ao voltar ao checkout no mesmo navegador, a cobrança pendente é retomada e, se já foi paga, segue para as ofertas.
 
-O telefone e o CPF fixos existem porque o checkout não pede esses dados, e a Void recusa cobrança sem telefone, apesar de a documentação dizer que é opcional.
+Endereço do webhook para cadastrar no portal da LiberPay: `https://piskoumx.vercel.app/api/webhook?key=<LIBERPAY_WEBHOOK_SECRET>`.
 
 ## Pendências antes de vender
 
-- **Entrega do acesso:** quando o webhook confirma o pagamento, falta enviar o acesso ao cliente (`api/webhook.js`, no `if (event.status === 'paid')`). Antes a Kirvano fazia isso. **Sem isso, o cliente paga e não recebe nada.**
-- **Formato do aviso da Void:** o webhook lê `transactionId` e `status`/`transactionStatus`. Confirme no log da primeira venda real (o log mostra os campos recebidos).
-- **Chave secreta:** ela foi compartilhada durante o desenvolvimento. Gere uma nova na Void e use a nova na Vercel.
-- **Cartão:** a Void foi integrada só para PIX.
+- **Formato do token da LiberPay:** a documentação recebida não mostra a resposta de `/auth/token`; o código aceita `access_token`, `accessToken` ou `token` (com `expires_in` opcional). Confirme no log da primeira cobrança real.
+- **Assinatura do webhook:** a documentação recebida não descreve a assinatura dos avisos; a proteção é a chave secreta no endereço. Se a LiberPay assinar os avisos, vale conferir também a assinatura.
+- **Chaves:** o `client_secret` foi compartilhado durante o desenvolvimento. Gere um novo no portal e atualize na Vercel.
+- **Entrega do pack de vídeos e do WhatsApp:** as compras ficam registradas, mas a entrega não é automática.
 
 ## Como a "geração" funciona
 
@@ -170,8 +173,6 @@ Pedidos de foto ou vídeo digitados no chat são identificados via saída estrut
 
 Geração: uma retentativa automática para falhas temporárias de rede, HTTP 408/429/5xx ou saída incompleta, dentro da mesma reserva. Recusas do modelo viram redirecionamento seguro. Se o navegador perder a resposta, consulta o histórico antes de pedir reenvio; mensagens concluídas são recuperadas sem duplicação. Uma indisponibilidade persistente ainda pode impedir respostas, preservando o texto e os créditos. Testes de geração: `node --test tests/chat-model.test.js`.
 
-`VOIDPAY_CALLBACK_ANCHOR` permite reutilizar o endereço de um webhook existente quando a cota da Void já está cheia, sem excluir registros. Não altere essa âncora a cada pedido: URLs distintas criam webhooks distintos e a Void limita a conta a 20.
-
 
 ### Painel de administração
 
@@ -192,7 +193,7 @@ atual. As taxas entre etapas exigem a mesma sessão passando pela anterior prime
 Entradas diretas aparecem nos totais de cada etapa. O gargalo é a maior proporção de
 sessões que ainda não avançaram, com no mínimo 5 sessões na etapa anterior; sessões
 em andamento também entram nessa diferença. O painel não é contado nas visitas.
-PIX e pagamento aprovado são registrados no servidor, por sessão (não representam
+Pagamento gerado e pagamento aprovado são registrados no servidor, por sessão (não representam
 quantidade de transações nem receita). O histórico é retido por até 90 dias, com
 limpeza ao consultar o painel. Bloqueadores e armazenamento indisponível podem
 reduzir a precisão. Métricas indisponíveis nunca impedem o fluxo de chat ou checkout.
@@ -231,11 +232,3 @@ A entrada do criador avança para Características ao escolher explicitamente um
 A aba **Transações** do admin lista cobranças guardadas no servidor, com período, filtro de status e páginas de 50 registros. Atualiza a cada 5 segundos enquanto está visível. O status manual tem efeito operacional: “Pago” confirma o checkout e libera os créditos do pedido; pendente, falhou e expirou retiram os créditos daquela compra, preservando o histórico e o consumo já realizado. Reconfirmar a mesma cobrança não duplica créditos. “Acompanhar o gateway” remove a prioridade manual e aplica a última confirmação recebida do gateway. O checkout e o chat verificam alterações a cada 5 segundos com a tela ativa; o servidor controla o acesso mesmo se a tela estiver desatualizada. Alterar o status não movimenta dinheiro nem faz estorno no banco. A última informação do gateway é preservada separadamente e avisos posteriores não sobrescrevem uma decisão manual ativa.
 
 Alterações têm observação, revisão para evitar sobrescritas entre abas e histórico privado. Marcações manuais já existentes são sincronizadas na migração. Cobranças antigas sem vínculo com uma conversa podem ter seu status alterado, mas não liberam automaticamente o chat; o painel informa essa limitação ao salvar. Nome/e-mail do comprador aparecem nas novas cobranças. A disponibilidade dos registros segue a retenção do armazenamento de pagamentos, sem reconstrução de cobranças já expiradas.
-
-
-O checkout inicia o PIX automaticamente para o plano da URL, sem solicitar cadastro.
-Para PIX, o servidor envia o nome `Usuario Piskou` e o e-mail operacional
-`vasconcelosescala@gmail.com` para a gateway. O acesso continua vinculado ao cookie
-assinado da conversa, não a esse e-mail compartilhado. O valor vem do catálogo do
-servidor. Recarregar retoma a cobrança pendente; o identificador do pedido permite
-reutilizar a resposta de uma geração concluída, e uma falha mostra uma ação para tentar novamente.

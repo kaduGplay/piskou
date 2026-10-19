@@ -24,9 +24,10 @@ import {
 } from './offer.js'
 import {
   CAMPAIGN_PARAMS,
+  CURRENCY,
   PLANS as CATALOG,
   SELECTION_STORAGE_KEY,
-  formatBRL,
+  formatPrice,
 } from '../shared/checkout.js'
 import './PaywallSheet.css'
 
@@ -137,7 +138,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
       track(EVENTS.CHECKOUT_CLICK, {
         plan: chosen.id,
         value: chosen.price,
-        currency: 'BRL',
+        currency: CURRENCY,
         visual_style: sel.style,
       })
     })
@@ -223,7 +224,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
                     </small>
                   </span>
                   <span className="message-upgrade-price">
-                    <strong>{formatBRL(option.price)}</strong>
+                    <strong>{formatPrice(option.price)}</strong>
                     <small>pago único</small>
                   </span>
                 </label>
@@ -358,7 +359,7 @@ export default function PaywallSheet({ sel, onClose, source }) {
                     </small>
                   </span>
                   <span className="paywall-plan-price">
-                    <strong>{formatBRL(option.price)}</strong>
+                    <strong>{formatPrice(option.price)}</strong>
                     <small>Pago único</small>
                   </span>
                 </button>
@@ -414,13 +415,13 @@ export default function PaywallSheet({ sel, onClose, source }) {
               onClickCapture={(event) => goToCheckout(event, plan)}
             >
               {fromChat
-                ? `SEGUIR LA PLÁTICA · ${formatBRL(plan.price)}`
-                : `DESBLOQUEAR ${plan.name.toUpperCase()} POR ${formatBRL(plan.price)}`}{' '}
+                ? `SEGUIR LA PLÁTICA · ${formatPrice(plan.price)}`
+                : `DESBLOQUEAR ${plan.name.toUpperCase()} POR ${formatPrice(plan.price)}`}{' '}
               <ArrowRight size={17} />
             </a>
             <p className="paywall-checkout-note">
               <ShieldCheck size={14} aria-hidden="true" /> Pago seguro con
-              PIX · Sin renovación automática
+              SPEI u OXXO · Sin renovación automática
             </p>
 
             <div className="paywall-trust">
@@ -517,8 +518,8 @@ export default function PaywallSheet({ sel, onClose, source }) {
                 onClickCapture={(event) => goToCheckout(event, plan)}
               >
                 {fromChat
-                  ? `SEGUIR LA PLÁTICA · ${formatBRL(plan.price)}`
-                  : `DESBLOQUEAR ${plan.name.toUpperCase()} POR ${formatBRL(plan.price)}`}{' '}
+                  ? `SEGUIR LA PLÁTICA · ${formatPrice(plan.price)}`
+                  : `DESBLOQUEAR ${plan.name.toUpperCase()} POR ${formatPrice(plan.price)}`}{' '}
                 <ArrowRight size={17} />
               </a>
               <p className="paywall-checkout-note">

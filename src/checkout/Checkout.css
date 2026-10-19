@@ -441,6 +441,29 @@
   font: 12px ui-monospace, monospace;
 }
 
+/* CLABE e referência OXXO são digitadas ou ditadas: maiores e legíveis. */
+.checkout-deposit .checkout-copy input {
+  height: 50px;
+  color: #fff;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.checkout-barcode {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.checkout-barcode img {
+  display: block;
+  width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+}
+
 .checkout-waiting {
   margin: 0;
   display: flex;

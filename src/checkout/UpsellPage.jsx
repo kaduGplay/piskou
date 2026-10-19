@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import QRCode from 'qrcode'
 import { Check, CircleCheck, Copy, Crown, Infinity, LoaderCircle, MessageCircle, Phone, PlayCircle, ShieldCheck, Video } from 'lucide-react'
 import { EVENTS, getResultImage, track } from '../funnel/data.js'
 import { readSavedSelection } from '../shared/progress.js'
 import { analyticsIdentity } from '../shared/analytics.js'
-import { BUYER_STORAGE_KEY, PLANS, UPSELL_SEQUENCE, formatBRL, onlyDigits, validateCustomer } from '../shared/checkout.js'
+import { BUYER_STORAGE_KEY, CURRENCY, PLANS, UPSELL_SEQUENCE, formatPrice, onlyDigits, validateCustomer } from '../shared/checkout.js'
 import './UpsellPage.css'
 
 const STEP_KEY = 'piskou:upsell-step'
@@ -57,15 +56,14 @@ const writeJson = (storage, key, value) => {
   }
 }
 
-// Ofertas de um clique depois do pagamento: Quero gera o PIX na hora com os dados já informados; Não, obrigado passa para a próxima.
+// Ofertas de um clique depois do pagamento: Quero gera a CLABE do SPEI na hora com os dados já informados; Não, obrigado passa para a próxima.
 export default function UpsellPage() {
   const [selection] = useState(readSavedSelection)
   const [buyer, setBuyer] = useState(() => readJson(sessionStorage, BUYER_STORAGE_KEY) || { name: '', email: '' })
   const [step, setStep] = useState(() => Math.min(UPSELL_SEQUENCE.length, Math.max(0, Number(readJson(sessionStorage, STEP_KEY)) || 0)))
-  const [charge, setCharge] = useState(() => readJson(sessionStorage, CHARGE_KEY))
-  const [phase, setPhase] = useState(() => (readJson(sessionStorage, CHARGE_KEY) ? 'pix' : 'offer'))
+  const [charge, setCharge] = useState(() => (readJson(sessionStorage, CHARGE_KEY)?.deposit?.code ? readJson(sessionStorage, CHARGE_KEY) : null))
+  const [phase, setPhase] = useState(() => (readJson(sessionStorage, CHARGE_KEY)?.deposit?.code ? 'pay' : 'offer'))
   const [error, setError] = useState('')
-  const [qrImage, setQrImage] = useState('')
   const [copied, setCopied] = useState(false)
   const [phone, setPhone] = useState('')
   const requestRef = useRef(null)
@@ -87,7 +85,6 @@ export default function UpsellPage() {
     writeJson(sessionStorage, CHARGE_KEY, null)
     requestRef.current = null
     setCharge(null)
-    setQrImage('')
     setCopied(false)
     setError('')
     setPhase('offer')
@@ -98,7 +95,7 @@ export default function UpsellPage() {
   const accept = async () => {
     if (busy.current) return
     if (needsBuyer) {
-      setError('Revisa tu nombre y correo para generar el PIX.')
+      setError('Revisa tu nombre y correo para generar tu pago.')
       return
     }
     busy.current = true
@@ -111,7 +108,7 @@ export default function UpsellPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId,
-          method: 'pix',
+          method: 'spei',
           requestId: requestRef.current,
           selection,
           customer: buyer,
@@ -120,16 +117,16 @@ export default function UpsellPage() {
       })
       const data = await response.json().catch(() => ({}))
       if (data.code === 'owned') return next()
-      if (!response.ok || data.status === 'failed' || !data.pix?.copyPaste) {
+      if (!response.ok || data.status === 'failed' || !data.deposit?.code) {
         setPhase('offer')
-        setError(data.error || 'No se pudo generar el PIX en este momento. Intenta de nuevo.')
+        setError(data.error || 'No se pudo generar tu pago en este momento. Intenta de nuevo.')
         return
       }
-      const saved = { id: data.id, planId, amount: data.amount, pix: data.pix }
+      const saved = { id: data.id, planId, amount: data.amount, deposit: data.deposit }
       writeJson(sessionStorage, CHARGE_KEY, saved)
       setCharge(saved)
-      setPhase('pix')
-      track(EVENTS.PIX_GENERATED, { plan: planId, value: data.amount, currency: 'BRL' })
+      setPhase('pay')
+      track(EVENTS.PIX_GENERATED, { plan: planId, value: data.amount, currency: CURRENCY, method: 'spei' })
     } catch {
       setPhase('offer')
       setError('Sin conexión. Revisa tu internet e intenta de nuevo.')
@@ -138,9 +135,9 @@ export default function UpsellPage() {
     }
   }
 
-  // Aguarda a confirmação do PIX da oferta atual.
+  // Aguarda a confirmação do SPEI da oferta atual.
   useEffect(() => {
-    if (phase !== 'pix' || !charge) return
+    if (phase !== 'pay' || !charge) return
     let stopped = false
     const check = async () => {
       try {
@@ -150,14 +147,14 @@ export default function UpsellPage() {
         if (stopped) return
         if (status === 'paid') {
           writeJson(sessionStorage, CHARGE_KEY, null)
-          track(EVENTS.PAYMENT_APPROVED, { plan: charge.planId, value: charge.amount, currency: 'BRL', method: 'pix', transaction_id: charge.id })
+          track(EVENTS.PAYMENT_APPROVED, { plan: charge.planId, value: charge.amount, currency: CURRENCY, method: 'spei', transaction_id: charge.id })
           setPhase('paid')
         } else if (status === 'expired' || status === 'failed') {
           writeJson(sessionStorage, CHARGE_KEY, null)
           requestRef.current = null
           setCharge(null)
           setPhase('offer')
-          setError(status === 'expired' ? 'El PIX venció. Genera uno nuevo para continuar.' : 'Pago no aprobado. Intenta de nuevo.')
+          setError(status === 'expired' ? 'Tu pago venció. Genera uno nuevo para continuar.' : 'Pago no aprobado. Intenta de nuevo.')
         }
       } catch {
         /* tenta de novo no próximo ciclo */
@@ -171,13 +168,6 @@ export default function UpsellPage() {
     }
   }, [phase, charge])
 
-  useEffect(() => {
-    if (!charge?.pix?.copyPaste) return
-    QRCode.toDataURL(charge.pix.copyPaste, { margin: 1, width: 440, errorCorrectionLevel: 'M' })
-      .then(setQrImage)
-      .catch(() => setQrImage(''))
-  }, [charge])
-
   // Pack e VIP seguem sozinhos para a próxima oferta; o WhatsApp espera o número.
   useEffect(() => {
     if (phase !== 'paid' || planId === 'upsell-whatsapp') return
@@ -185,9 +175,9 @@ export default function UpsellPage() {
     return () => clearTimeout(timer)
   }, [phase, planId])
 
-  const copyPix = async () => {
+  const copyClabe = async () => {
     try {
-      await navigator.clipboard.writeText(charge.pix.copyPaste)
+      await navigator.clipboard.writeText(charge.deposit.code)
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     } catch {
@@ -197,8 +187,9 @@ export default function UpsellPage() {
 
   const savePhone = async (event) => {
     event.preventDefault()
-    const digits = onlyDigits(phone)
-    if (digits.length < 10 || digits.length > 11) {
+    // Acepta el número con o sin +52 / +521.
+    const digits = onlyDigits(phone).replace(/^52(1)?(?=\d{10}$)/, '')
+    if (digits.length !== 10) {
       setError('Escribe tu WhatsApp a 10 dígitos.')
       return
     }
@@ -267,7 +258,7 @@ export default function UpsellPage() {
                 ))}
               </ul>
               <div className="upsell-price">
-                <strong>{formatBRL(plan.price)}</strong>
+                <strong>{formatPrice(plan.price)}</strong>
                 <span>{planId === 'upsell-vip' ? <><Infinity size={15} aria-hidden="true" /> para siempre</> : 'pago único'}</span>
               </div>
               {needsBuyer && (
@@ -286,33 +277,36 @@ export default function UpsellPage() {
               <button type="button" className="upsell-accept" onClick={accept} disabled={phase === 'creating'}>
                 {phase === 'creating' ? (
                   <>
-                    <LoaderCircle className="upsell-spin" size={18} /> GENERANDO PIX...
+                    <LoaderCircle className="upsell-spin" size={18} /> GENERANDO CLABE...
                   </>
                 ) : (
-                  `${offer.cta} · ${formatBRL(plan.price)}`
+                  `${offer.cta} · ${formatPrice(plan.price)}`
                 )}
               </button>
               <button type="button" className="upsell-decline" onClick={next} disabled={phase === 'creating'}>
                 No, gracias
               </button>
               <p className="upsell-secure">
-                <ShieldCheck size={14} aria-hidden="true" /> Un clic · PIX · sin volver a llenar tus datos
+                <ShieldCheck size={14} aria-hidden="true" /> Un clic · SPEI · sin volver a llenar tus datos
               </p>
             </div>
           </section>
         )}
 
-        {phase === 'pix' && charge && (
+        {phase === 'pay' && charge && (
           <section className="upsell-card upsell-pix" aria-live="polite">
-            <span className="upsell-eyebrow">PAGA CON PIX</span>
+            <span className="upsell-eyebrow">PAGA CON SPEI</span>
             <h1>{plan.name}</h1>
-            <p className="upsell-pix-amount">{formatBRL(charge.amount)}</p>
-            <div className="upsell-qr">{qrImage ? <img src={qrImage} alt="Código QR del PIX" /> : <LoaderCircle className="upsell-spin" size={28} />}</div>
-            <button type="button" className="upsell-accept" onClick={copyPix}>
-              {copied ? <><Check size={18} /> CÓDIGO COPIADO</> : <><Copy size={18} /> COPIAR CÓDIGO PIX</>}
+            <p className="upsell-pix-amount">{formatPrice(charge.amount)}</p>
+            <label className="upsell-clabe">
+              CLABE (18 dígitos)
+              <input id="upsell-clabe" readOnly value={charge.deposit.code} onFocus={(event) => event.target.select()} />
+            </label>
+            <button type="button" className="upsell-accept" onClick={copyClabe}>
+              {copied ? <><Check size={18} /> CLABE COPIADA</> : <><Copy size={18} /> COPIAR CLABE</>}
             </button>
             <p className="upsell-waiting">
-              <LoaderCircle className="upsell-spin" size={16} aria-hidden="true" /> Esperando el pago. Esta pantalla se actualiza sola.
+              <LoaderCircle className="upsell-spin" size={16} aria-hidden="true" /> Transfiere exactamente {formatPrice(charge.amount)} por SPEI desde la app de tu banco. Esta pantalla se actualiza sola.
             </p>
             {error && <p className="upsell-error" role="alert">{error}</p>}
             <button type="button" className="upsell-decline" onClick={next}>

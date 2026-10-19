@@ -2,8 +2,8 @@ import { chatSession, chatDatabase } from './_lib/chat.js'
 import { getGateway } from './_lib/gateway.js'
 import { chargeKey, store } from './_lib/store.js'
 
-// GET /api/checkout-status?id=... — consultado pela tela do PIX enquanto espera o pagamento.
-// Gateways com confirmação por webhook (Void) são lidos do store, nunca consultados direto.
+// GET /api/checkout-status?id=... — consultado pela tela de pagamento (SPEI/OXXO) enquanto espera a confirmação.
+// Gateways com confirmação por webhook (LiberPay) são lidos do store, nunca consultados direto.
 export default async function handler(req, res) {
   if (req.method !== 'GET')
     return res.status(405).json({ error: 'Método no permitido.' })

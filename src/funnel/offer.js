@@ -14,7 +14,7 @@ import {
   UsersRound,
   Video,
 } from 'lucide-react'
-import { PLANS as CATALOG, formatBRL } from '../shared/checkout.js'
+import { PLANS as CATALOG, formatPrice } from '../shared/checkout.js'
 
 // O que cada plano entrega e os depoimentos: usados pela oferta (PaywallSheet) e pelo checkout.
 
@@ -144,8 +144,8 @@ export const TRUST = {
   subtitle: 'Compra segura y discreta',
 }
 
-const PREMIUM_PRICE = formatBRL(CATALOG['premium-access'].price)
-const LUXURY_PRICE = formatBRL(CATALOG['luxury-access'].price)
+const PREMIUM_PRICE = formatPrice(CATALOG['premium-access'].price)
+const LUXURY_PRICE = formatPrice(CATALOG['luxury-access'].price)
 
 export const FAQ = [
   {
@@ -164,11 +164,11 @@ export const FAQ = [
   {
     question: '¿Cuándo recibo mi acceso?',
     answer:
-      'Tu acceso se libera en cuanto se confirma el pago, aquí mismo en el sitio. Con PIX, la confirmación suele tardar unos segundos.',
+      'Tu acceso se libera en cuanto se confirma el pago, aquí mismo en el sitio. Con SPEI la confirmación tarda unos segundos; en OXXO puede tardar unas horas.',
   },
   {
     question: '¿Dónde hago el pago?',
     answer:
-      'Aquí mismo, en el checkout seguro de Piskou, con PIX. Revisas el precio del plan antes de pagar y la confirmación es al instante.',
+      'Aquí mismo, en el checkout seguro de Piskou: por transferencia SPEI desde tu banco o en efectivo en cualquier OXXO. Revisas el precio del plan antes de pagar.',
   },
 ]

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { pathToFileURL } from 'node:url'
 import { DEFAULT_SELECTION } from '../src/funnel/data.js'
-import { PLANS } from '../src/shared/checkout.js'
+import { PLANS, formatPrice } from '../src/shared/checkout.js'
 const { chromium } = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href)
 const origin = process.env.CHAT_TEST_ORIGIN || 'http://127.0.0.1:5173'
 const browser = await chromium.launch({ headless: true })
@@ -24,7 +24,7 @@ async function run(choices) {
         return route.fulfill({ json: { ok: true } })
       }
       charges.push(body)
-      return route.fulfill({ json: { id: `tx-${body.planId}`, status: 'pending', method: 'pix', planId: body.planId, amount: PLANS[body.planId].price, pix: { copyPaste: '000201SYNTHETIC-' + body.planId, expiresAt: new Date(Date.now() + 1800000).toISOString() } } })
+      return route.fulfill({ json: { id: `tx-${body.planId}`, status: 'pending', method: body.method, planId: body.planId, amount: PLANS[body.planId].price, deposit: { method: 'spei', code: '684180417019567955', barcodeUrl: null, expiresAt: null } } })
     }
     if (url.pathname === '/api/checkout-status') {
       const id = url.searchParams.get('id')
@@ -42,17 +42,18 @@ async function run(choices) {
     await page.locator(`ol[aria-label="Oferta ${index + 1} de 3"]`).waitFor()
     await page.locator('#upsell-title').waitFor()
     const accept = page.locator('.upsell-accept')
-    assert.ok((await accept.innerText()).includes(PLANS[planId].price.toFixed(2).replace('.', ',')), `${planId} price on button`)
+    assert.ok((await accept.innerText()).includes(formatPrice(PLANS[planId].price)), `${planId} price on button`)
     if (choice === 'decline') {
       await page.getByRole('button', { name: 'No, gracias' }).click()
       continue
     }
     await accept.click()
-    await page.locator('.upsell-qr img').waitFor()
-    assert.ok((await page.locator('.upsell-pix-amount').innerText()).includes(PLANS[planId].price.toFixed(2).replace('.', ',')))
+    await page.locator('#upsell-clabe').waitFor()
+    assert.equal(await page.locator('#upsell-clabe').inputValue(), '684180417019567955')
+    assert.ok((await page.locator('.upsell-pix-amount').innerText()).includes(formatPrice(PLANS[planId].price)))
     await page.locator('.upsell-done').waitFor({ timeout: 15000 })
     if (planId === 'upsell-whatsapp') {
-      await page.locator('#upsell-phone').fill('(11) 99999-8888')
+      await page.locator('#upsell-phone').fill('+52 1 55 1234 5678')
       await page.getByRole('button', { name: 'CONFIRMAR MI WHATSAPP' }).click()
     } else {
       await page.getByRole('button', { name: 'CONTINUAR' }).click()
@@ -69,13 +70,13 @@ try {
   assert.deepEqual(first.charges.map((c) => c.planId), ['upsell-video-pack', 'upsell-vip'])
   for (const charge of first.charges) {
     assert.deepEqual(charge.customer, { name: 'Comprador Teste', email: 'comprador@example.test' })
-    assert.equal(charge.method, 'pix')
+    assert.equal(charge.method, 'spei')
     assert.equal(charge.addons, undefined)
   }
   const second = await run({ 'upsell-video-pack': 'decline', 'upsell-whatsapp': 'accept', 'upsell-vip': 'decline' })
   assert.deepEqual(second.charges.map((c) => c.planId), ['upsell-whatsapp'])
-  assert.deepEqual(second.contacts, ['11999998888'])
-  console.log('PASS one-click offers: accept generates PIX with saved buyer, decline shows the next offer, WhatsApp asks for the number, then chat')
+  assert.deepEqual(second.contacts, ['5512345678'])
+  console.log('PASS one-click offers: accept generates a SPEI CLABE with saved buyer, decline shows the next offer, WhatsApp asks for the number, then chat')
 } finally {
   await browser.close()
 }

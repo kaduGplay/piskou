@@ -30,13 +30,13 @@ test('signed chat identity is available to checkout and rejects tampering', () =
   )
 })
 test('message products have the authorized fixed prices', () => {
-  assert.equal(PLANS['premium-access'].price, 14.90)
-  assert.equal(PLANS['luxury-access'].price, 27.90)
-  assert.equal(PLANS['messages-six'].price, 10)
-  assert.equal(PLANS['messages-unlimited'].price, 19.90)
+  assert.equal(PLANS['premium-access'].price, 99)
+  assert.equal(PLANS['luxury-access'].price, 179)
+  assert.equal(PLANS['messages-six'].price, 39)
+  assert.equal(PLANS['messages-unlimited'].price, 69)
   assert.equal(PLANS['messages-six'].purpose, 'messages')
-  assert.equal(PLANS['messages-120'].price, 10)
-  assert.deepEqual(['upsell-video-pack', 'upsell-whatsapp', 'upsell-vip'].map((id) => [PLANS[id].price, PLANS[id].purpose]), [[14.90, 'upsell'], [14.90, 'upsell'], [19.90, 'upsell']])
+  assert.equal(PLANS['messages-120'].price, 39)
+  assert.deepEqual(['upsell-video-pack', 'upsell-whatsapp', 'upsell-vip'].map((id) => [PLANS[id].price, PLANS[id].purpose]), [[49, 'upsell'], [49, 'upsell'], [69, 'upsell']])
   assert.equal(PLANS['messages-120'].messageCount, 120)
   assert.equal(PLANS['messages-120'].purpose, 'messages')
 })
@@ -148,35 +148,44 @@ test('checkout binds purchase to signed owner and status cannot grant another br
         body: {
           planId: 'premium-access',
           selection: DEFAULT_SELECTION,
-          method: 'card',
-          cardToken: 'test-token',
+          method: 'spei',
+          requestId: '10000000-1000-4000-8000-100000000000',
           customer: { name: 'Teste', email: 'teste@example.test' },
         },
       },
       res,
     )
     assert.equal(res.code, 200)
-    assert.equal(res.data.status, 'paid')
-    assert.equal(grants, 1)
+    assert.equal(res.data.status, 'pending')
+    assert.equal(res.data.deposit.method, 'spei')
+    assert.equal(res.data.deposit.code.length, 18)
+    assert.equal(grants, 0)
     const cookie = res.headers['Set-Cookie'].split(';')[0]
-    const other = response()
-    await status(
-      { method: 'GET', headers: {}, query: { id: res.data.id } },
-      other,
-    )
-    assert.equal(other.code, 404)
-    assert.equal(grants, 1)
-    const own = response()
-    await status(
-      { method: 'GET', headers: { cookie }, query: { id: res.data.id } },
-      own,
-    )
-    assert.equal(own.data.status, 'paid')
-    assert.equal(grants, 2) // Database idempotency handles repeated confirmations.
+    // O depósito de teste é aprovado ~10 s depois de gerado.
+    const realNow = Date.now
+    Date.now = () => realNow() + 11000
+    try {
+      const other = response()
+      await status(
+        { method: 'GET', headers: {}, query: { id: res.data.id } },
+        other,
+      )
+      assert.equal(other.code, 404)
+      assert.equal(grants, 0)
+      const own = response()
+      await status(
+        { method: 'GET', headers: { cookie }, query: { id: res.data.id } },
+        own,
+      )
+      assert.equal(own.data.status, 'paid')
+      assert.equal(grants, 1)
+    } finally {
+      Date.now = realNow
+    }
     const pixRequest = {
       method: 'POST',
       headers: { host: 'test.local', origin: 'http://test.local', cookie },
-      body: { planId: 'luxury-access', method: 'pix', selection: DEFAULT_SELECTION,
+      body: { planId: 'luxury-access', method: 'oxxo', selection: DEFAULT_SELECTION,
         requestId: '20000000-2000-4000-8000-200000000000', amount: 0.01,
         customer: { name: 'Ignored', email: 'ignored@example.test' } },
     }
@@ -184,6 +193,7 @@ test('checkout binds purchase to signed owner and status cannot grant another br
     await checkout(pixRequest, pix)
     assert.equal(pix.code, 200)
     assert.equal(pix.data.amount, PLANS['luxury-access'].price)
+    assert.equal(pix.data.deposit.method, 'oxxo')
     assert.deepEqual(charges.get('charge:' + pix.data.id).customer,
       { name: 'Ignored', email: 'ignored@example.test' })
     const repeated = response()
@@ -197,13 +207,13 @@ test('checkout binds purchase to signed owner and status cannot grant another br
     const addonRequest = { ...pixRequest, body: { ...pixRequest.body, planId: 'premium-access', addons: ['second-partner'], amount: 0.01, requestId: '30000000-3000-4000-8000-300000000000' } }
     const addon = response(); await checkout(addonRequest, addon)
     assert.equal(addon.code, 200)
-    assert.equal(addon.data.amount, 23.80)
+    assert.equal(addon.data.amount, 128)
     assert.deepEqual(charges.get('charge:' + addon.data.id).addons, ['second-partner'])
     const addonRepeated = response(); await checkout(addonRequest, addonRepeated)
     assert.equal(addonRepeated.data.id, addon.data.id)
     const voice = response(); await checkout({ ...addonRequest, body: { ...addonRequest.body, addons: ['voice-call', 'second-partner'], requestId: '40000000-4000-4000-8000-400000000000' } }, voice)
     assert.equal(voice.code, 200)
-    assert.equal(voice.data.amount, 32.70)
+    assert.equal(voice.data.amount, 157)
     assert.deepEqual(charges.get('charge:' + voice.data.id).addons, ['second-partner', 'voice-call'])
     const before = charges.size
     const unknown = response(); await checkout({ ...addonRequest, body: { ...addonRequest.body, addons: ['video-call'] } }, unknown)
@@ -218,7 +228,7 @@ test('checkout binds purchase to signed owner and status cannot grant another br
     purchases = [{ plan_id: 'premium-access' }]
     const vip = response(); await checkout(upsellRequest, vip)
     assert.equal(vip.code, 200)
-    assert.equal(vip.data.amount, 19.90)
+    assert.equal(vip.data.amount, 69)
     assert.equal(charges.get('charge:' + vip.data.id).planId, 'upsell-vip')
     const withAddon = response(); await checkout({ ...upsellRequest, body: { ...upsellRequest.body, addons: ['voice-call'], requestId: '60000000-6000-4000-8000-600000000000' } }, withAddon)
     assert.equal(withAddon.code, 400)
@@ -228,19 +238,15 @@ test('checkout binds purchase to signed owner and status cannot grant another br
 
     const whatsapp = (phone, headers = pixRequest.headers) => { const r = response(); return checkout({ method: 'POST', headers, body: { action: 'whatsapp', phone } }, r).then(() => r) }
     assert.equal((await whatsapp('123')).code, 400)
-    assert.equal((await whatsapp('(11) 99999-8888', { host: 'test.local', origin: 'http://test.local' })).code, 403)
-    const savedPhone = await whatsapp('+55 (11) 99999-8888')
+    assert.equal((await whatsapp('55 1234 5678', { host: 'test.local', origin: 'http://test.local' })).code, 403)
+    const savedPhone = await whatsapp('+52 1 55 1234 5678')
     assert.equal(savedPhone.code, 200)
-    assert.equal(contacts.at(-1).p_phone, '11999998888')
+    assert.equal(contacts.at(-1).p_phone, '525512345678')
+    assert.equal((await whatsapp('(55) 1234-5678')).code, 200)
+    assert.equal(contacts.at(-1).p_phone, '525512345678')
+    assert.equal((await whatsapp('+55 (11) 99999-8888')).code, 400)
     contactSaved = false
-    assert.equal((await whatsapp('11999998888')).code, 403)
-
-    failGrant = true
-    const deferred = response()
-    await checkout({method:'POST',headers:{host:'test.local',origin:'http://test.local'},body:{planId:'premium-access',selection:DEFAULT_SELECTION,method:'card',cardToken:'test-token',customer:{name:'Teste',email:'teste@example.test'}}},deferred)
-    assert.equal(deferred.code,200)
-    assert.equal(deferred.data.status,'processing')
-    assert.equal(charges.get('charge:'+deferred.data.id).status,'paid')
+    assert.equal((await whatsapp('5512345678')).code, 403)
 
   } finally {
     globalThis.fetch = originalFetch

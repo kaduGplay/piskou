@@ -1,5 +1,6 @@
 import { chatDatabase } from './_lib/chat.js'
 import { getGateway } from './_lib/gateway.js'
+import { sendMetaPurchase } from './_lib/meta.js'
 import { chargeKey, store } from './_lib/store.js'
 
 // POST /api/webhook — o gateway avisa aqui quando um pagamento muda de status.
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
     orderId: event.orderId,
     id: event.id,
     status: event.rawStatus,
-    conferidoNaVoid: event.verified,
+    conferidoNoGateway: event.verified,
     campos: event.fields,
   })
 
@@ -36,7 +37,9 @@ export default async function handler(req, res) {
     })
     return res.status(404).json({ error: 'Cobrança não encontrada.' })
   }
-  if ((charge.gatewayStatus || charge.status) !== event.status) {
+  // Um aviso atrasado de "criado" não desfaz um pagamento já confirmado.
+  const late = (charge.gatewayStatus || charge.status) === 'paid' && event.status === 'pending'
+  if (!late && (charge.gatewayStatus || charge.status) !== event.status) {
     await store.set(key, {
       ...charge,
       status: event.status,
@@ -55,6 +58,10 @@ export default async function handler(req, res) {
       return res.status(503).json({
         error: 'Pagamento confirmado; liberação pendente. Tente novamente.',
       })
+    }
+    // Compra para a Meta, uma vez por cobrança (avisos repetidos não reenviam).
+    if (!effective.metaSentAt && (await sendMetaPurchase(event.id, effective))) {
+      await store.set(key, { ...effective, metaSentAt: new Date().toISOString() })
     }
   }
   return res.status(200).json({ received: true })
