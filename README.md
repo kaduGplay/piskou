@@ -94,7 +94,7 @@ O Pixel não carrega em localhost, para os testes não entrarem nas métricas. O
 
 ## Checkout
 
-Após “Dê vida à sua IA”, o criador abre os planos Baby (R$ 14,90) e Pro (R$ 27,90), com pagamento único, iguais aos do create.piskou.com (versão de 15/10/2026). O checkout solicita somente nome e e-mail e usa esses dados também no PIX, com os order bumps Chamada de voz e Segunda Parceira (+R$ 8,90 cada; a Segunda Parceira já vem no Pro). Os preços são validados no servidor e no banco; PIX gerados com os preços anteriores (R$ 10,00 / R$ 19,90) continuam sendo liberados. Pacotes adicionais: 120 mensagens por R$ 10,00 e mensagens ilimitadas na conversa por R$ 19,90. Recompras preservam o histórico.
+Após “Dê vida”, o criador abre os planos Baby (R$ 14,90) e Pro (R$ 27,90), com pagamento único, iguais aos do create.piskou.com (versão de 15/10/2026). O checkout solicita somente nome e e-mail e usa esses dados também no PIX, com os order bumps Chamada de voz e Segunda Parceira (+R$ 8,90 cada; a Segunda Parceira já vem no Pro). Os preços são validados no servidor e no banco; PIX gerados com os preços anteriores (R$ 10,00 / R$ 19,90) continuam sendo liberados. Pacotes adicionais: 120 mensagens por R$ 10,00 e mensagens ilimitadas na conversa por R$ 19,90. Recompras preservam o histórico.
 
 ### Ofertas de um clique (`/oferta`)
 
@@ -144,7 +144,7 @@ Não existe chamada de IA. `getResultImage()` monta o caminho de uma imagem pron
 - **Anime:** `public/anime-results/<origem>_<cor>_<corpo>_<seios>_<bumbum>.webp` (816 imagens). Corpo "Magra" só tem imagem com seios "Médios"; nas outras combinações aparece a imagem da origem.
 - **Realista:** `public/results/<CASTANHO|PRETO|LOIRA>/<SB|NB|BB|LB><ThinBody|AtleticBody|PlusSizeBody|CurvyBody>.webp` (48 imagens). Origem, corte de cabelo e bumbum não mudam a imagem; "Musculosa" usa a imagem de "Atlética".
 
-A revelação toca o vídeo `public/funnel-media/v2/loader/loader.mp4` com o progresso acompanhando o vídeo e, no fim, mostra a imagem, como no create.piskou.com. Com movimento reduzido, economia de dados ou falha no vídeo, mostra a imagem assim que ela carrega. As imagens e vídeos dos cards ficam em `public/funnel-media/v2/`; opções sem mídia v2 usam a anterior.
+A revelação toca o vídeo `public/funnel-media/v2/loader/loader.mp4` com o progresso acompanhando o vídeo e, no fim, mostra a imagem, como no create.piskou.com. Com movimento reduzido, economia de dados ou falha no vídeo, mostra a imagem assim que ela carrega. Os cards do criador usam as imagens e vídeos de `public/funnel-media/anime/` e `public/funnel-media/realista/`.
 
 ## Detalhes herdados do original
 
